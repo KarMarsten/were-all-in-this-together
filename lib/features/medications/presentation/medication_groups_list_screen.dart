@@ -3,40 +3,28 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:were_all_in_this_together/core/router/app_router.dart';
-import 'package:were_all_in_this_together/features/medications/domain/medication.dart';
+import 'package:were_all_in_this_together/features/medications/domain/medication_group.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/providers.dart';
-import 'package:were_all_in_this_together/features/medications/presentation/widgets/medication_icon.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/widgets/medication_schedule_editor.dart';
-import 'package:were_all_in_this_together/features/medications/presentation/widgets/reminder_permission_banner.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 
-/// Medications list for the currently-active Person.
+/// Medication groups list for the currently-active Person.
 ///
-/// Three top-level states:
-/// * No active Person at all (roster empty) → point at "Add someone" first,
-///   because a med without an owner can't exist.
-/// * Active Person but no meds → friendly empty state + "Add medication".
-/// * Normal list with tiles + an expandable "Archived" section when there
-///   are archived meds.
-class MedicationsListScreen extends ConsumerWidget {
-  const MedicationsListScreen({super.key});
+/// Mirrors `MedicationsListScreen`'s layout — active rows on top,
+/// archived collapsed at the bottom — so the mental model transfers
+/// between the two screens.
+class MedicationGroupsListScreen extends ConsumerWidget {
+  const MedicationGroupsListScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeAsync = ref.watch(activePersonProvider);
-    final medsAsync = ref.watch(medicationsListProvider);
-    final archivedAsync = ref.watch(archivedMedicationsListProvider);
+    final groupsAsync = ref.watch(medicationGroupsListProvider);
+    final archivedAsync = ref.watch(archivedMedicationGroupsListProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Medications'),
-        actions: [
-          IconButton(
-            tooltip: 'Groups',
-            icon: const Icon(Icons.layers_outlined),
-            onPressed: () => context.push(Routes.medicationGroups),
-          ),
-        ],
+        title: const Text('Medication groups'),
         bottom: activeAsync.maybeWhen(
           data: (person) => person == null
               ? null
@@ -60,9 +48,9 @@ class MedicationsListScreen extends ConsumerWidget {
         data: (person) => person == null
             ? null
             : FloatingActionButton.extended(
-                onPressed: () => context.push(Routes.medicationNew),
+                onPressed: () => context.push(Routes.medicationGroupNew),
                 icon: const Icon(Icons.add),
-                label: const Text('Add medication'),
+                label: const Text('New group'),
               ),
         orElse: () => null,
       ),
@@ -73,26 +61,21 @@ class MedicationsListScreen extends ConsumerWidget {
           if (person == null) {
             return const _NoActivePersonState();
           }
-          return medsAsync.when(
+          return groupsAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (err, _) => _ErrorState(message: err.toString()),
-            data: (meds) {
+            data: (groups) {
               final archived =
-                  archivedAsync.value ?? const <Medication>[];
-              if (meds.isEmpty && archived.isEmpty) {
+                  archivedAsync.value ?? const <MedicationGroup>[];
+              if (groups.isEmpty && archived.isEmpty) {
                 return const _EmptyState();
               }
               return ListView(
                 padding: const EdgeInsets.fromLTRB(8, 8, 8, 96),
                 children: [
-                  // Only show the permission banner when there's
-                  // something worth reminding about — an empty list
-                  // doesn't need the UX noise.
-                  if (meds.any((m) => m.schedule.isReminderEligible))
-                    const ReminderPermissionBanner(),
-                  for (final m in meds) _MedicationTile(medication: m),
+                  for (final g in groups) _GroupTile(group: g),
                   if (archived.isNotEmpty)
-                    _ArchivedSection(medications: archived),
+                    _ArchivedSection(groups: archived),
                 ],
               );
             },
@@ -103,10 +86,10 @@ class MedicationsListScreen extends ConsumerWidget {
   }
 }
 
-class _MedicationTile extends StatelessWidget {
-  const _MedicationTile({required this.medication});
+class _GroupTile extends StatelessWidget {
+  const _GroupTile({required this.group});
 
-  final Medication medication;
+  final MedicationGroup group;
 
   @override
   Widget build(BuildContext context) {
@@ -115,45 +98,29 @@ class _MedicationTile extends StatelessWidget {
       elevation: 0,
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       child: ListTile(
-        leading: MedicationIcon(form: medication.form),
-        title: Text(medication.name),
+        leading: const Icon(Icons.layers_outlined),
+        title: Text(group.name),
         subtitle: subtitle == null ? null : Text(subtitle),
         trailing: const Icon(Icons.chevron_right),
-        onTap: () =>
-            context.push(Routes.medicationEdit(medication.id)),
+        onTap: () => context.push(Routes.medicationGroupEdit(group.id)),
       ),
     );
   }
 
-  /// Dose · form · schedule, trimmed to whatever is present. Schedule
-  /// comes last so the identity of the medication (name + dose) leads
-  /// and the "how / when" trails behind as supporting context.
   String? _subtitle(BuildContext context) {
     final parts = <String>[];
-    if (medication.dose != null && medication.dose!.trim().isNotEmpty) {
-      parts.add(medication.dose!.trim());
-    }
-    if (medication.form != null) {
-      parts.add(medicationFormLabel(medication.form));
-    }
-    final scheduleHint = medicationScheduleLabel(context, medication.schedule);
-    if (scheduleHint != null) {
-      parts.add(scheduleHint);
-    }
-    return parts.isEmpty ? null : parts.join(' · ');
+    final n = group.memberMedicationIds.length;
+    parts.add('$n ${n == 1 ? 'med' : 'meds'}');
+    final scheduleHint = medicationScheduleLabel(context, group.schedule);
+    if (scheduleHint != null) parts.add(scheduleHint);
+    return parts.join(' · ');
   }
 }
 
-/// Collapsible "Archived" group rendered at the bottom of the list.
-///
-/// Archived meds belong in sight but out of the way — a long history of
-/// "meds we used to take" is clinically useful but shouldn't dominate
-/// the live view. Rendered as an [ExpansionTile] to keep the default
-/// state tidy.
 class _ArchivedSection extends StatelessWidget {
-  const _ArchivedSection({required this.medications});
+  const _ArchivedSection({required this.groups});
 
-  final List<Medication> medications;
+  final List<MedicationGroup> groups;
 
   @override
   Widget build(BuildContext context) {
@@ -166,18 +133,15 @@ class _ArchivedSection extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 8),
         child: ExpansionTile(
           tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-          title: Text('Archived (${medications.length})'),
+          title: Text('Archived (${groups.length})'),
           children: [
-            for (final m in medications)
+            for (final g in groups)
               ListTile(
-                leading: MedicationIcon(form: m.form),
-                title: Text(m.name),
-                subtitle: m.dose == null || m.dose!.trim().isEmpty
-                    ? null
-                    : Text(m.dose!.trim()),
+                leading: const Icon(Icons.layers_outlined),
+                title: Text(g.name),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () =>
-                    context.push(Routes.medicationEdit(m.id)),
+                    context.push(Routes.medicationGroupEdit(g.id)),
               ),
           ],
         ),
@@ -212,7 +176,7 @@ class _NoActivePersonState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Medications are kept per person, so we need to know who '
+              'Groups are kept per person, so we need to know who '
               "we're tracking them for.",
               style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
               textAlign: TextAlign.center,
@@ -244,28 +208,28 @@ class _EmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.medication_outlined,
+              Icons.layers_outlined,
               size: 48,
               color: scheme.onSurfaceVariant,
             ),
             const SizedBox(height: 16),
             Text(
-              'No medications yet',
+              'No groups yet',
               style: text.titleMedium,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              "Add one when you're ready — supplements, prescriptions, "
-              'anything you want to keep track of.',
+              'Bundle medications that are taken together — one reminder '
+              'and one Taken tap for the whole stack.',
               style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
             FilledButton.icon(
-              onPressed: () => context.push(Routes.medicationNew),
+              onPressed: () => context.push(Routes.medicationGroupNew),
               icon: const Icon(Icons.add),
-              label: const Text('Add medication'),
+              label: const Text('New group'),
             ),
           ],
         ),
@@ -291,7 +255,7 @@ class _ErrorState extends StatelessWidget {
             Icon(Icons.error_outline, size: 48, color: scheme.error),
             const SizedBox(height: 16),
             Text(
-              "Couldn't load medications",
+              "Couldn't load groups",
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),

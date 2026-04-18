@@ -115,6 +115,91 @@ abstract class MedicationSchedule with _$MedicationSchedule {
 
   const MedicationSchedule._();
 
+  /// Tolerant decode from a wire-format JSON map (the `schedule`
+  /// sub-object on encrypted payloads). Used by both
+  /// `EncryptedMedicationPayload` and `EncryptedMedicationGroupPayload`
+  /// so the format stays consistent across both entities.
+  ///
+  /// Rules — all in service of "a partially-corrupt payload should
+  /// degrade gracefully rather than hide the row":
+  ///
+  /// * `null` / non-map / missing → [asNeeded].
+  /// * Unknown `kind` → [asNeeded] (see [ScheduleKind.fromWireName]).
+  /// * Unparseable entries in `times` are dropped, not fatal.
+  /// * `days` entries outside 1..7 are dropped.
+  /// * Weekly with an empty `days` list is demoted to [asNeeded],
+  ///   matching the domain invariant upheld by the UI.
+  ///
+  // Can't be a factory constructor because `MedicationSchedule` is a
+  // freezed abstract class whose only public constructors are the
+  // generated ones; a user-defined factory would clash with freezed's
+  // codegen. Keeping this as a static factory method.
+  // ignore: prefer_constructors_over_static_methods
+  static MedicationSchedule fromWireJson(Object? raw) {
+    if (raw is! Map) return asNeeded;
+    final kind = ScheduleKind.fromWireName(raw['kind'] as String?);
+    if (kind == ScheduleKind.asNeeded) return asNeeded;
+
+    final timesRaw = raw['times'];
+    final times = <ScheduledTime>[];
+    if (timesRaw is List) {
+      for (final t in timesRaw) {
+        if (t is! String) continue;
+        try {
+          times.add(ScheduledTime.fromWireString(t));
+        } on FormatException {
+          // Skip unparseable entries rather than failing the whole row.
+        }
+      }
+    }
+
+    final daysRaw = raw['days'];
+    final days = <int>{};
+    if (daysRaw is List) {
+      for (final d in daysRaw) {
+        if (d is int && d >= 1 && d <= 7) days.add(d);
+      }
+    }
+
+    if (kind == ScheduleKind.weekly && days.isEmpty) {
+      return asNeeded;
+    }
+    return MedicationSchedule(
+      kind: kind,
+      times: _sortAndDedupe(times),
+      days: kind == ScheduleKind.weekly ? days : const <int>{},
+    );
+  }
+
+  /// Encode as the canonical wire-format JSON map. Times are sorted +
+  /// de-duplicated on `minutesSinceMidnight` so equivalent schedules
+  /// serialise byte-identically — useful both for Phase 2 sync diffs
+  /// and for making "same" schedules actually `==` after a round-trip.
+  Map<String, dynamic> toWireJson() {
+    final sorted = _sortAndDedupe(times);
+    final json = <String, dynamic>{
+      'kind': kind.wireName,
+      'times': [for (final t in sorted) t.toWireString()],
+    };
+    if (kind == ScheduleKind.weekly) {
+      final sortedDays = days.toList()..sort();
+      json['days'] = sortedDays;
+    }
+    return json;
+  }
+
+  static List<ScheduledTime> _sortAndDedupe(Iterable<ScheduledTime> times) {
+    final seen = <int>{};
+    final out = <ScheduledTime>[];
+    for (final t in times) {
+      if (seen.add(t.minutesSinceMidnight)) out.add(t);
+    }
+    out.sort(
+      (a, b) => a.minutesSinceMidnight.compareTo(b.minutesSinceMidnight),
+    );
+    return out;
+  }
+
   /// Canonical "no schedule" value. Default for new meds and for v1
   /// payloads decoded by this build.
   static const MedicationSchedule asNeeded =

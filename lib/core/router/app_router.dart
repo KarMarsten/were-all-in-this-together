@@ -3,9 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:were_all_in_this_together/features/home/ui/home_screen.dart';
+import 'package:were_all_in_this_together/features/medications/data/medication_group_repository.dart';
 import 'package:were_all_in_this_together/features/medications/data/medication_repository.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication.dart';
+import 'package:were_all_in_this_together/features/medications/domain/medication_group.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/medication_form_screen.dart';
+import 'package:were_all_in_this_together/features/medications/presentation/medication_group_form_screen.dart';
+import 'package:were_all_in_this_together/features/medications/presentation/medication_groups_list_screen.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/medications_list_screen.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/today_screen.dart';
 import 'package:were_all_in_this_together/features/people/data/person_repository.dart';
@@ -35,6 +39,13 @@ abstract class Routes {
   static const medicationEditPattern = '/medications/:id/edit';
 
   static String medicationEdit(String id) => '/medications/$id/edit';
+
+  static const medicationGroups = '/medications/groups';
+  static const medicationGroupNew = '/medications/groups/new';
+  static const medicationGroupEditPattern = '/medications/groups/:id/edit';
+
+  static String medicationGroupEdit(String id) =>
+      '/medications/groups/$id/edit';
 
   static const today = '/today';
 }
@@ -96,6 +107,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final id = state.pathParameters['id']!;
           return _EditMedicationLoader(medicationId: id);
+        },
+      ),
+      GoRoute(
+        path: Routes.medicationGroups,
+        name: 'medication-groups',
+        builder: (context, state) => const MedicationGroupsListScreen(),
+      ),
+      GoRoute(
+        path: Routes.medicationGroupNew,
+        name: 'medication-group-new',
+        builder: (context, state) => const MedicationGroupFormScreen(),
+      ),
+      GoRoute(
+        path: Routes.medicationGroupEditPattern,
+        name: 'medication-group-edit',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return _EditMedicationGroupLoader(groupId: id);
         },
       ),
       GoRoute(
@@ -244,6 +273,71 @@ class _MedicationEditNotFound extends StatelessWidget {
         child: Center(
           child: Text(
             "That medication isn't in this app anymore.",
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Same shape as [_EditMedicationLoader] — deep-link-safe resolver for
+/// the `/medications/groups/:id/edit` route. Falls back to archived
+/// rows so Archive → Edit → Restore round-trips cleanly.
+class _EditMedicationGroupLoader extends ConsumerWidget {
+  const _EditMedicationGroupLoader({required this.groupId});
+
+  final String groupId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repo = ref.watch(medicationGroupRepositoryProvider);
+    return FutureBuilder<MedicationGroup?>(
+      future: _resolve(repo, ref),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const _EditLoading();
+        }
+        if (snapshot.hasError) {
+          return _EditError(message: snapshot.error.toString());
+        }
+        final group = snapshot.data;
+        if (group == null) {
+          return const _MedicationGroupEditNotFound();
+        }
+        return MedicationGroupFormScreen(initialGroup: group);
+      },
+    );
+  }
+
+  Future<MedicationGroup?> _resolve(
+    MedicationGroupRepository repo,
+    WidgetRef ref,
+  ) async {
+    final active = await repo.findById(groupId);
+    if (active != null) return active;
+    final activePersonId =
+        await ref.read(activePersonIdProvider.future);
+    if (activePersonId == null) return null;
+    final archived = await repo.listArchivedForPerson(activePersonId);
+    for (final g in archived) {
+      if (g.id == groupId) return g;
+    }
+    return null;
+  }
+}
+
+class _MedicationGroupEditNotFound extends StatelessWidget {
+  const _MedicationGroupEditNotFound();
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(),
+      body: const Padding(
+        padding: EdgeInsets.all(24),
+        child: Center(
+          child: Text(
+            "That group isn't in this app anymore.",
             textAlign: TextAlign.center,
           ),
         ),

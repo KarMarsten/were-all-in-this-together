@@ -70,7 +70,7 @@ class EncryptedMedicationPayload {
       notes: json['notes'] as String?,
       startDate: startRaw is String ? _parseDateOnly(startRaw) : null,
       endDate: endRaw is String ? _parseDateOnly(endRaw) : null,
-      schedule: _decodeSchedule(json['schedule']),
+      schedule: MedicationSchedule.fromWireJson(json['schedule']),
     );
   }
 
@@ -89,63 +89,6 @@ class EncryptedMedicationPayload {
       throw FormatException('Invalid date-only string: "$s"');
     }
     return DateTime.utc(y, m, d);
-  }
-
-  /// Decode the `schedule` sub-object. Missing / malformed schedules
-  /// fall back to [MedicationSchedule.asNeeded] — this keeps v1 payloads
-  /// working and tolerates partial corruption without hiding the row.
-  static MedicationSchedule _decodeSchedule(Object? raw) {
-    if (raw is! Map) return MedicationSchedule.asNeeded;
-    final kind = ScheduleKind.fromWireName(raw['kind'] as String?);
-    if (kind == ScheduleKind.asNeeded) return MedicationSchedule.asNeeded;
-
-    final timesRaw = raw['times'];
-    final times = <ScheduledTime>[];
-    if (timesRaw is List) {
-      for (final t in timesRaw) {
-        if (t is! String) continue;
-        try {
-          times.add(ScheduledTime.fromWireString(t));
-        } on FormatException {
-          // Skip unparseable entries rather than failing the whole row.
-        }
-      }
-    }
-
-    final daysRaw = raw['days'];
-    final days = <int>{};
-    if (daysRaw is List) {
-      for (final d in daysRaw) {
-        if (d is int && d >= 1 && d <= 7) days.add(d);
-      }
-    }
-
-    // Enforce the domain invariants here rather than letting the
-    // assertion in `MedicationSchedule` fire in production: if a payload
-    // is self-contradictory (weekly with no days, daily with a days list)
-    // we clean it up instead of crashing.
-    if (kind == ScheduleKind.weekly && days.isEmpty) {
-      return MedicationSchedule.asNeeded;
-    }
-    return MedicationSchedule(
-      kind: kind,
-      times: _sortTimes(times),
-      days: kind == ScheduleKind.weekly ? days : const <int>{},
-    );
-  }
-
-  /// Sort + dedupe on `minutesSinceMidnight` so equivalent schedules
-  /// serialise to byte-identical JSON (modulo other fields).
-  static List<ScheduledTime> _sortTimes(Iterable<ScheduledTime> times) {
-    final seen = <int>{};
-    final sorted = <ScheduledTime>[];
-    for (final t in times) {
-      if (seen.add(t.minutesSinceMidnight)) sorted.add(t);
-    }
-    sorted.sort(
-      (a, b) => a.minutesSinceMidnight.compareTo(b.minutesSinceMidnight),
-    );
-    return sorted;
   }
 
   /// The schema version written by this build.
@@ -177,21 +120,8 @@ class EncryptedMedicationPayload {
         // a v1 payload apart from `v`, which keeps diffs small when
         // Phase 2 sync ships.
         if (schedule.kind != ScheduleKind.asNeeded)
-          'schedule': _encodeSchedule(schedule),
+          'schedule': schedule.toWireJson(),
       };
-
-  static Map<String, dynamic> _encodeSchedule(MedicationSchedule s) {
-    final sorted = _sortTimes(s.times);
-    final json = <String, dynamic>{
-      'kind': s.kind.wireName,
-      'times': [for (final t in sorted) t.toWireString()],
-    };
-    if (s.kind == ScheduleKind.weekly) {
-      final days = s.days.toList()..sort();
-      json['days'] = days;
-    }
-    return json;
-  }
 
   static String _dateOnly(DateTime d) {
     final y = d.year.toString().padLeft(4, '0');

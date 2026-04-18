@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:were_all_in_this_together/features/medications/data/dose_log_repository.dart';
 import 'package:were_all_in_this_together/features/medications/domain/dose_log.dart';
 import 'package:were_all_in_this_together/features/medications/domain/scheduled_dose.dart';
+import 'package:were_all_in_this_together/features/medications/domain/today_item.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/today_providers.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/widgets/medication_icon.dart';
 
@@ -23,12 +24,14 @@ import 'package:were_all_in_this_together/features/medications/presentation/widg
 ///   today" hint but otherwise look identical to upcoming rows.
 /// * Logged rows show their state inline and offer a single **Undo**
 ///   path so a mis-tap is never sticky.
+/// * Medication groups render as expandable bundle rows — one tap to
+///   log the whole stack; expand to see member status.
 class TodayScreen extends ConsumerWidget {
   const TodayScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final dosesAsync = ref.watch(todayScheduledDosesProvider);
+    final itemsAsync = ref.watch(todayItemsProvider);
     final logsAsync = ref.watch(todayDoseLogsProvider);
 
     return Scaffold(
@@ -48,11 +51,11 @@ class TodayScreen extends ConsumerWidget {
           ),
         ),
       ),
-      body: dosesAsync.when(
+      body: itemsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => _ErrorState(message: err.toString()),
-        data: (doses) {
-          if (doses.isEmpty) {
+        data: (items) {
+          if (items.isEmpty) {
             return const _EmptyState();
           }
           return logsAsync.when(
@@ -62,11 +65,20 @@ class TodayScreen extends ConsumerWidget {
               final now = ref.read(todayClockProvider)();
               return ListView.builder(
                 padding: const EdgeInsets.fromLTRB(8, 8, 8, 24),
-                itemCount: doses.length,
+                itemCount: items.length,
                 itemBuilder: (context, index) {
-                  final dose = doses[index];
-                  final log = logs[identityOfDose(dose)];
-                  return _DoseTile(dose: dose, log: log, now: now);
+                  final item = items[index];
+                  if (item is TodaySoloItem) {
+                    return _SoloTile(
+                      dose: item.dose,
+                      log: logs[identityOfDose(item.dose)],
+                      now: now,
+                    );
+                  }
+                  if (item is TodayGroupItem) {
+                    return _GroupTile(item: item, logs: logs, now: now);
+                  }
+                  return const SizedBox.shrink();
                 },
               );
             },
@@ -108,8 +120,8 @@ class TodayScreen extends ConsumerWidget {
   }
 }
 
-class _DoseTile extends ConsumerStatefulWidget {
-  const _DoseTile({
+class _SoloTile extends ConsumerStatefulWidget {
+  const _SoloTile({
     required this.dose,
     required this.log,
     required this.now,
@@ -120,10 +132,10 @@ class _DoseTile extends ConsumerStatefulWidget {
   final DateTime now;
 
   @override
-  ConsumerState<_DoseTile> createState() => _DoseTileState();
+  ConsumerState<_SoloTile> createState() => _SoloTileState();
 }
 
-class _DoseTileState extends ConsumerState<_DoseTile> {
+class _SoloTileState extends ConsumerState<_SoloTile> {
   /// Guards against double-taps while a Taken/Skip/Undo write is in
   /// flight — without this a user hammering the button can produce
   /// two partially-overlapping upserts and surprise the repo.
@@ -150,26 +162,9 @@ class _DoseTileState extends ConsumerState<_DoseTile> {
         padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
         child: Row(
           children: [
-            SizedBox(
-              width: 64,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _formatClock(localTime),
-                    style: text.titleMedium?.copyWith(
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                  if (isPast && log == null)
-                    Text(
-                      'earlier',
-                      style: text.bodySmall?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
-                    ),
-                ],
-              ),
+            _LeadingTime(
+              localTime: localTime,
+              showEarlier: isPast && log == null,
             ),
             MedicationIcon(form: dose.form, size: 28),
             const SizedBox(width: 10),
@@ -188,22 +183,19 @@ class _DoseTileState extends ConsumerState<_DoseTile> {
               ),
             ),
             const SizedBox(width: 8),
-            _actions(context, log),
+            _actions(log),
           ],
         ),
       ),
     );
   }
 
-  Widget _actions(BuildContext context, DoseLog? log) {
+  Widget _actions(DoseLog? log) {
     if (log == null) {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _TakeButton(
-            busy: _busy,
-            onPressed: () => _record(DoseOutcome.taken),
-          ),
+          _TakeButton(busy: _busy, onPressed: () => _record(DoseOutcome.taken)),
           const SizedBox(width: 4),
           _SkipButton(
             busy: _busy,
@@ -212,11 +204,7 @@ class _DoseTileState extends ConsumerState<_DoseTile> {
         ],
       );
     }
-    return _LoggedState(
-      log: log,
-      busy: _busy,
-      onUndo: _undo,
-    );
+    return _LoggedState(outcome: log.outcome, busy: _busy, onUndo: _undo);
   }
 
   Future<void> _record(DoseOutcome outcome) async {
@@ -257,6 +245,311 @@ class _DoseTileState extends ConsumerState<_DoseTile> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+}
+
+/// Summary of a group bundle's collective state. Derived from the
+/// per-member log map rather than stored — we keep the ACK model
+/// single-sourced on `dose_logs`.
+enum _GroupAckState {
+  /// No member of the group has been logged yet.
+  none,
+
+  /// Every member is logged as taken.
+  allTaken,
+
+  /// Every member is logged as skipped.
+  allSkipped,
+
+  /// Some — but not all — members are logged, or the logged set has
+  /// a mix of outcomes. The user needs to decide how to finish.
+  partial,
+}
+
+class _GroupTile extends ConsumerStatefulWidget {
+  const _GroupTile({
+    required this.item,
+    required this.logs,
+    required this.now,
+  });
+
+  final TodayGroupItem item;
+  final Map<DoseIdentity, DoseLog> logs;
+  final DateTime now;
+
+  @override
+  ConsumerState<_GroupTile> createState() => _GroupTileState();
+}
+
+class _GroupTileState extends ConsumerState<_GroupTile> {
+  bool _busy = false;
+  bool _expanded = false;
+
+  _GroupAckState _ackState() {
+    var taken = 0;
+    var skipped = 0;
+    for (final m in widget.item.members) {
+      final log = widget.logs[identityOfDose(m)];
+      if (log == null) continue;
+      if (log.outcome == DoseOutcome.taken) taken += 1;
+      if (log.outcome == DoseOutcome.skipped) skipped += 1;
+    }
+    final total = widget.item.members.length;
+    if (taken == 0 && skipped == 0) return _GroupAckState.none;
+    if (taken == total) return _GroupAckState.allTaken;
+    if (skipped == total) return _GroupAckState.allSkipped;
+    return _GroupAckState.partial;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    final localTime = widget.item.scheduledAt.toLocal();
+    final ack = _ackState();
+    final isPast = widget.item.scheduledAt.isBefore(widget.now) &&
+        ack == _GroupAckState.none;
+
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      color: scheme.primaryContainer.withValues(alpha: 0.22),
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+              child: Row(
+                children: [
+                  _LeadingTime(localTime: localTime, showEarlier: isPast),
+                  Icon(Icons.layers_outlined, size: 28, color: scheme.primary),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(widget.item.groupName, style: text.titleSmall),
+                        Text(
+                          '${widget.item.personDisplayName} · '
+                          '${widget.item.members.length} meds'
+                          '${_summaryFor(ack)}',
+                          style: text.bodySmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _groupActions(ack),
+                  Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_expanded) const Divider(height: 1),
+          if (_expanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(60, 4, 12, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final m in widget.item.members)
+                    _MemberRow(
+                      dose: m,
+                      log: widget.logs[identityOfDose(m)],
+                    ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _summaryFor(_GroupAckState state) {
+    switch (state) {
+      case _GroupAckState.none:
+        return '';
+      case _GroupAckState.allTaken:
+        return ' · all taken';
+      case _GroupAckState.allSkipped:
+        return ' · all skipped';
+      case _GroupAckState.partial:
+        var taken = 0;
+        for (final m in widget.item.members) {
+          final log = widget.logs[identityOfDose(m)];
+          if (log?.outcome == DoseOutcome.taken) taken += 1;
+        }
+        return ' · $taken / ${widget.item.members.length} logged';
+    }
+  }
+
+  Widget _groupActions(_GroupAckState state) {
+    switch (state) {
+      case _GroupAckState.none:
+      case _GroupAckState.partial:
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _TakeButton(
+              busy: _busy,
+              onPressed: () => _recordAll(DoseOutcome.taken),
+            ),
+            const SizedBox(width: 4),
+            _SkipButton(
+              busy: _busy,
+              onPressed: () => _recordAll(DoseOutcome.skipped),
+            ),
+          ],
+        );
+      case _GroupAckState.allTaken:
+        return _LoggedState(
+          outcome: DoseOutcome.taken,
+          busy: _busy,
+          onUndo: _undoAll,
+        );
+      case _GroupAckState.allSkipped:
+        return _LoggedState(
+          outcome: DoseOutcome.skipped,
+          busy: _busy,
+          onUndo: _undoAll,
+        );
+    }
+  }
+
+  Future<void> _recordAll(DoseOutcome outcome) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final repo = ref.read(doseLogRepositoryProvider);
+      // Serial writes rather than Future.wait — keeps the error surface
+      // predictable (first failure stops later writes) and avoids the
+      // appearance of partial-commit inside a single transaction when
+      // there isn't one.
+      for (final m in widget.item.members) {
+        await repo.record(
+          personId: m.personId,
+          medicationId: m.medicationId,
+          scheduledAt: m.scheduledAt,
+          outcome: outcome,
+        );
+      }
+      invalidateDoseLogsState(ref);
+    } on Object catch (err) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Couldn't save: $err")),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _undoAll() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final repo = ref.read(doseLogRepositoryProvider);
+      for (final m in widget.item.members) {
+        await repo.undo(
+          medicationId: m.medicationId,
+          scheduledAt: m.scheduledAt,
+        );
+      }
+      invalidateDoseLogsState(ref);
+    } on Object catch (err) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Couldn't undo: $err")),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+}
+
+class _MemberRow extends StatelessWidget {
+  const _MemberRow({required this.dose, required this.log});
+
+  final ScheduledDose dose;
+  final DoseLog? log;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    final (icon, color) = switch (log?.outcome) {
+      DoseOutcome.taken => (Icons.check_circle, scheme.primary),
+      DoseOutcome.skipped => (
+          Icons.remove_circle_outline,
+          scheme.onSurfaceVariant,
+        ),
+      null => (Icons.radio_button_unchecked, scheme.onSurfaceVariant),
+    };
+    final titleParts = <String>[dose.medicationName];
+    if (dose.dose != null && dose.dose!.trim().isNotEmpty) {
+      titleParts.add(dose.dose!.trim());
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 16),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              titleParts.join(' · '),
+              style: text.bodyMedium,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Clock-on-the-left column, shared by solo and group tiles so time
+/// positions align vertically across rows in the list.
+class _LeadingTime extends StatelessWidget {
+  const _LeadingTime({
+    required this.localTime,
+    required this.showEarlier,
+  });
+
+  final DateTime localTime;
+  final bool showEarlier;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
+    return SizedBox(
+      width: 64,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _formatClock(localTime),
+            style: text.titleMedium?.copyWith(
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+          if (showEarlier)
+            Text(
+              'earlier',
+              style: text.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 
@@ -301,12 +594,12 @@ class _SkipButton extends StatelessWidget {
 
 class _LoggedState extends StatelessWidget {
   const _LoggedState({
-    required this.log,
+    required this.outcome,
     required this.onUndo,
     required this.busy,
   });
 
-  final DoseLog log;
+  final DoseOutcome outcome;
   final VoidCallback onUndo;
   final bool busy;
 
@@ -315,7 +608,7 @@ class _LoggedState extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
 
-    final (icon, label, color) = switch (log.outcome) {
+    final (icon, label, color) = switch (outcome) {
       DoseOutcome.taken => (
           Icons.check_circle,
           'Taken',
