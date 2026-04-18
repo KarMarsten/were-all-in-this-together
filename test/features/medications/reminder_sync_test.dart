@@ -11,7 +11,6 @@ import 'package:were_all_in_this_together/core/notifications/local_notification_
 import 'package:were_all_in_this_together/features/medications/data/medication_repository.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication_schedule.dart';
 import 'package:were_all_in_this_together/features/medications/notifications/reminder_sync.dart';
-import 'package:were_all_in_this_together/features/medications/presentation/providers.dart';
 import 'package:were_all_in_this_together/features/people/data/person_repository.dart';
 import 'package:were_all_in_this_together/features/people/presentation/providers.dart';
 
@@ -41,12 +40,11 @@ void main() {
         keyStorageProvider.overrideWith((_) => InMemoryKeyStorage()),
         notificationServiceProvider.overrideWith((_) => fake),
       ],
-    );
-
-    // Subscribe to the sync provider; without this the `ref.listen`
-    // inside it is never instantiated and reconciliation never runs.
-    // `App` does the equivalent watch in production.
-    container.read(reminderSyncProvider);
+    )
+      // Subscribe to the sync provider; without this the `ref.listen`
+      // inside it is never instantiated and reconciliation never
+      // runs. `App` does the equivalent watch in production.
+      ..read(reminderSyncProvider);
   });
 
   tearDown(() => container.dispose());
