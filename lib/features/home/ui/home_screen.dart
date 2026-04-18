@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -247,6 +249,7 @@ class _FeatureGrid extends StatelessWidget {
       label: 'Medications',
       icon: Icons.medication_outlined,
       description: 'Current list + history',
+      route: Routes.medications,
     ),
     _FeatureTileData(
       label: 'Profile',
@@ -301,10 +304,16 @@ class _FeatureTileData {
     required this.label,
     required this.icon,
     required this.description,
+    this.route,
   });
   final String label;
   final IconData icon;
   final String description;
+
+  /// If non-null, tapping the tile navigates here. Otherwise we show a
+  /// "coming soon" snackbar — so the grid can grow ahead of the
+  /// implementation without stubs behind each tile.
+  final String? route;
 }
 
 class _FeatureTile extends StatelessWidget {
@@ -317,7 +326,14 @@ class _FeatureTile extends StatelessWidget {
     return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => _showComingSoon(context, data.label),
+        onTap: () {
+          final route = data.route;
+          if (route != null) {
+            unawaited(context.push(route));
+          } else {
+            _showComingSoon(context, data.label);
+          }
+        },
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(

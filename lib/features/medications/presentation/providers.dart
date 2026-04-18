@@ -1,0 +1,42 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:were_all_in_this_together/features/medications/data/medication_repository.dart';
+import 'package:were_all_in_this_together/features/medications/domain/medication.dart';
+import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
+
+/// Active (non-archived) medications for the currently-active Person.
+///
+/// Watches [activePersonIdProvider] via `.future`, so the list naturally
+/// re-resolves when the active Person changes (switch, first-add, delete
+/// of the active Person). Mutations local to the medication domain
+/// (create/update/archive/restore) must explicitly call
+/// [invalidateMedicationsState] below.
+///
+/// Returns `[]` when the roster is empty. We don't throw — an empty
+/// roster is a real UI state the list screen handles cleanly.
+final medicationsListProvider = FutureProvider<List<Medication>>((ref) async {
+  final personId = await ref.watch(activePersonIdProvider.future);
+  if (personId == null) return const <Medication>[];
+  final repo = ref.watch(medicationRepositoryProvider);
+  return repo.listActiveForPerson(personId);
+});
+
+/// Archived medications for the active Person, newest-archived first.
+final archivedMedicationsListProvider =
+    FutureProvider<List<Medication>>((ref) async {
+  final personId = await ref.watch(activePersonIdProvider.future);
+  if (personId == null) return const <Medication>[];
+  final repo = ref.watch(medicationRepositoryProvider);
+  return repo.listArchivedForPerson(personId);
+});
+
+/// Refresh every provider that derives from "which meds exist".
+///
+/// Must be called after any create / update / archive / restore so the
+/// list screen and the archived section both re-fetch. Active-person
+/// changes invalidate automatically via the `.future` watch above.
+void invalidateMedicationsState(WidgetRef ref) {
+  ref
+    ..invalidate(medicationsListProvider)
+    ..invalidate(archivedMedicationsListProvider);
+}
