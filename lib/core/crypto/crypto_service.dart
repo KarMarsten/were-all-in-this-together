@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:were_all_in_this_together/core/crypto/encrypted_payload.dart';
 
@@ -97,3 +98,9 @@ class XChaCha20CryptoService implements CryptoService {
   @override
   Future<SecretKey> generateKey() => _cipher.newSecretKey();
 }
+
+/// Application-wide [CryptoService]. The XChaCha20 implementation is
+/// effectively free to construct, so a single shared instance is fine.
+final cryptoServiceProvider = Provider<CryptoService>(
+  (ref) => XChaCha20CryptoService(),
+);
