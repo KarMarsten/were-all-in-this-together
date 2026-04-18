@@ -7,6 +7,7 @@ import 'package:were_all_in_this_together/features/medications/data/medication_r
 import 'package:were_all_in_this_together/features/medications/domain/medication.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/medication_form_screen.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/medications_list_screen.dart';
+import 'package:were_all_in_this_together/features/medications/presentation/today_screen.dart';
 import 'package:were_all_in_this_together/features/people/data/person_repository.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 import 'package:were_all_in_this_together/features/people/presentation/people_list_screen.dart';
@@ -34,6 +35,8 @@ abstract class Routes {
   static const medicationEditPattern = '/medications/:id/edit';
 
   static String medicationEdit(String id) => '/medications/$id/edit';
+
+  static const today = '/today';
 }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -94,6 +97,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final id = state.pathParameters['id']!;
           return _EditMedicationLoader(medicationId: id);
         },
+      ),
+      GoRoute(
+        path: Routes.today,
+        name: 'today',
+        builder: (context, state) => const TodayScreen(),
       ),
     ],
   );
