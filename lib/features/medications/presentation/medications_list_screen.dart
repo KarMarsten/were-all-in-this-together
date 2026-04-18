@@ -6,6 +6,7 @@ import 'package:were_all_in_this_together/core/router/app_router.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/providers.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/widgets/medication_icon.dart';
+import 'package:were_all_in_this_together/features/medications/presentation/widgets/medication_schedule_editor.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 
 /// Medications list for the currently-active Person.
@@ -96,13 +97,14 @@ class _MedicationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final subtitle = _subtitle(context);
     return Card(
       elevation: 0,
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       child: ListTile(
         leading: MedicationIcon(form: medication.form),
         title: Text(medication.name),
-        subtitle: _subtitle() == null ? null : Text(_subtitle()!),
+        subtitle: subtitle == null ? null : Text(subtitle),
         trailing: const Icon(Icons.chevron_right),
         onTap: () =>
             context.push(Routes.medicationEdit(medication.id)),
@@ -110,16 +112,20 @@ class _MedicationTile extends StatelessWidget {
     );
   }
 
-  /// Dose · form, trimmed to whatever is present. We skip framing like
-  /// "at 8am" here — that belongs to the schedule PR, not the intrinsic
-  /// medication record.
-  String? _subtitle() {
+  /// Dose · form · schedule, trimmed to whatever is present. Schedule
+  /// comes last so the identity of the medication (name + dose) leads
+  /// and the "how / when" trails behind as supporting context.
+  String? _subtitle(BuildContext context) {
     final parts = <String>[];
     if (medication.dose != null && medication.dose!.trim().isNotEmpty) {
       parts.add(medication.dose!.trim());
     }
     if (medication.form != null) {
       parts.add(medicationFormLabel(medication.form));
+    }
+    final scheduleHint = medicationScheduleLabel(context, medication.schedule);
+    if (scheduleHint != null) {
+      parts.add(scheduleHint);
     }
     return parts.isEmpty ? null : parts.join(' · ');
   }

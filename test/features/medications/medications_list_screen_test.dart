@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:were_all_in_this_together/features/medications/domain/medication_schedule.dart';
+
 import '../../helpers/test_app_scope.dart';
 
 /// Helper: seed a Person named [name] by driving the People flow,
@@ -251,6 +253,109 @@ void main() {
       // Back on the list, Alpha is active again.
       expect(find.text('Alpha'), findsOneWidget);
       expect(find.text('Archived (1)'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'schedule editor: "Every day" reveals times; weekday picker hidden',
+    (tester) async {
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      await _addPerson(tester, 'Alex');
+      await _openMedications(tester);
+      await tester.tap(find.text('Add medication').first);
+      await tester.pumpAndSettle();
+
+      // Default is "As needed": no Times / Days sections rendered.
+      expect(find.text('Times'), findsNothing);
+      expect(find.text('Days'), findsNothing);
+
+      // Switch to "Every day" and scroll the new section into view.
+      final everyDay = find.text('Every day');
+      await tester.ensureVisible(everyDay);
+      await tester.tap(everyDay);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Times'), findsOneWidget);
+      expect(find.text('Add time'), findsOneWidget);
+      // Daily, not weekly: no day picker.
+      expect(find.text('Days'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'schedule editor: "Specific days" shows the weekday picker',
+    (tester) async {
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      await _addPerson(tester, 'Alex');
+      await _openMedications(tester);
+      await tester.tap(find.text('Add medication').first);
+      await tester.pumpAndSettle();
+
+      final specificDays = find.text('Specific days');
+      await tester.ensureVisible(specificDays);
+      await tester.tap(specificDays);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Days'), findsOneWidget);
+      expect(find.text('Times'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'a med saved with a daily schedule shows the schedule hint on its tile',
+    (tester) async {
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      await _addPerson(tester, 'Alex');
+      await _openMedications(tester);
+
+      // Save-path heavy tests of the time picker would be brittle (it
+      // hits a modal clock dialog). Instead we navigate through the
+      // form with the default kind switch and rely on repository tests
+      // to cover persistence of times. Here we just prove the list
+      // subtitle renders *something* when the schedule isn't
+      // asNeeded — we use the edit flow to verify seeded state shows.
+      // So: seed via the form and then re-open to observe.
+      await tester.tap(find.text('Add medication').first);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Name'),
+        'Morning meds',
+      );
+      await tester.ensureVisible(find.text('Every day'));
+      await tester.tap(find.text('Every day'));
+      await tester.pumpAndSettle();
+      // No time added — the subtitle falls back to "no times set".
+      await tester.ensureVisible(find.text('Save'));
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      // Back on the list, the hint text appears in the subtitle.
+      expect(find.text('Morning meds'), findsOneWidget);
+      expect(find.textContaining('no times set'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'isReminderEligible matches what the editor produces — daily with no '
+    'times is not reminder-eligible',
+    (tester) async {
+      // Pure domain check but lives with the widget tests because the
+      // editor's transition rules are the thing we care about in
+      // practice. Exercising the domain directly keeps this fast.
+      const empty = MedicationSchedule(kind: ScheduleKind.daily);
+      expect(empty.isReminderEligible, isFalse);
+
+      const withTime = MedicationSchedule(
+        kind: ScheduleKind.daily,
+        times: [ScheduledTime(hour: 8, minute: 0)],
+      );
+      expect(withTime.isReminderEligible, isTrue);
     },
   );
 }

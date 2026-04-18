@@ -11,6 +11,7 @@ import 'package:were_all_in_this_together/core/crypto/key_storage.dart';
 import 'package:were_all_in_this_together/core/database/app_database.dart';
 import 'package:were_all_in_this_together/features/medications/data/encrypted_medication_payload.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication.dart';
+import 'package:were_all_in_this_together/features/medications/domain/medication_schedule.dart';
 
 /// Thrown when a medication row exists for a Person but that Person's
 /// encryption key is missing on this device. Same data-integrity meaning
@@ -85,6 +86,7 @@ class MedicationRepository {
     String? notes,
     DateTime? startDate,
     DateTime? endDate,
+    MedicationSchedule schedule = MedicationSchedule.asNeeded,
   }) async {
     if (name.trim().isEmpty) {
       throw ArgumentError.value(name, 'name', 'must not be empty');
@@ -111,6 +113,7 @@ class MedicationRepository {
       notes: notes,
       startDate: startDate,
       endDate: endDate,
+      schedule: schedule,
     );
     final encrypted = await _sealPayload(
       medicationId: id,
@@ -139,6 +142,7 @@ class MedicationRepository {
       notes: notes,
       startDate: startDate,
       endDate: endDate,
+      schedule: schedule,
       createdAt: now,
       updatedAt: now,
     );
@@ -242,6 +246,7 @@ class MedicationRepository {
       notes: updated.notes,
       startDate: updated.startDate,
       endDate: updated.endDate,
+      schedule: updated.schedule,
     );
     final encrypted = await _sealPayload(
       medicationId: updated.id,
@@ -342,6 +347,7 @@ class MedicationRepository {
       notes: payload.notes,
       startDate: payload.startDate,
       endDate: payload.endDate,
+      schedule: payload.schedule,
       createdAt:
           DateTime.fromMillisecondsSinceEpoch(row.createdAt, isUtc: true),
       updatedAt:

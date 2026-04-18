@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import 'package:were_all_in_this_together/features/medications/data/medication_repository.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication.dart';
+import 'package:were_all_in_this_together/features/medications/domain/medication_schedule.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/providers.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/widgets/medication_icon.dart';
+import 'package:were_all_in_this_together/features/medications/presentation/widgets/medication_schedule_editor.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 
 /// Form for creating or editing a [Medication].
@@ -41,6 +43,7 @@ class _MedicationFormScreenState extends ConsumerState<MedicationFormScreen> {
   MedicationForm? _form;
   DateTime? _startDate;
   DateTime? _endDate;
+  MedicationSchedule _schedule = MedicationSchedule.asNeeded;
   bool _saving = false;
 
   @override
@@ -54,6 +57,7 @@ class _MedicationFormScreenState extends ConsumerState<MedicationFormScreen> {
     _form = seed?.form;
     _startDate = seed?.startDate;
     _endDate = seed?.endDate;
+    _schedule = seed?.schedule ?? MedicationSchedule.asNeeded;
   }
 
   @override
@@ -139,6 +143,12 @@ class _MedicationFormScreenState extends ConsumerState<MedicationFormScreen> {
                   helpText: 'Leave empty if still taking',
                 ),
                 const SizedBox(height: 16),
+                const SizedBox(height: 24),
+                MedicationScheduleEditor(
+                  value: _schedule,
+                  onChanged: (s) => setState(() => _schedule = s),
+                ),
+                const SizedBox(height: 16),
                 TextFormField(
                   controller: _notes,
                   decoration: const InputDecoration(
@@ -185,6 +195,7 @@ class _MedicationFormScreenState extends ConsumerState<MedicationFormScreen> {
             notes: _nullIfBlank(_notes.text),
             startDate: _startDate,
             endDate: _endDate,
+            schedule: _schedule,
           ),
         );
       } else {
@@ -215,6 +226,7 @@ class _MedicationFormScreenState extends ConsumerState<MedicationFormScreen> {
           notes: _nullIfBlank(_notes.text),
           startDate: _startDate,
           endDate: _endDate,
+          schedule: _schedule,
         );
       }
       invalidateMedicationsState(ref);
