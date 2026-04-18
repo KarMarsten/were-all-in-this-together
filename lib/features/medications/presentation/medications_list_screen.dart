@@ -7,6 +7,7 @@ import 'package:were_all_in_this_together/features/medications/domain/medication
 import 'package:were_all_in_this_together/features/medications/presentation/providers.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/widgets/medication_icon.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/widgets/medication_schedule_editor.dart';
+import 'package:were_all_in_this_together/features/medications/presentation/widgets/reminder_permission_banner.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 
 /// Medications list for the currently-active Person.
@@ -77,6 +78,11 @@ class MedicationsListScreen extends ConsumerWidget {
               return ListView(
                 padding: const EdgeInsets.fromLTRB(8, 8, 8, 96),
                 children: [
+                  // Only show the permission banner when there's
+                  // something worth reminding about — an empty list
+                  // doesn't need the UX noise.
+                  if (meds.any((m) => m.schedule.isReminderEligible))
+                    const ReminderPermissionBanner(),
                   for (final m in meds) _MedicationTile(medication: m),
                   if (archived.isNotEmpty)
                     _ArchivedSection(medications: archived),

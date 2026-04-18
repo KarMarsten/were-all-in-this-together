@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:were_all_in_this_together/features/medications/data/medication_repository.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication.dart';
+import 'package:were_all_in_this_together/features/medications/notifications/reminder_sync.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 
 /// Active (non-archived) medications for the currently-active Person.
@@ -38,5 +39,10 @@ final archivedMedicationsListProvider =
 void invalidateMedicationsState(WidgetRef ref) {
   ref
     ..invalidate(medicationsListProvider)
-    ..invalidate(archivedMedicationsListProvider);
+    ..invalidate(archivedMedicationsListProvider)
+    // Invalidating the "all active" list re-triggers reminder
+    // reconciliation via `reminderSyncProvider`'s listener — the
+    // OS-level notification queue is treated as derived state and
+    // must stay in lockstep with whatever the user just did.
+    ..invalidate(allActiveMedicationsProvider);
 }
