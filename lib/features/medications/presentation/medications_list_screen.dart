@@ -9,6 +9,7 @@ import 'package:were_all_in_this_together/features/medications/presentation/widg
 import 'package:were_all_in_this_together/features/medications/presentation/widgets/medication_schedule_editor.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/widgets/reminder_permission_banner.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
+import 'package:were_all_in_this_together/features/providers/presentation/providers.dart';
 
 /// Medications list for the currently-active Person.
 ///
@@ -108,14 +109,37 @@ class MedicationsListScreen extends ConsumerWidget {
   }
 }
 
-class _MedicationTile extends StatelessWidget {
+class _MedicationTile extends ConsumerWidget {
   const _MedicationTile({required this.medication});
 
   final Medication medication;
 
   @override
-  Widget build(BuildContext context) {
-    final subtitle = _subtitle(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Resolve the prescriber name from the picker data. We fall back
+    // to the free-text `prescriber` if there's no link, and to a
+    // quiet "(unknown provider)" if the link points at a row we
+    // can't resolve yet (e.g. a pending sync or a forgotten key).
+    // The picker provider is also what the edit form uses, so this
+    // is guaranteed to match what the user will see there.
+    String? prescriberLabel;
+    if (medication.prescriberId != null) {
+      final pickerAsync =
+          ref.watch(careProviderPickerProvider(medication.personId));
+      final provider = pickerAsync.maybeWhen(
+        data: (data) => data.byId(medication.prescriberId!),
+        orElse: () => null,
+      );
+      if (provider != null) {
+        prescriberLabel = provider.deletedAt != null
+            ? '${provider.name} (archived)'
+            : provider.name;
+      }
+    }
+    prescriberLabel ??=
+        _nullIfBlank(medication.prescriber);
+
+    final subtitle = _subtitle(context, prescriberLabel);
     return Card(
       elevation: 0,
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -130,10 +154,11 @@ class _MedicationTile extends StatelessWidget {
     );
   }
 
-  /// Dose · form · schedule, trimmed to whatever is present. Schedule
-  /// comes last so the identity of the medication (name + dose) leads
-  /// and the "how / when" trails behind as supporting context.
-  String? _subtitle(BuildContext context) {
+  /// Dose · form · schedule · prescriber — whichever are present.
+  /// Schedule comes before prescriber so the identity of the
+  /// medication (name + dose + when) leads and the "who" trails as
+  /// supporting context.
+  String? _subtitle(BuildContext context, String? prescriberLabel) {
     final parts = <String>[];
     if (medication.dose != null && medication.dose!.trim().isNotEmpty) {
       parts.add(medication.dose!.trim());
@@ -145,7 +170,16 @@ class _MedicationTile extends StatelessWidget {
     if (scheduleHint != null) {
       parts.add(scheduleHint);
     }
+    if (prescriberLabel != null) {
+      parts.add('by $prescriberLabel');
+    }
     return parts.isEmpty ? null : parts.join(' · ');
+  }
+
+  static String? _nullIfBlank(String? s) {
+    if (s == null) return null;
+    final trimmed = s.trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 }
 

@@ -21,7 +21,17 @@ Future<void> _addPerson(WidgetTester tester, String name) async {
 }
 
 Future<void> _openMedications(WidgetTester tester) async {
-  await tester.tap(find.text('Medications'));
+  // Home's feature grid is scrollable; after navigating back from
+  // another feature screen the GridView can be missing the top
+  // tiles from its built subtree. Drag it down so "Medications"
+  // enters the viewport before we tap.
+  final medsFinder = find.text('Medications');
+  if (medsFinder.evaluate().isEmpty) {
+    final gridScrollable = find.byType(Scrollable).first;
+    await tester.drag(gridScrollable, const Offset(0, 400));
+    await tester.pumpAndSettle();
+  }
+  await tester.tap(medsFinder);
   await tester.pumpAndSettle();
 }
 
@@ -340,6 +350,66 @@ void main() {
       expect(find.textContaining('no times set'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'Prescribed-by dropdown lists active providers and links the selection; '
+    'the medications list subtitle resolves the provider name',
+    (tester) async {
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      await _addPerson(tester, 'Alex');
+
+      // Seed one provider via the UI, then return to home so the
+      // Medications flow can observe it through the picker provider.
+      await tester.ensureVisible(find.text('Providers'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Providers'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Add provider').first);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Name'),
+        'Dr. Chen',
+      );
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+
+      await _openMedications(tester);
+      await tester.tap(find.text('Add medication').first);
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Name'),
+        'Vyvanse',
+      );
+
+      // Open the Prescribed-by dropdown and pick Dr. Chen. The picker
+      // is a `DropdownButtonFormField<String?>`, distinguished from
+      // the medication-form `DropdownButtonFormField<MedicationForm?>`
+      // above it by its value type.
+      final dropdown = find.byType(DropdownButtonFormField<String?>);
+      await tester.ensureVisible(dropdown.last);
+      await tester.pumpAndSettle();
+      await tester.tap(dropdown.last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.textContaining('Dr. Chen').last);
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Save'));
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      // Back on the list, the subtitle resolves the provider name —
+      // proving the link round-trips through encryption and that the
+      // tile prefers the provider record over the free-text field.
+      expect(find.text('Vyvanse'), findsOneWidget);
+      expect(find.textContaining('by Dr. Chen'), findsOneWidget);
+    },
+  );
+
 
   testWidgets(
     'isReminderEligible matches what the editor produces — daily with no '

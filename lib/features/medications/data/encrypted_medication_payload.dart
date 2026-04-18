@@ -22,6 +22,10 @@ import 'package:were_all_in_this_together/features/medications/domain/medication
 /// * **v3** — adds optional `nagIntervalMinutes` and `nagCap` per-med
 ///   overrides. v1/v2 payloads decode with both fields `null`, which
 ///   means "inherit the device-wide default".
+/// * **v4** — adds optional `prescriberId`, a link to a `CareProvider`
+///   owned by the same Person. The free-text `prescriber` field is
+///   preserved as a fallback (e.g. one-off urgent-care visits), so
+///   v1-v3 payloads round-trip unchanged with `prescriberId = null`.
 class EncryptedMedicationPayload {
   const EncryptedMedicationPayload({
     required this.schemaVersion,
@@ -30,6 +34,7 @@ class EncryptedMedicationPayload {
     this.dose,
     this.form,
     this.prescriber,
+    this.prescriberId,
     this.notes,
     this.startDate,
     this.endDate,
@@ -72,6 +77,7 @@ class EncryptedMedicationPayload {
       dose: json['dose'] as String?,
       form: MedicationForm.fromWireName(json['form'] as String?),
       prescriber: json['prescriber'] as String?,
+      prescriberId: json['prescriberId'] as String?,
       notes: json['notes'] as String?,
       startDate: startRaw is String ? _parseDateOnly(startRaw) : null,
       endDate: endRaw is String ? _parseDateOnly(endRaw) : null,
@@ -113,13 +119,22 @@ class EncryptedMedicationPayload {
   ///
   /// * 1 → 2: added optional `schedule` sub-object.
   /// * 2 → 3: added optional `nagIntervalMinutes` / `nagCap` overrides.
-  static const int currentSchemaVersion = 3;
+  /// * 3 → 4: added optional `prescriberId` linking to a `CareProvider`.
+  static const int currentSchemaVersion = 4;
 
   final int schemaVersion;
   final String name;
   final String? dose;
   final MedicationForm? form;
   final String? prescriber;
+
+  /// Optional link to a `CareProvider` owned by the same Person. Kept
+  /// as a reference rather than an embedded copy so a provider name /
+  /// phone change updates every medication prescribed by them in one
+  /// place. The free-text [prescriber] stays available for one-off
+  /// prescribers that aren't saved as Providers.
+  final String? prescriberId;
+
   final String? notes;
   final DateTime? startDate;
   final DateTime? endDate;
@@ -133,6 +148,7 @@ class EncryptedMedicationPayload {
         if (dose != null) 'dose': dose,
         if (form != null) 'form': form!.wireName,
         if (prescriber != null) 'prescriber': prescriber,
+        if (prescriberId != null) 'prescriberId': prescriberId,
         if (notes != null) 'notes': notes,
         if (startDate != null) 'startDate': _dateOnly(startDate!),
         if (endDate != null) 'endDate': _dateOnly(endDate!),

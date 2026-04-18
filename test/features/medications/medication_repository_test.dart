@@ -294,6 +294,52 @@ void main() {
     });
   });
 
+  group('prescriberId linkage', () {
+    test('round-trips through create, list and findById', () async {
+      // We don't verify the CareProvider itself exists here — the
+      // repository intentionally doesn't foreign-key validate (defence
+      // in depth lives at the UI / service layer). What matters is
+      // that whatever id the caller passes survives the encrypt/
+      // decrypt trip intact.
+      final med = await meds.create(
+        personId: alexId,
+        name: 'Vyvanse',
+        prescriber: 'Dr. Chen',
+        prescriberId: 'care-provider-uuid-1',
+      );
+
+      expect(med.prescriberId, 'care-provider-uuid-1');
+
+      final fetched = await meds.findById(med.id);
+      expect(fetched, isNotNull);
+      expect(fetched!.prescriberId, 'care-provider-uuid-1');
+      expect(fetched.prescriber, 'Dr. Chen');
+
+      final list = await meds.listActiveForPerson(alexId);
+      expect(list.single.prescriberId, 'care-provider-uuid-1');
+    });
+
+    test('update can clear prescriberId back to null', () async {
+      // Detaching a medication from its provider (e.g. the parent
+      // decides a supplement doesn't need a link) must actually
+      // remove the link, not just hide it. Passing `null` through
+      // copyWith on a freezed nullable field sets the value.
+      final med = await meds.create(
+        personId: alexId,
+        name: 'Multivitamin',
+        prescriberId: 'care-provider-uuid-to-forget',
+      );
+
+      final updated = await meds.update(
+        med.copyWith(prescriberId: null),
+      );
+      expect(updated.prescriberId, isNull);
+
+      final fetched = await meds.findById(med.id);
+      expect(fetched!.prescriberId, isNull);
+    });
+  });
+
   group('update', () {
     test('persists new fields, bumps rowVersion + updatedAt', () async {
       final created = await meds.create(personId: alexId, name: 'Alpha');

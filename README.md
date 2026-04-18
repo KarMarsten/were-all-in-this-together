@@ -22,6 +22,11 @@ access.
   - Daily or specific-days-of-week schedules with any number of times.
   - **Medication groups** — bundle several meds under one time slot so
     they appear as a single Today row and ACK together.
+  - **Prescribed by** — optional link to a saved `CareProvider`, so a
+    name or phone change on the provider flows through every
+    medication they prescribed. Archived providers stay selectable so
+    historical links don't break; a free-text fallback covers one-off
+    prescribers that aren't in the Providers list.
 - **Today's doses** — the one screen a caregiver opens in the morning.
   Shows every dose due on the current local day (solo + group), with
   Taken / Skip / Undo, all stored as encrypted dose logs.
@@ -39,8 +44,9 @@ access.
   "other" kinds, grouped by kind, per-Person scoped. Each provider has
   phone, address, portal URL, free-text specialty, and notes, with
   one-tap actions to call, open the portal, or open the address in
-  Maps. Archive preserves the record so historical references (future
-  `prescriberId` on meds, appointments) still resolve.
+  Maps. Archive preserves the record so historical references (e.g.
+  `prescriberId` on meds today, future `providerId` on appointments)
+  still resolve.
 - **Calm** — in-the-moment coping strategies and crisis contacts, reachable
   in one tap from anywhere, rendered in a dedicated low-stimulation theme.
 

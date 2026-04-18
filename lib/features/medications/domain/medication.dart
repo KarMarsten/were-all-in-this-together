@@ -87,9 +87,17 @@ abstract class Medication with _$Medication {
     /// icons.
     MedicationForm? form,
 
-    /// Who prescribed it. Free text today; will link to a Doctor record
-    /// in a later PR.
+    /// Free-text prescriber — a fallback for one-off prescribers that
+    /// aren't saved as a `CareProvider`. For saved providers use
+    /// [prescriberId].
     String? prescriber,
+
+    /// Optional link to a `CareProvider` owned by the same Person.
+    /// When set, UI prefers the provider's current name over
+    /// [prescriber]. Nullable because many medications have no
+    /// prescriber at all (vitamins, OTC) or predate the Providers
+    /// feature.
+    String? prescriberId,
 
     /// User-visible notes (side effects to watch for, instructions, etc).
     String? notes,

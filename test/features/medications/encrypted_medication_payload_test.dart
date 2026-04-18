@@ -206,6 +206,57 @@ void main() {
     });
   });
 
+  group('prescriberId (schema v4)', () {
+    test('v3 payload without prescriberId decodes as null', () {
+      // Existing rows written before Providers existed must round-trip
+      // cleanly with `prescriberId = null`. No data loss, no crash.
+      final json = <String, dynamic>{
+        'v': 3,
+        'name': 'Legacy',
+        'prescriber': 'Dr. Chen',
+      };
+
+      final payload = EncryptedMedicationPayload.fromJson(json);
+
+      expect(payload.schemaVersion, 3);
+      expect(payload.prescriber, 'Dr. Chen');
+      expect(payload.prescriberId, isNull);
+    });
+
+    test('v4 payload round-trips both prescriber and prescriberId', () {
+      // The free-text prescriber and the provider link coexist by
+      // design — free text is a fallback for one-off prescribers that
+      // aren't saved as Providers.
+      const original = EncryptedMedicationPayload(
+        schemaVersion: EncryptedMedicationPayload.currentSchemaVersion,
+        name: 'Vyvanse',
+        prescriber: 'Dr. Chen',
+        prescriberId: 'care-provider-uuid-1',
+        schedule: MedicationSchedule.asNeeded,
+      );
+
+      final encoded = original.toJson();
+      expect(encoded['v'], 4);
+      expect(encoded['prescriber'], 'Dr. Chen');
+      expect(encoded['prescriberId'], 'care-provider-uuid-1');
+
+      final decoded = EncryptedMedicationPayload.fromJson(encoded);
+      expect(decoded.prescriberId, 'care-provider-uuid-1');
+      expect(decoded.prescriber, 'Dr. Chen');
+    });
+
+    test('null prescriberId is omitted from the wire to keep diffs small',
+        () {
+      const original = EncryptedMedicationPayload(
+        schemaVersion: EncryptedMedicationPayload.currentSchemaVersion,
+        name: 'Multivitamin',
+        schedule: MedicationSchedule.asNeeded,
+      );
+
+      expect(original.toJson().containsKey('prescriberId'), isFalse);
+    });
+  });
+
   test('includes MedicationForm in a full v2 round-trip', () {
     // Sanity check that existing v1 fields still round-trip alongside
     // the new schedule block.

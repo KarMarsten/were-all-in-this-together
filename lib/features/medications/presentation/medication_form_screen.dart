@@ -10,6 +10,10 @@ import 'package:were_all_in_this_together/features/medications/presentation/widg
 import 'package:were_all_in_this_together/features/medications/presentation/widgets/medication_schedule_editor.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/widgets/reminder_override_editor.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
+import 'package:were_all_in_this_together/features/providers/domain/care_provider.dart';
+import 'package:were_all_in_this_together/features/providers/presentation/care_providers_list_screen.dart'
+    show labelForKind;
+import 'package:were_all_in_this_together/features/providers/presentation/providers.dart';
 
 /// Form for creating or editing a [Medication].
 ///
@@ -42,6 +46,7 @@ class _MedicationFormScreenState extends ConsumerState<MedicationFormScreen> {
   late final TextEditingController _prescriber;
   late final TextEditingController _notes;
   MedicationForm? _form;
+  String? _prescriberId;
   DateTime? _startDate;
   DateTime? _endDate;
   MedicationSchedule _schedule = MedicationSchedule.asNeeded;
@@ -58,6 +63,7 @@ class _MedicationFormScreenState extends ConsumerState<MedicationFormScreen> {
     _prescriber = TextEditingController(text: seed?.prescriber ?? '');
     _notes = TextEditingController(text: seed?.notes ?? '');
     _form = seed?.form;
+    _prescriberId = seed?.prescriberId;
     _startDate = seed?.startDate;
     _endDate = seed?.endDate;
     _schedule = seed?.schedule ?? MedicationSchedule.asNeeded;
@@ -127,11 +133,26 @@ class _MedicationFormScreenState extends ConsumerState<MedicationFormScreen> {
                   onChanged: (v) => setState(() => _form = v),
                 ),
                 const SizedBox(height: 16),
+                // Resolve the picker's personId from the active Person
+                // in create mode, or the medication's own Person in edit
+                // mode (the form never moves a med between People).
+                // When no Person is active yet the picker just hides —
+                // the free-text prescriber below still works.
+                _PrescriberPicker(
+                  personId: widget.initialMedication?.personId ??
+                      ref.watch(activePersonIdProvider).value,
+                  value: _prescriberId,
+                  onChanged: (v) => setState(() => _prescriberId = v),
+                ),
+                const SizedBox(height: 16),
                 TextFormField(
                   controller: _prescriber,
                   decoration: const InputDecoration(
-                    labelText: 'Prescriber (optional)',
+                    labelText: 'Prescriber note (optional)',
                     hintText: 'Name or practice',
+                    helperText:
+                        "Use this when the prescriber isn't in your "
+                        'Providers list (e.g. a one-off urgent-care visit).',
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -205,6 +226,7 @@ class _MedicationFormScreenState extends ConsumerState<MedicationFormScreen> {
             dose: _nullIfBlank(_dose.text),
             form: _form,
             prescriber: _nullIfBlank(_prescriber.text),
+            prescriberId: _prescriberId,
             notes: _nullIfBlank(_notes.text),
             startDate: _startDate,
             endDate: _endDate,
@@ -238,10 +260,13 @@ class _MedicationFormScreenState extends ConsumerState<MedicationFormScreen> {
           dose: _nullIfBlank(_dose.text),
           form: _form,
           prescriber: _nullIfBlank(_prescriber.text),
+          prescriberId: _prescriberId,
           notes: _nullIfBlank(_notes.text),
           startDate: _startDate,
           endDate: _endDate,
           schedule: _schedule,
+          nagIntervalMinutesOverride: _nagIntervalOverride,
+          nagCapOverride: _nagCapOverride,
         );
       }
       invalidateMedicationsState(ref);
@@ -296,6 +321,129 @@ class _FormDropdown extends StatelessWidget {
           ),
       ],
       onChanged: onChanged,
+    );
+  }
+}
+
+/// "Prescribed by" dropdown backed by the active Person's care
+/// providers.
+///
+/// Design choices worth knowing:
+///
+/// * Archived providers are kept in the list so that editing an old
+///   medication still shows whoever originally prescribed it —
+///   clinical history shouldn't silently drop links. They render in
+///   a separate group with an "(archived)" suffix so the user can
+///   tell at a glance.
+/// * The picker hides itself when [personId] is null (no active
+///   Person yet / loading). The free-text "Prescriber note" field
+///   below still lets the user capture a name in that case.
+/// * Loading / error states collapse the picker into a disabled
+///   placeholder rather than a full-screen spinner. The rest of the
+///   form is usable while providers resolve.
+class _PrescriberPicker extends ConsumerWidget {
+  const _PrescriberPicker({
+    required this.personId,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String? personId;
+  final String? value;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pid = personId;
+    if (pid == null) return const SizedBox.shrink();
+
+    final pickerAsync = ref.watch(careProviderPickerProvider(pid));
+    return pickerAsync.when(
+      loading: () => const _PickerSkeleton(),
+      error: (_, _) => const _PickerSkeleton(errored: true),
+      data: (data) {
+        final active = data.active;
+        final archived = data.archived;
+        // Dropdown must always include the currently-selected value,
+        // even if it somehow isn't in either list (shouldn't happen,
+        // but defends against stale state). We surface it as "Unknown
+        // provider" so the user can choose to clear it.
+        final knownIds = <String>{
+          for (final p in active) p.id,
+          for (final p in archived) p.id,
+        };
+        final orphan = value != null && !knownIds.contains(value);
+
+        return DropdownButtonFormField<String?>(
+          initialValue: value,
+          isExpanded: true,
+          decoration: const InputDecoration(
+            labelText: 'Prescribed by (optional)',
+            helperText: 'Pick a saved provider to keep links up to date.',
+          ),
+          items: [
+            const DropdownMenuItem<String?>(
+              child: Text('— None —'),
+            ),
+            for (final p in active) _providerMenuItem(p, archived: false),
+            if (archived.isNotEmpty)
+              const DropdownMenuItem<String?>(
+                enabled: false,
+                child: Text(
+                  'Archived',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+            for (final p in archived) _providerMenuItem(p, archived: true),
+            if (orphan)
+              DropdownMenuItem<String?>(
+                value: value,
+                child: const Text('Unknown provider'),
+              ),
+          ],
+          onChanged: onChanged,
+        );
+      },
+    );
+  }
+
+  DropdownMenuItem<String?> _providerMenuItem(
+    CareProvider provider, {
+    required bool archived,
+  }) {
+    final suffix = <String>[
+      labelForKind(provider.kind),
+      if (provider.specialty != null && provider.specialty!.trim().isNotEmpty)
+        provider.specialty!.trim(),
+    ].join(' · ');
+    final head =
+        archived ? '${provider.name} (archived)' : provider.name;
+    final label = suffix.isEmpty ? head : '$head  ·  $suffix';
+    return DropdownMenuItem<String?>(
+      value: provider.id,
+      child: Text(
+        label,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+}
+
+class _PickerSkeleton extends StatelessWidget {
+  const _PickerSkeleton({this.errored = false});
+
+  final bool errored;
+
+  @override
+  Widget build(BuildContext context) {
+    return InputDecorator(
+      decoration: InputDecoration(
+        labelText: 'Prescribed by (optional)',
+        helperText: errored
+            ? "Couldn't load providers — try again later."
+            : 'Loading providers…',
+      ),
+      child: const Text('—'),
     );
   }
 }
