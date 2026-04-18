@@ -271,6 +271,7 @@ class _FeatureGrid extends StatelessWidget {
       label: 'Providers',
       icon: Icons.local_hospital_outlined,
       description: 'Doctors, therapists, specialists',
+      route: Routes.careProviders,
     ),
     _FeatureTileData(
       label: 'Programs',

@@ -35,14 +35,21 @@ access.
   ACK'd by) over any date range, with per-person filter and **PDF export
   / Print** for doctor visits. Archived meds still render with their real
   name.
+- **Providers** — PCPs, specialists, therapists, dentists, and catch-all
+  "other" kinds, grouped by kind, per-Person scoped. Each provider has
+  phone, address, portal URL, free-text specialty, and notes, with
+  one-tap actions to call, open the portal, or open the address in
+  Maps. Archive preserves the record so historical references (future
+  `prescriberId` on meds, appointments) still resolve.
 - **Calm** — in-the-moment coping strategies and crisis contacts, reachable
   in one tap from anywhere, rendered in a dedicated low-stimulation theme.
 
 ## What's still to come
 
 - **Appointments & reminders** — calendar + local push notifications.
-- **Providers** — PCP, specialists, therapists, dentists: phone, address,
-  portal link, notes.
+- **Medication history** — dose / prescriber / frequency timeline per
+  medication (`MedicationEvent`), so regimen changes over time are a
+  first-class record rather than overwrites of the current row.
 - **Programs** — schools, camps, after-care: calendars, holidays, contact
   trees, key phone numbers.
 - **Apps & Sites** — portals (IEP, telehealth, insurance): URLs + notes
@@ -85,7 +92,7 @@ lib/
 ├── app.dart               MaterialApp.router wiring + pending-ACK drainer
 ├── core/
 │   ├── crypto/            XChaCha20-Poly1305 envelope + Keychain key storage
-│   ├── database/          Drift schema + migrations (v1-v4)
+│   ├── database/          Drift schema + migrations (v1-v5)
 │   ├── notifications/     local notifications + background ACK queue
 │   ├── router/            go_router config
 │   └── theme/             Material 3 + Calm low-stim theme
@@ -96,9 +103,9 @@ lib/
     ├── people/            Person CRUD + active-Person switcher
     ├── medications/       meds + groups + schedule + Today + dose logs + notifications
     ├── reports/           adherence report (four-column + PDF/print)
+    ├── providers/         care-provider CRUD + detail with tap actions
     ├── profile/           planned: stims, routines, preferences + Notes timeline
     ├── appointments/      planned
-    ├── providers/         planned
     ├── programs/          planned
     ├── apps_sites/        planned
     └── milestones/        planned (Milestones & dates)

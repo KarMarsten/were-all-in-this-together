@@ -16,6 +16,11 @@ import 'package:were_all_in_this_together/features/people/data/person_repository
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 import 'package:were_all_in_this_together/features/people/presentation/people_list_screen.dart';
 import 'package:were_all_in_this_together/features/people/presentation/person_form_screen.dart';
+import 'package:were_all_in_this_together/features/providers/data/care_provider_repository.dart';
+import 'package:were_all_in_this_together/features/providers/domain/care_provider.dart';
+import 'package:were_all_in_this_together/features/providers/presentation/care_provider_detail_screen.dart';
+import 'package:were_all_in_this_together/features/providers/presentation/care_provider_form_screen.dart';
+import 'package:were_all_in_this_together/features/providers/presentation/care_providers_list_screen.dart';
 import 'package:were_all_in_this_together/features/reports/presentation/adherence_report_screen.dart';
 import 'package:were_all_in_this_together/features/safety_plan/ui/calm_screen.dart';
 import 'package:were_all_in_this_together/features/settings/ui/notification_settings_screen.dart';
@@ -53,6 +58,14 @@ abstract class Routes {
   static const today = '/today';
 
   static const adherenceReport = '/medications/report';
+
+  static const careProviders = '/providers';
+  static const careProviderNew = '/providers/new';
+  static const careProviderDetailPattern = '/providers/:id';
+  static const careProviderEditPattern = '/providers/:id/edit';
+
+  static String careProviderDetail(String id) => '/providers/$id';
+  static String careProviderEdit(String id) => '/providers/$id/edit';
 }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -146,6 +159,32 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: Routes.adherenceReport,
         name: 'adherence-report',
         builder: (context, state) => const AdherenceReportScreen(),
+      ),
+      GoRoute(
+        path: Routes.careProviders,
+        name: 'care-providers',
+        builder: (context, state) => const CareProvidersListScreen(),
+      ),
+      GoRoute(
+        path: Routes.careProviderNew,
+        name: 'care-provider-new',
+        builder: (context, state) => const CareProviderFormScreen(),
+      ),
+      GoRoute(
+        path: Routes.careProviderDetailPattern,
+        name: 'care-provider-detail',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return _CareProviderDetailLoader(providerId: id);
+        },
+      ),
+      GoRoute(
+        path: Routes.careProviderEditPattern,
+        name: 'care-provider-edit',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return _CareProviderEditLoader(providerId: id);
+        },
       ),
     ],
   );
@@ -353,6 +392,83 @@ class _MedicationGroupEditNotFound extends StatelessWidget {
         child: Center(
           child: Text(
             "That group isn't in this app anymore.",
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Resolver for the care-provider detail route. `findById` looks at
+/// active *and* archived rows, so this route renders archived
+/// providers too — important for following a medication's
+/// `prescriberId` link even after the provider has been archived.
+class _CareProviderDetailLoader extends ConsumerWidget {
+  const _CareProviderDetailLoader({required this.providerId});
+
+  final String providerId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repo = ref.watch(careProviderRepositoryProvider);
+    return FutureBuilder<CareProvider?>(
+      future: repo.findById(providerId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const _EditLoading();
+        }
+        if (snapshot.hasError) {
+          return _EditError(message: snapshot.error.toString());
+        }
+        final prov = snapshot.data;
+        if (prov == null) {
+          return const _CareProviderNotFound();
+        }
+        return CareProviderDetailScreen(provider: prov);
+      },
+    );
+  }
+}
+
+class _CareProviderEditLoader extends ConsumerWidget {
+  const _CareProviderEditLoader({required this.providerId});
+
+  final String providerId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repo = ref.watch(careProviderRepositoryProvider);
+    return FutureBuilder<CareProvider?>(
+      future: repo.findById(providerId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const _EditLoading();
+        }
+        if (snapshot.hasError) {
+          return _EditError(message: snapshot.error.toString());
+        }
+        final prov = snapshot.data;
+        if (prov == null) {
+          return const _CareProviderNotFound();
+        }
+        return CareProviderFormScreen(initialProvider: prov);
+      },
+    );
+  }
+}
+
+class _CareProviderNotFound extends StatelessWidget {
+  const _CareProviderNotFound();
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(),
+      body: const Padding(
+        padding: EdgeInsets.all(24),
+        child: Center(
+          child: Text(
+            "That provider isn't in this app anymore.",
             textAlign: TextAlign.center,
           ),
         ),
