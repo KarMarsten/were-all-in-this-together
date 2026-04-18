@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:were_all_in_this_together/core/database/tables/care_providers.dart';
 import 'package:were_all_in_this_together/core/database/tables/dose_logs.dart';
 import 'package:were_all_in_this_together/core/database/tables/medication_groups.dart';
 import 'package:were_all_in_this_together/core/database/tables/medications.dart';
@@ -25,7 +26,10 @@ part 'app_database.g.dart';
 /// * **v2** — adds Medications.
 /// * **v3** — adds DoseLogs.
 /// * **v4** — adds MedicationGroups.
-@DriftDatabase(tables: [Persons, Medications, DoseLogs, MedicationGroups])
+/// * **v5** — adds CareProviders.
+@DriftDatabase(
+  tables: [Persons, Medications, DoseLogs, MedicationGroups, CareProviders],
+)
 class AppDatabase extends _$AppDatabase {
   // `super.executor` would be nicer but the drift-generated base constructor
   // names its parameter `e`, which would leak into our call sites.
@@ -38,7 +42,7 @@ class AppDatabase extends _$AppDatabase {
       AppDatabase(driftDatabase(name: 'were_all_in_this_together'));
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -58,6 +62,9 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 4) {
             await m.createTable(medicationGroups);
+          }
+          if (from < 5) {
+            await m.createTable(careProviders);
           }
         },
       );
