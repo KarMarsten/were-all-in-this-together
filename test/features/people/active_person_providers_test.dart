@@ -7,7 +7,6 @@ import 'package:were_all_in_this_together/core/database/app_database.dart';
 import 'package:were_all_in_this_together/features/people/data/active_person_preference.dart';
 import 'package:were_all_in_this_together/features/people/data/person_repository.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
-import 'package:were_all_in_this_together/features/people/presentation/providers.dart';
 
 import '../../helpers/in_memory_active_person_preference.dart';
 import '../../helpers/in_memory_key_storage.dart';
