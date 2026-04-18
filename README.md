@@ -5,17 +5,42 @@ neurodivergent child, a neurodivergent parent, or both. One household. Any
 number of neurodivergent people in it. Any number of trusted people with
 access.
 
-> **Status:** early scaffold. Walking skeleton only. Data model, database,
-> encryption, and sync are not yet implemented. See
+> **Status:** Phase 1 (local-only MVP) in progress. Crypto, encrypted
+> local database, People, and the full Medications vertical are shipped.
+> Multi-device sync lands in Phase 2. See
 > [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the plan.
 
 ---
 
-## What it will do
+## What works today
+
+- **People roster** — add, edit, archive. Encrypted per-person records with
+  per-person keys in the iOS Keychain. Free-form display name, pronouns,
+  preferred-framing notes — no fixed roles.
+- **Medications** for each person:
+  - Create / edit / archive / restore with name, dose, schedule.
+  - Daily or specific-days-of-week schedules with any number of times.
+  - **Medication groups** — bundle several meds under one time slot so
+    they appear as a single Today row and ACK together.
+- **Today's doses** — the one screen a caregiver opens in the morning.
+  Shows every dose due on the current local day (solo + group), with
+  Taken / Skip / Undo, all stored as encrypted dose logs.
+- **Reminders you can act on from the lock screen** — one-shot local
+  notifications with **Taken** and **Skip** action buttons. Tapping either
+  cancels the nag chain and queues the ACK silently; the app doesn't need
+  to launch. Unacknowledged doses get a configurable **nag chain**
+  (interval + cap), with a global default and optional per-medication
+  override.
+- **Adherence report** — four-column report (Time · Medication · Person ·
+  ACK'd by) over any date range, with per-person filter and **PDF export
+  / Print** for doctor visits. Archived meds still render with their real
+  name.
+- **Calm** — in-the-moment coping strategies and crisis contacts, reachable
+  in one tap from anywhere, rendered in a dedicated low-stimulation theme.
+
+## What's still to come
 
 - **Appointments & reminders** — calendar + local push notifications.
-- **Medications** — current list *and* a full history of dose/med changes,
-  with one-tap **Medication report** PDF for doctors.
 - **Providers** — PCP, specialists, therapists, dentists: phone, address,
   portal link, notes.
 - **Programs** — schools, camps, after-care: calendars, holidays, contact
@@ -31,8 +56,8 @@ access.
 - **Care summary** — a second PDF export built from Profile + routines + what
   helps + early signs + crisis contacts. The "here's how to spend a weekend
   with them" handoff doc for babysitters, grandparents, and respite.
-- **Calm** — in-the-moment coping strategies and crisis contacts, reachable
-  in one tap from anywhere, rendered in a dedicated low-stimulation theme.
+- **Multi-device, multi-caregiver sync** (Phase 2) — Supabase backend in
+  the EU, per-person key shares, QR pairing, first-ACK-wins attribution.
 
 ## Principles
 
@@ -57,16 +82,22 @@ access.
 ```
 lib/
 ├── main.dart              app entry (ProviderScope → App)
-├── app.dart               MaterialApp.router wiring
-├── core/                  cross-cutting infra (theme, router, crypto, db, notif)
-└── features/              one folder per feature domain
+├── app.dart               MaterialApp.router wiring + pending-ACK drainer
+├── core/
+│   ├── crypto/            XChaCha20-Poly1305 envelope + Keychain key storage
+│   ├── database/          Drift schema + migrations (v1-v4)
+│   ├── notifications/     local notifications + background ACK queue
+│   ├── router/            go_router config
+│   └── theme/             Material 3 + Calm low-stim theme
+└── features/
     ├── home/              tabbed home + persistent Calm button
     ├── safety_plan/       Calm screen (low-stim theme)
-    ├── settings/
-    ├── people/            planned: Person CRUD (root entity)
+    ├── settings/          settings + reminder-nag preferences
+    ├── people/            Person CRUD + active-Person switcher
+    ├── medications/       meds + groups + schedule + Today + dose logs + notifications
+    ├── reports/           adherence report (four-column + PDF/print)
     ├── profile/           planned: stims, routines, preferences + Notes timeline
     ├── appointments/      planned
-    ├── medications/       planned (+ Medication report PDF)
     ├── providers/         planned
     ├── programs/          planned
     ├── apps_sites/        planned
