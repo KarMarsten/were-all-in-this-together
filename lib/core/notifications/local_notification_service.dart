@@ -7,6 +7,7 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
+import 'package:were_all_in_this_together/core/notifications/appointment_reminder.dart';
 import 'package:were_all_in_this_together/core/notifications/background_ack_handler.dart';
 import 'package:were_all_in_this_together/core/notifications/notification_action_ids.dart';
 import 'package:were_all_in_this_together/core/notifications/notification_service.dart';
@@ -40,15 +41,27 @@ class LocalNotificationService implements NotificationService {
 
   bool _initialized = false;
 
-  /// Channel id shared by all reminders. Changing this value orphans
-  /// any notifications the user had scheduled, so keep it stable.
+  /// Channel id shared by all medication reminders. Changing this
+  /// value orphans any notifications the user had scheduled, so
+  /// keep it stable.
   static const String _channelId = 'medication_reminders';
 
-  /// iOS category identifier. Must match the id Flutter registers
-  /// with `DarwinNotificationCategory` below and must match what the
-  /// AppDelegate declares in native code, otherwise action buttons
-  /// silently disappear.
+  /// Dedicated channel for appointment reminders. Kept separate so
+  /// Android users can mute one family without the other — the
+  /// "hey, Dr. Chen in 30 min" alert is low-frequency and usually
+  /// welcome even for people who mute medication pings.
+  static const String _appointmentChannelId = 'appointment_reminders';
+
+  /// iOS category identifier for medication reminders. Must match
+  /// the id Flutter registers with `DarwinNotificationCategory`
+  /// below and must match what the AppDelegate declares in native
+  /// code, otherwise action buttons silently disappear.
   static const String _categoryId = 'MEDICATION_REMINDER';
+
+  /// iOS category for appointment reminders. No action buttons —
+  /// appointments have nothing to ACK in the background, so the
+  /// category exists only to keep iOS grouping consistent.
+  static const String _appointmentCategoryId = 'APPOINTMENT_REMINDER';
 
   @override
   Future<void> initialize() async {
@@ -77,6 +90,11 @@ class LocalNotificationService implements NotificationService {
         requestBadgePermission: false,
         requestSoundPermission: false,
         notificationCategories: [
+          // Appointments: no actions. Having a category still lets
+          // iOS group these reminders distinctly in the Notification
+          // Center and lets a later PR wire category-scoped deep
+          // links without a new category registration.
+          const DarwinNotificationCategory(_appointmentCategoryId),
           DarwinNotificationCategory(
             _categoryId,
             actions: [
@@ -172,10 +190,26 @@ class LocalNotificationService implements NotificationService {
   }
 
   @override
-  Future<Set<int>> pendingReminderIds() async {
+  Future<Set<int>> pendingMedicationReminderIds() async =>
+      _pendingIdsOfKind(ReminderPayloadKind.medication);
+
+  @override
+  Future<Set<int>> pendingAppointmentReminderIds() async =>
+      _pendingIdsOfKind(ReminderPayloadKind.appointment);
+
+  /// Inspect pending notifications and return the ids whose payload
+  /// matches [kind]. Legacy pre-PR-22 payloads are treated as
+  /// medication reminders (see [peekReminderPayloadKind]), so an
+  /// upgrade never orphans the user's previously-scheduled nags.
+  Future<Set<int>> _pendingIdsOfKind(String kind) async {
     await initialize();
     final pending = await _plugin.pendingNotificationRequests();
-    return {for (final p in pending) p.id};
+    final out = <int>{};
+    for (final p in pending) {
+      final peeked = peekReminderPayloadKind(p.payload);
+      if (peeked == kind) out.add(p.id);
+    }
+    return out;
   }
 
   @override
@@ -210,6 +244,42 @@ class LocalNotificationService implements NotificationService {
       // nature of meds and doesn't require the Android 12+
       // "alarms & reminders" special permission that exact
       // schedules trigger.
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      payload: reminder.encodePayload(),
+    );
+  }
+
+  @override
+  Future<void> scheduleAppointmentReminder(
+    AppointmentReminder reminder,
+  ) async {
+    await initialize();
+
+    const notificationDetails = NotificationDetails(
+      android: AndroidNotificationDetails(
+        _appointmentChannelId,
+        'Appointment reminders',
+        channelDescription:
+            'Heads-up notifications for upcoming visits and meetings.',
+        importance: Importance.high,
+        priority: Priority.high,
+      ),
+      iOS: DarwinNotificationDetails(
+        categoryIdentifier: _appointmentCategoryId,
+      ),
+    );
+
+    final fireAt = tz.TZDateTime.from(reminder.fireAt, tz.local);
+    await _plugin.zonedSchedule(
+      id: reminder.id,
+      title: reminder.displayTitle,
+      body: reminder.body,
+      scheduledDate: fireAt,
+      notificationDetails: notificationDetails,
+      // Same rationale as medication reminders: inexact-while-idle
+      // avoids the Android 12+ "alarms & reminders" special
+      // permission and is accurate enough for a "heads up, visit
+      // in X" alert.
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       payload: reminder.encodePayload(),
     );

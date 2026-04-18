@@ -120,7 +120,7 @@ class ReminderReconciler {
       for (final r in desired) r.id: r,
     };
 
-    final pending = await _service.pendingReminderIds();
+    final pending = await _service.pendingMedicationReminderIds();
 
     for (final id in pending) {
       if (!desiredById.containsKey(id)) {

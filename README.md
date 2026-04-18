@@ -59,16 +59,19 @@ access.
   day ("Today", "Tomorrow", weekday, ISO date) and a collapsible past
   section. Each appointment has a title, scheduled time, optional
   provider link (archived providers still selectable), location,
-  duration, notes, and reminder lead. Reminders are persisted now;
-  local notifications are wired in the next PR. Archive / restore
-  mirrors the other domain forms.
+  duration, notes, and reminder lead. Picking a lead schedules a
+  one-shot local notification (e.g. "In 30 min · Clinic A") that
+  self-heals on edits — move the visit or change the lead and the
+  OS registration is replaced on the next reconcile pass. Archive /
+  restore mirrors the other domain forms.
 - **Calm** — in-the-moment coping strategies and crisis contacts, reachable
   in one tap from anywhere, rendered in a dedicated low-stimulation theme.
 
 ## What's still to come
 
-- **Appointment reminders** — local push notifications for the
-  reminder lead already stored on each appointment (next PR).
+- **Today integration** — surface the next few appointments alongside
+  the dose list on the Today screen so caregivers see everything
+  coming up in one glance (next PR).
 - **Programs** — schools, camps, after-care: calendars, holidays, contact
   trees, key phone numbers.
 - **Apps & Sites** — portals (IEP, telehealth, insurance): URLs + notes

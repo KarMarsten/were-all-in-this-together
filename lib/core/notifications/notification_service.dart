@@ -1,3 +1,4 @@
+import 'package:were_all_in_this_together/core/notifications/appointment_reminder.dart';
 import 'package:were_all_in_this_together/core/notifications/scheduled_reminder.dart';
 
 /// Coarse-grained permission state, mirroring what iOS reports and what
@@ -47,21 +48,37 @@ abstract class NotificationService {
   /// prompt once; subsequent calls resolve from cached state.
   Future<NotificationPermission> requestPermission();
 
-  /// IDs of every reminder we've scheduled that is still pending
-  /// delivery. Used by the reconciler as the "current" set to diff
-  /// against the desired set.
-  Future<Set<int>> pendingReminderIds();
+  /// IDs of every pending **medication** reminder. Implementations
+  /// MUST filter pending OS notifications to those whose payload
+  /// `kind` is [ReminderPayloadKind.medication] (including legacy
+  /// payloads with no `kind` field at all); appointment reminders
+  /// live in a parallel id space and are listed by
+  /// [pendingAppointmentReminderIds] instead.
+  ///
+  /// This strict bucketing is what lets the medication reconciler
+  /// and the appointment reconciler each diff "pending vs desired"
+  /// without cancelling each other's work.
+  Future<Set<int>> pendingMedicationReminderIds();
 
-  /// Schedule (or re-schedule) a single reminder. Must be idempotent
-  /// on [ScheduledReminder.id]: calling twice with the same id should
-  /// leave exactly one reminder scheduled.
+  /// IDs of every pending **appointment** reminder. Only returns
+  /// notifications whose payload `kind` is
+  /// [ReminderPayloadKind.appointment].
+  Future<Set<int>> pendingAppointmentReminderIds();
+
+  /// Schedule (or re-schedule) a single medication reminder. Must
+  /// be idempotent on [ScheduledReminder.id]: calling twice with
+  /// the same id should leave exactly one reminder scheduled.
   Future<void> scheduleReminder(ScheduledReminder reminder);
 
-  /// Cancel a single previously-scheduled reminder. No-op if the id
-  /// is not currently pending.
+  /// Schedule (or re-schedule) a single appointment reminder.
+  /// Same idempotency contract on [AppointmentReminder.id].
+  Future<void> scheduleAppointmentReminder(AppointmentReminder reminder);
+
+  /// Cancel a single previously-scheduled reminder of either kind.
+  /// No-op if the id is not currently pending.
   Future<void> cancelReminder(int id);
 
-  /// Cancel every reminder this service has scheduled. Only affects
-  /// this app's notifications, not system ones.
+  /// Cancel every reminder this service has scheduled. Only
+  /// affects this app's notifications, not system ones.
   Future<void> cancelAll();
 }
