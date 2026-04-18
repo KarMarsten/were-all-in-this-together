@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -131,49 +129,5 @@ String? _outcomeForAction(String? actionId) {
       return 'skipped';
     default:
       return null;
-  }
-}
-
-/// Unit-test shim: reproduces the queue-enqueue half of the
-/// handler without needing a real `NotificationResponse`. Lets
-/// tests exercise the ACK-encoding code path the background
-/// handler relies on, with no plugin channel required.
-@visibleForTesting
-Future<void> debugEnqueueAck({
-  required SharedPreferences prefs,
-  required String actionId,
-  required String payload,
-  required String source,
-}) async {
-  final outcome = _outcomeForAction(actionId);
-  if (outcome == null) return;
-  final decoded = ReminderPayload.tryDecode(payload);
-  if (decoded == null) return;
-  await PendingAckQueue(prefs).enqueue(
-    PendingAck(
-      medicationId: decoded.medicationId,
-      personId: decoded.personId,
-      scheduledAtUtcMs: decoded.scheduledAtUtcMs,
-      outcome: outcome,
-      ackedAtUtcMs: DateTime.now().toUtc().millisecondsSinceEpoch,
-      source: source,
-    ),
-  );
-}
-
-/// Internal use only — exposed so the foreground handler can
-/// serialise entries the same way the queue does.
-@visibleForTesting
-Map<String, Object?> debugEncodePendingAck(PendingAck ack) => ack.toJson();
-
-/// Internal use only.
-@visibleForTesting
-PendingAck? debugDecodePendingAck(String raw) {
-  try {
-    final decoded = jsonDecode(raw);
-    if (decoded is! Map) return null;
-    return PendingAck.fromJson(Map<String, Object?>.from(decoded));
-  } on FormatException {
-    return null;
   }
 }

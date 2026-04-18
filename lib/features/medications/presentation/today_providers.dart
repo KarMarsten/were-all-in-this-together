@@ -62,8 +62,8 @@ final todayScheduledDosesProvider =
 /// Analogous to [allActiveMedicationsProvider]: a single source of
 /// truth for "which groups should the Today screen consider?" that
 /// invalidates when the Person roster changes. Group repo mutations
-/// invalidate this provider explicitly from
-/// [invalidateMedicationGroupsState].
+/// invalidate this provider explicitly from `invalidateGroupsState`
+/// in the medications presentation layer.
 final allActiveMedicationGroupsProvider =
     FutureProvider<List<OwnedMedicationGroup>>((ref) async {
   final people = await ref.watch(peopleListProvider.future);
@@ -158,14 +158,6 @@ final todayDoseLogsProvider =
 /// change, so recomputing it would just waste work.
 void invalidateDoseLogsState(WidgetRef ref) {
   ref.invalidate(todayDoseLogsProvider);
-}
-
-/// Refresh provider state after a medication-group write.
-///
-/// Invalidates the all-active-groups source, which cascades through
-/// [todayItemsProvider] and [todayDoseLogsProvider] automatically.
-void invalidateMedicationGroupsState(WidgetRef ref) {
-  ref.invalidate(allActiveMedicationGroupsProvider);
 }
 
 /// One active [MedicationGroup] paired with its owning Person's
