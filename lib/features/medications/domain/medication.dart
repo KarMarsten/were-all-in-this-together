@@ -1,5 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'package:were_all_in_this_together/features/medications/domain/medication_schedule.dart';
+
 part 'medication.freezed.dart';
 
 /// The physical form a medication is taken in. Kept small and practical —
@@ -97,6 +99,11 @@ abstract class Medication with _$Medication {
 
     /// Last day of the regimen, date-only. `null` means ongoing.
     DateTime? endDate,
+
+    /// When and how often to take it. Defaults to
+    /// [MedicationSchedule.asNeeded] so meds added before the schedule UI
+    /// existed (v1 payloads) decode sensibly without spawning reminders.
+    @Default(MedicationSchedule.asNeeded) MedicationSchedule schedule,
 
     DateTime? deletedAt,
     @Default(1) int rowVersion,

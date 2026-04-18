@@ -9,6 +9,7 @@ import 'package:were_all_in_this_together/core/crypto/encrypted_payload.dart';
 import 'package:were_all_in_this_together/core/database/app_database.dart';
 import 'package:were_all_in_this_together/features/medications/data/medication_repository.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication.dart';
+import 'package:were_all_in_this_together/features/medications/domain/medication_schedule.dart';
 import 'package:were_all_in_this_together/features/people/data/person_repository.dart';
 
 import '../../helpers/in_memory_key_storage.dart';
@@ -408,6 +409,76 @@ void main() {
       await expectLater(
         () => meds.restore(created.id),
         throwsA(isA<MedicationNotFoundError>()),
+      );
+    });
+  });
+
+  group('schedule', () {
+    test('defaults to asNeeded when not supplied on create', () async {
+      final created = await meds.create(personId: alexId, name: 'Ibuprofen');
+      expect(created.schedule, MedicationSchedule.asNeeded);
+
+      final reloaded = await meds.findById(created.id);
+      expect(reloaded!.schedule, MedicationSchedule.asNeeded);
+    });
+
+    test('daily + times round-trips through the encrypted payload',
+        () async {
+      const schedule = MedicationSchedule(
+        kind: ScheduleKind.daily,
+        times: [
+          ScheduledTime(hour: 8, minute: 0),
+          ScheduledTime(hour: 20, minute: 30),
+        ],
+      );
+      final created = await meds.create(
+        personId: alexId,
+        name: 'Omeprazole',
+        schedule: schedule,
+      );
+
+      final reloaded = await meds.findById(created.id);
+      expect(reloaded!.schedule.kind, ScheduleKind.daily);
+      expect(reloaded.schedule.times, schedule.times);
+      expect(reloaded.schedule.days, isEmpty);
+    });
+
+    test('weekly + days round-trips and preserves the day set', () async {
+      const schedule = MedicationSchedule(
+        kind: ScheduleKind.weekly,
+        times: [ScheduledTime(hour: 9, minute: 0)],
+        days: {1, 3, 5},
+      );
+      final created = await meds.create(
+        personId: alexId,
+        name: 'Methotrexate',
+        schedule: schedule,
+      );
+
+      final reloaded = await meds.findById(created.id);
+      expect(reloaded!.schedule.kind, ScheduleKind.weekly);
+      expect(reloaded.schedule.days, {1, 3, 5});
+    });
+
+    test('update rewrites the schedule and bumps rowVersion', () async {
+      final created = await meds.create(personId: alexId, name: 'Vitamin D');
+      expect(created.schedule, MedicationSchedule.asNeeded);
+
+      final updated = await meds.update(
+        created.copyWith(
+          schedule: const MedicationSchedule(
+            kind: ScheduleKind.daily,
+            times: [ScheduledTime(hour: 7, minute: 30)],
+          ),
+        ),
+      );
+      expect(updated.rowVersion, 2);
+
+      final reloaded = await meds.findById(created.id);
+      expect(reloaded!.schedule.kind, ScheduleKind.daily);
+      expect(
+        reloaded.schedule.times,
+        const [ScheduledTime(hour: 7, minute: 30)],
       );
     });
   });
