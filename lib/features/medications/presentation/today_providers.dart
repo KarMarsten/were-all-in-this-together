@@ -1,9 +1,14 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:were_all_in_this_together/features/medications/data/dose_log_repository.dart';
+import 'package:were_all_in_this_together/features/medications/data/medication_group_repository.dart';
 import 'package:were_all_in_this_together/features/medications/domain/dose_log.dart';
+import 'package:were_all_in_this_together/features/medications/domain/medication_group.dart';
 import 'package:were_all_in_this_together/features/medications/domain/scheduled_dose.dart';
+import 'package:were_all_in_this_together/features/medications/domain/today_item.dart';
 import 'package:were_all_in_this_together/features/medications/notifications/reminder_sync.dart';
+import 'package:were_all_in_this_together/features/people/presentation/providers.dart';
 
 /// Composite identity of a single scheduled dose: `(medicationId,
 /// scheduledAtUtcMs)`. Same shape as the DB's unique-key on
@@ -58,23 +63,96 @@ final todayScheduledDosesProvider =
   );
 });
 
+/// Flat list of every active medication group across all people,
+/// paired with the owning Person's display name.
+///
+/// Analogous to [allActiveMedicationsProvider]: a single source of
+/// truth for "which groups should the Today screen consider?" that
+/// invalidates when the Person roster changes. Group repo mutations
+/// invalidate this provider explicitly from
+/// [invalidateMedicationGroupsState].
+final allActiveMedicationGroupsProvider =
+    FutureProvider<List<OwnedMedicationGroup>>((ref) async {
+  final people = await ref.watch(peopleListProvider.future);
+  final repo = ref.watch(medicationGroupRepositoryProvider);
+  final result = <OwnedMedicationGroup>[];
+  for (final person in people) {
+    final groups = await repo.listActiveForPerson(person.id);
+    for (final g in groups) {
+      result.add(
+        OwnedMedicationGroup(group: g, personDisplayName: person.displayName),
+      );
+    }
+  }
+  return result;
+});
+
+/// Every Today row (solo or group) for the device's current local
+/// calendar day, already de-duplicated and sorted.
+///
+/// This is the canonical feed the Today screen renders. Depends on
+/// both [todayScheduledDosesProvider] and
+/// [allActiveMedicationGroupsProvider], so any upstream change
+/// (Person / med / group / archive) flows through automatically.
+final todayItemsProvider = FutureProvider<List<TodayItem>>((ref) async {
+  final now = ref.watch(todayClockProvider)();
+  final owned = await ref.watch(allActiveMedicationsProvider.future);
+  final ownedGroups = await ref.watch(allActiveMedicationGroupsProvider.future);
+
+  final medContexts = [
+    for (final o in owned)
+      DoseSchedulingContext(
+        medication: o.medication,
+        personDisplayName: o.personDisplayName,
+      ),
+  ];
+  final groupContexts = [
+    for (final g in ownedGroups)
+      GroupSchedulingContext(
+        group: g.group,
+        personDisplayName: g.personDisplayName,
+      ),
+  ];
+
+  final startOfDay = DateTime(now.year, now.month, now.day);
+  final startOfTomorrow = startOfDay.add(const Duration(days: 1));
+  return expandTodayItems(
+    medications: medContexts,
+    groups: groupContexts,
+    fromInclusive: startOfDay,
+    toExclusive: startOfTomorrow,
+  );
+});
+
 /// Logs indexed by `(medicationId, scheduledAtUtcMs)` for today's
 /// doses only.
 ///
-/// Only queries for medication ids that actually appear in today's
-/// schedule expansion — no wasted decrypts for meds that aren't even
-/// due today.
+/// Queries the union of medication ids appearing across today's
+/// rendered items — both solo doses and every group member — so a
+/// group bundle can look up per-member log state.
 final todayDoseLogsProvider =
     FutureProvider<Map<DoseIdentity, DoseLog>>((ref) async {
   final now = ref.watch(todayClockProvider)();
-  final doses = await ref.watch(todayScheduledDosesProvider.future);
-  if (doses.isEmpty) return const <DoseIdentity, DoseLog>{};
+  final items = await ref.watch(todayItemsProvider.future);
+  if (items.isEmpty) return const <DoseIdentity, DoseLog>{};
+
+  final medIds = <String>{};
+  for (final item in items) {
+    if (item is TodaySoloItem) {
+      medIds.add(item.dose.medicationId);
+    } else if (item is TodayGroupItem) {
+      for (final m in item.members) {
+        medIds.add(m.medicationId);
+      }
+    }
+  }
+  if (medIds.isEmpty) return const <DoseIdentity, DoseLog>{};
 
   final repo = ref.watch(doseLogRepositoryProvider);
   final startOfDay = DateTime(now.year, now.month, now.day);
   final startOfTomorrow = startOfDay.add(const Duration(days: 1));
   final logs = await repo.forMedicationsInRange(
-    medicationIds: {for (final d in doses) d.medicationId},
+    medicationIds: medIds,
     fromInclusive: startOfDay,
     toExclusive: startOfTomorrow,
   );
@@ -87,4 +165,26 @@ final todayDoseLogsProvider =
 /// change, so recomputing it would just waste work.
 void invalidateDoseLogsState(WidgetRef ref) {
   ref.invalidate(todayDoseLogsProvider);
+}
+
+/// Refresh provider state after a medication-group write.
+///
+/// Invalidates the all-active-groups source, which cascades through
+/// [todayItemsProvider] and [todayDoseLogsProvider] automatically.
+void invalidateMedicationGroupsState(WidgetRef ref) {
+  ref.invalidate(allActiveMedicationGroupsProvider);
+}
+
+/// One active [MedicationGroup] paired with its owning Person's
+/// display name. Mirror of `OwnedMedication` from the notifications
+/// layer.
+@immutable
+class OwnedMedicationGroup {
+  const OwnedMedicationGroup({
+    required this.group,
+    required this.personDisplayName,
+  });
+
+  final MedicationGroup group;
+  final String personDisplayName;
 }

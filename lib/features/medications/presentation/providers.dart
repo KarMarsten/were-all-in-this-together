@@ -1,8 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:were_all_in_this_together/features/medications/data/medication_group_repository.dart';
 import 'package:were_all_in_this_together/features/medications/data/medication_repository.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication.dart';
+import 'package:were_all_in_this_together/features/medications/domain/medication_group.dart';
 import 'package:were_all_in_this_together/features/medications/notifications/reminder_sync.dart';
+import 'package:were_all_in_this_together/features/medications/presentation/today_providers.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 
 /// Active (non-archived) medications for the currently-active Person.
@@ -45,4 +48,35 @@ void invalidateMedicationsState(WidgetRef ref) {
     // OS-level notification queue is treated as derived state and
     // must stay in lockstep with whatever the user just did.
     ..invalidate(allActiveMedicationsProvider);
+}
+
+/// Active (non-archived) medication groups for the currently-active
+/// Person. Mirrors [medicationsListProvider] in shape and invalidation
+/// rules.
+final medicationGroupsListProvider =
+    FutureProvider<List<MedicationGroup>>((ref) async {
+  final personId = await ref.watch(activePersonIdProvider.future);
+  if (personId == null) return const <MedicationGroup>[];
+  final repo = ref.watch(medicationGroupRepositoryProvider);
+  return repo.listActiveForPerson(personId);
+});
+
+/// Archived groups for the active Person.
+final archivedMedicationGroupsListProvider =
+    FutureProvider<List<MedicationGroup>>((ref) async {
+  final personId = await ref.watch(activePersonIdProvider.future);
+  if (personId == null) return const <MedicationGroup>[];
+  final repo = ref.watch(medicationGroupRepositoryProvider);
+  return repo.listArchivedForPerson(personId);
+});
+
+/// Refresh the group-list providers after a group mutation. Also
+/// nudges the Today items pipeline through
+/// [allActiveMedicationGroupsProvider] so a newly-created group shows
+/// up on Today without a pull-to-refresh.
+void invalidateGroupsState(WidgetRef ref) {
+  ref
+    ..invalidate(medicationGroupsListProvider)
+    ..invalidate(archivedMedicationGroupsListProvider)
+    ..invalidate(allActiveMedicationGroupsProvider);
 }

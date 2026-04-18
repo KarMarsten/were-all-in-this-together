@@ -1847,12 +1847,609 @@ class DoseLogsCompanion extends UpdateCompanion<DoseLogRow> {
   }
 }
 
+class $MedicationGroupsTable extends MedicationGroups
+    with TableInfo<$MedicationGroupsTable, MedicationGroupRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MedicationGroupsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _personIdMeta = const VerificationMeta(
+    'personId',
+  );
+  @override
+  late final GeneratedColumn<String> personId = GeneratedColumn<String>(
+    'person_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _rowVersionMeta = const VerificationMeta(
+    'rowVersion',
+  );
+  @override
+  late final GeneratedColumn<int> rowVersion = GeneratedColumn<int>(
+    'row_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _lastWriterDeviceIdMeta =
+      const VerificationMeta('lastWriterDeviceId');
+  @override
+  late final GeneratedColumn<String> lastWriterDeviceId =
+      GeneratedColumn<String>(
+        'last_writer_device_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _keyVersionMeta = const VerificationMeta(
+    'keyVersion',
+  );
+  @override
+  late final GeneratedColumn<int> keyVersion = GeneratedColumn<int>(
+    'key_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _payloadMeta = const VerificationMeta(
+    'payload',
+  );
+  @override
+  late final GeneratedColumn<Uint8List> payload = GeneratedColumn<Uint8List>(
+    'payload',
+    aliasedName,
+    false,
+    type: DriftSqlType.blob,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    personId,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    rowVersion,
+    lastWriterDeviceId,
+    keyVersion,
+    payload,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'medication_groups';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MedicationGroupRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('person_id')) {
+      context.handle(
+        _personIdMeta,
+        personId.isAcceptableOrUnknown(data['person_id']!, _personIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_personIdMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('row_version')) {
+      context.handle(
+        _rowVersionMeta,
+        rowVersion.isAcceptableOrUnknown(data['row_version']!, _rowVersionMeta),
+      );
+    }
+    if (data.containsKey('last_writer_device_id')) {
+      context.handle(
+        _lastWriterDeviceIdMeta,
+        lastWriterDeviceId.isAcceptableOrUnknown(
+          data['last_writer_device_id']!,
+          _lastWriterDeviceIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('key_version')) {
+      context.handle(
+        _keyVersionMeta,
+        keyVersion.isAcceptableOrUnknown(data['key_version']!, _keyVersionMeta),
+      );
+    }
+    if (data.containsKey('payload')) {
+      context.handle(
+        _payloadMeta,
+        payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_payloadMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  MedicationGroupRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MedicationGroupRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      personId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}person_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      rowVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}row_version'],
+      )!,
+      lastWriterDeviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_writer_device_id'],
+      ),
+      keyVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}key_version'],
+      )!,
+      payload: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}payload'],
+      )!,
+    );
+  }
+
+  @override
+  $MedicationGroupsTable createAlias(String alias) {
+    return $MedicationGroupsTable(attachedDatabase, alias);
+  }
+}
+
+class MedicationGroupRow extends DataClass
+    implements Insertable<MedicationGroupRow> {
+  /// Client-generated UUID v4.
+  final String id;
+
+  /// Owning Person. Not a declared SQL foreign key — same Phase 2
+  /// arrival-order rationale as every other table in this schema.
+  final String personId;
+
+  /// Epoch milliseconds; when the row was first written.
+  final int createdAt;
+
+  /// Epoch milliseconds; updated on every mutation.
+  final int updatedAt;
+
+  /// Epoch milliseconds; `null` until archived. Keeping soft-delete
+  /// symmetric with the other tables simplifies sync later.
+  final int? deletedAt;
+
+  /// Monotonically increasing per-row counter, incremented on every
+  /// write. Same semantics as elsewhere.
+  final int rowVersion;
+
+  /// Which device last wrote this row. `null` in Phase 1.
+  final String? lastWriterDeviceId;
+
+  /// Which key generation decrypted this row's payload.
+  final int keyVersion;
+
+  /// Envelope-encrypted bytes produced by `EncryptedPayload.toBytes()`
+  /// over an `EncryptedMedicationGroupPayload` JSON body.
+  final Uint8List payload;
+  const MedicationGroupRow({
+    required this.id,
+    required this.personId,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+    required this.rowVersion,
+    this.lastWriterDeviceId,
+    required this.keyVersion,
+    required this.payload,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['person_id'] = Variable<String>(personId);
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<int>(deletedAt);
+    }
+    map['row_version'] = Variable<int>(rowVersion);
+    if (!nullToAbsent || lastWriterDeviceId != null) {
+      map['last_writer_device_id'] = Variable<String>(lastWriterDeviceId);
+    }
+    map['key_version'] = Variable<int>(keyVersion);
+    map['payload'] = Variable<Uint8List>(payload);
+    return map;
+  }
+
+  MedicationGroupsCompanion toCompanion(bool nullToAbsent) {
+    return MedicationGroupsCompanion(
+      id: Value(id),
+      personId: Value(personId),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      rowVersion: Value(rowVersion),
+      lastWriterDeviceId: lastWriterDeviceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastWriterDeviceId),
+      keyVersion: Value(keyVersion),
+      payload: Value(payload),
+    );
+  }
+
+  factory MedicationGroupRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MedicationGroupRow(
+      id: serializer.fromJson<String>(json['id']),
+      personId: serializer.fromJson<String>(json['personId']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
+      rowVersion: serializer.fromJson<int>(json['rowVersion']),
+      lastWriterDeviceId: serializer.fromJson<String?>(
+        json['lastWriterDeviceId'],
+      ),
+      keyVersion: serializer.fromJson<int>(json['keyVersion']),
+      payload: serializer.fromJson<Uint8List>(json['payload']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'personId': serializer.toJson<String>(personId),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
+      'rowVersion': serializer.toJson<int>(rowVersion),
+      'lastWriterDeviceId': serializer.toJson<String?>(lastWriterDeviceId),
+      'keyVersion': serializer.toJson<int>(keyVersion),
+      'payload': serializer.toJson<Uint8List>(payload),
+    };
+  }
+
+  MedicationGroupRow copyWith({
+    String? id,
+    String? personId,
+    int? createdAt,
+    int? updatedAt,
+    Value<int?> deletedAt = const Value.absent(),
+    int? rowVersion,
+    Value<String?> lastWriterDeviceId = const Value.absent(),
+    int? keyVersion,
+    Uint8List? payload,
+  }) => MedicationGroupRow(
+    id: id ?? this.id,
+    personId: personId ?? this.personId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    rowVersion: rowVersion ?? this.rowVersion,
+    lastWriterDeviceId: lastWriterDeviceId.present
+        ? lastWriterDeviceId.value
+        : this.lastWriterDeviceId,
+    keyVersion: keyVersion ?? this.keyVersion,
+    payload: payload ?? this.payload,
+  );
+  MedicationGroupRow copyWithCompanion(MedicationGroupsCompanion data) {
+    return MedicationGroupRow(
+      id: data.id.present ? data.id.value : this.id,
+      personId: data.personId.present ? data.personId.value : this.personId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      rowVersion: data.rowVersion.present
+          ? data.rowVersion.value
+          : this.rowVersion,
+      lastWriterDeviceId: data.lastWriterDeviceId.present
+          ? data.lastWriterDeviceId.value
+          : this.lastWriterDeviceId,
+      keyVersion: data.keyVersion.present
+          ? data.keyVersion.value
+          : this.keyVersion,
+      payload: data.payload.present ? data.payload.value : this.payload,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MedicationGroupRow(')
+          ..write('id: $id, ')
+          ..write('personId: $personId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('rowVersion: $rowVersion, ')
+          ..write('lastWriterDeviceId: $lastWriterDeviceId, ')
+          ..write('keyVersion: $keyVersion, ')
+          ..write('payload: $payload')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    personId,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    rowVersion,
+    lastWriterDeviceId,
+    keyVersion,
+    $driftBlobEquality.hash(payload),
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MedicationGroupRow &&
+          other.id == this.id &&
+          other.personId == this.personId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.rowVersion == this.rowVersion &&
+          other.lastWriterDeviceId == this.lastWriterDeviceId &&
+          other.keyVersion == this.keyVersion &&
+          $driftBlobEquality.equals(other.payload, this.payload));
+}
+
+class MedicationGroupsCompanion extends UpdateCompanion<MedicationGroupRow> {
+  final Value<String> id;
+  final Value<String> personId;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int?> deletedAt;
+  final Value<int> rowVersion;
+  final Value<String?> lastWriterDeviceId;
+  final Value<int> keyVersion;
+  final Value<Uint8List> payload;
+  final Value<int> rowid;
+  const MedicationGroupsCompanion({
+    this.id = const Value.absent(),
+    this.personId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.rowVersion = const Value.absent(),
+    this.lastWriterDeviceId = const Value.absent(),
+    this.keyVersion = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MedicationGroupsCompanion.insert({
+    required String id,
+    required String personId,
+    required int createdAt,
+    required int updatedAt,
+    this.deletedAt = const Value.absent(),
+    this.rowVersion = const Value.absent(),
+    this.lastWriterDeviceId = const Value.absent(),
+    this.keyVersion = const Value.absent(),
+    required Uint8List payload,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       personId = Value(personId),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt),
+       payload = Value(payload);
+  static Insertable<MedicationGroupRow> custom({
+    Expression<String>? id,
+    Expression<String>? personId,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? deletedAt,
+    Expression<int>? rowVersion,
+    Expression<String>? lastWriterDeviceId,
+    Expression<int>? keyVersion,
+    Expression<Uint8List>? payload,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (personId != null) 'person_id': personId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (rowVersion != null) 'row_version': rowVersion,
+      if (lastWriterDeviceId != null)
+        'last_writer_device_id': lastWriterDeviceId,
+      if (keyVersion != null) 'key_version': keyVersion,
+      if (payload != null) 'payload': payload,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MedicationGroupsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? personId,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int?>? deletedAt,
+    Value<int>? rowVersion,
+    Value<String?>? lastWriterDeviceId,
+    Value<int>? keyVersion,
+    Value<Uint8List>? payload,
+    Value<int>? rowid,
+  }) {
+    return MedicationGroupsCompanion(
+      id: id ?? this.id,
+      personId: personId ?? this.personId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      rowVersion: rowVersion ?? this.rowVersion,
+      lastWriterDeviceId: lastWriterDeviceId ?? this.lastWriterDeviceId,
+      keyVersion: keyVersion ?? this.keyVersion,
+      payload: payload ?? this.payload,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (personId.present) {
+      map['person_id'] = Variable<String>(personId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (rowVersion.present) {
+      map['row_version'] = Variable<int>(rowVersion.value);
+    }
+    if (lastWriterDeviceId.present) {
+      map['last_writer_device_id'] = Variable<String>(lastWriterDeviceId.value);
+    }
+    if (keyVersion.present) {
+      map['key_version'] = Variable<int>(keyVersion.value);
+    }
+    if (payload.present) {
+      map['payload'] = Variable<Uint8List>(payload.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MedicationGroupsCompanion(')
+          ..write('id: $id, ')
+          ..write('personId: $personId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('rowVersion: $rowVersion, ')
+          ..write('lastWriterDeviceId: $lastWriterDeviceId, ')
+          ..write('keyVersion: $keyVersion, ')
+          ..write('payload: $payload, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $PersonsTable persons = $PersonsTable(this);
   late final $MedicationsTable medications = $MedicationsTable(this);
   late final $DoseLogsTable doseLogs = $DoseLogsTable(this);
+  late final $MedicationGroupsTable medicationGroups = $MedicationGroupsTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1861,6 +2458,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     persons,
     medications,
     doseLogs,
+    medicationGroups,
   ];
 }
 
@@ -2724,6 +3322,298 @@ typedef $$DoseLogsTableProcessedTableManager =
       DoseLogRow,
       PrefetchHooks Function()
     >;
+typedef $$MedicationGroupsTableCreateCompanionBuilder =
+    MedicationGroupsCompanion Function({
+      required String id,
+      required String personId,
+      required int createdAt,
+      required int updatedAt,
+      Value<int?> deletedAt,
+      Value<int> rowVersion,
+      Value<String?> lastWriterDeviceId,
+      Value<int> keyVersion,
+      required Uint8List payload,
+      Value<int> rowid,
+    });
+typedef $$MedicationGroupsTableUpdateCompanionBuilder =
+    MedicationGroupsCompanion Function({
+      Value<String> id,
+      Value<String> personId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> deletedAt,
+      Value<int> rowVersion,
+      Value<String?> lastWriterDeviceId,
+      Value<int> keyVersion,
+      Value<Uint8List> payload,
+      Value<int> rowid,
+    });
+
+class $$MedicationGroupsTableFilterComposer
+    extends Composer<_$AppDatabase, $MedicationGroupsTable> {
+  $$MedicationGroupsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get personId => $composableBuilder(
+    column: $table.personId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get rowVersion => $composableBuilder(
+    column: $table.rowVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastWriterDeviceId => $composableBuilder(
+    column: $table.lastWriterDeviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get keyVersion => $composableBuilder(
+    column: $table.keyVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MedicationGroupsTableOrderingComposer
+    extends Composer<_$AppDatabase, $MedicationGroupsTable> {
+  $$MedicationGroupsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get personId => $composableBuilder(
+    column: $table.personId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get rowVersion => $composableBuilder(
+    column: $table.rowVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastWriterDeviceId => $composableBuilder(
+    column: $table.lastWriterDeviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get keyVersion => $composableBuilder(
+    column: $table.keyVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<Uint8List> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MedicationGroupsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MedicationGroupsTable> {
+  $$MedicationGroupsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get personId =>
+      $composableBuilder(column: $table.personId, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get rowVersion => $composableBuilder(
+    column: $table.rowVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get lastWriterDeviceId => $composableBuilder(
+    column: $table.lastWriterDeviceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get keyVersion => $composableBuilder(
+    column: $table.keyVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<Uint8List> get payload =>
+      $composableBuilder(column: $table.payload, builder: (column) => column);
+}
+
+class $$MedicationGroupsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MedicationGroupsTable,
+          MedicationGroupRow,
+          $$MedicationGroupsTableFilterComposer,
+          $$MedicationGroupsTableOrderingComposer,
+          $$MedicationGroupsTableAnnotationComposer,
+          $$MedicationGroupsTableCreateCompanionBuilder,
+          $$MedicationGroupsTableUpdateCompanionBuilder,
+          (
+            MedicationGroupRow,
+            BaseReferences<
+              _$AppDatabase,
+              $MedicationGroupsTable,
+              MedicationGroupRow
+            >,
+          ),
+          MedicationGroupRow,
+          PrefetchHooks Function()
+        > {
+  $$MedicationGroupsTableTableManager(
+    _$AppDatabase db,
+    $MedicationGroupsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MedicationGroupsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MedicationGroupsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MedicationGroupsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> personId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<int> rowVersion = const Value.absent(),
+                Value<String?> lastWriterDeviceId = const Value.absent(),
+                Value<int> keyVersion = const Value.absent(),
+                Value<Uint8List> payload = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MedicationGroupsCompanion(
+                id: id,
+                personId: personId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                rowVersion: rowVersion,
+                lastWriterDeviceId: lastWriterDeviceId,
+                keyVersion: keyVersion,
+                payload: payload,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String personId,
+                required int createdAt,
+                required int updatedAt,
+                Value<int?> deletedAt = const Value.absent(),
+                Value<int> rowVersion = const Value.absent(),
+                Value<String?> lastWriterDeviceId = const Value.absent(),
+                Value<int> keyVersion = const Value.absent(),
+                required Uint8List payload,
+                Value<int> rowid = const Value.absent(),
+              }) => MedicationGroupsCompanion.insert(
+                id: id,
+                personId: personId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                rowVersion: rowVersion,
+                lastWriterDeviceId: lastWriterDeviceId,
+                keyVersion: keyVersion,
+                payload: payload,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MedicationGroupsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MedicationGroupsTable,
+      MedicationGroupRow,
+      $$MedicationGroupsTableFilterComposer,
+      $$MedicationGroupsTableOrderingComposer,
+      $$MedicationGroupsTableAnnotationComposer,
+      $$MedicationGroupsTableCreateCompanionBuilder,
+      $$MedicationGroupsTableUpdateCompanionBuilder,
+      (
+        MedicationGroupRow,
+        BaseReferences<
+          _$AppDatabase,
+          $MedicationGroupsTable,
+          MedicationGroupRow
+        >,
+      ),
+      MedicationGroupRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2734,4 +3624,6 @@ class $AppDatabaseManager {
       $$MedicationsTableTableManager(_db, _db.medications);
   $$DoseLogsTableTableManager get doseLogs =>
       $$DoseLogsTableTableManager(_db, _db.doseLogs);
+  $$MedicationGroupsTableTableManager get medicationGroups =>
+      $$MedicationGroupsTableTableManager(_db, _db.medicationGroups);
 }
