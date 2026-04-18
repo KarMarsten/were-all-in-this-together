@@ -32,6 +32,11 @@ class MedicationsListScreen extends ConsumerWidget {
         title: const Text('Medications'),
         actions: [
           IconButton(
+            tooltip: 'Adherence report',
+            icon: const Icon(Icons.assessment_outlined),
+            onPressed: () => context.push(Routes.adherenceReport),
+          ),
+          IconButton(
             tooltip: 'Groups',
             icon: const Icon(Icons.layers_outlined),
             onPressed: () => context.push(Routes.medicationGroups),

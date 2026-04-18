@@ -16,6 +16,7 @@ import 'package:were_all_in_this_together/features/people/data/person_repository
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 import 'package:were_all_in_this_together/features/people/presentation/people_list_screen.dart';
 import 'package:were_all_in_this_together/features/people/presentation/person_form_screen.dart';
+import 'package:were_all_in_this_together/features/reports/presentation/adherence_report_screen.dart';
 import 'package:were_all_in_this_together/features/safety_plan/ui/calm_screen.dart';
 import 'package:were_all_in_this_together/features/settings/ui/notification_settings_screen.dart';
 import 'package:were_all_in_this_together/features/settings/ui/settings_screen.dart';
@@ -50,6 +51,8 @@ abstract class Routes {
       '/medications/groups/$id/edit';
 
   static const today = '/today';
+
+  static const adherenceReport = '/medications/report';
 }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -138,6 +141,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: Routes.today,
         name: 'today',
         builder: (context, state) => const TodayScreen(),
+      ),
+      GoRoute(
+        path: Routes.adherenceReport,
+        name: 'adherence-report',
+        builder: (context, state) => const AdherenceReportScreen(),
       ),
     ],
   );
