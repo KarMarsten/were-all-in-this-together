@@ -7,8 +7,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:were_all_in_this_together/core/crypto/crypto_service.dart';
 import 'package:were_all_in_this_together/core/crypto/encrypted_payload.dart';
 import 'package:were_all_in_this_together/core/database/app_database.dart';
+import 'package:were_all_in_this_together/features/medications/data/medication_event_repository.dart';
 import 'package:were_all_in_this_together/features/medications/data/medication_repository.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication.dart';
+import 'package:were_all_in_this_together/features/medications/domain/medication_event.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication_schedule.dart';
 import 'package:were_all_in_this_together/features/people/data/person_repository.dart';
 
@@ -20,6 +22,7 @@ void main() {
   late InMemoryKeyStorage keys;
   late PersonRepository people;
   late MedicationRepository meds;
+  late MedicationEventRepository events;
 
   // Ticking UTC clock — every call advances one millisecond so
   // updatedAt / deletedAt are strictly monotonic across operations.
@@ -44,11 +47,18 @@ void main() {
       keys: keys,
       clock: tickingClock,
     );
+    events = MedicationEventRepository(
+      database: db,
+      crypto: crypto,
+      keys: keys,
+      clock: tickingClock,
+    );
     meds = MedicationRepository(
       database: db,
       crypto: crypto,
       keys: keys,
       clock: tickingClock,
+      events: events,
     );
     final alex = await people.create(displayName: 'Alex');
     alexId = alex.id;
@@ -526,6 +536,90 @@ void main() {
         reloaded.schedule.times,
         const [ScheduledTime(hour: 7, minute: 30)],
       );
+    });
+  });
+
+  // Auto-logging is the *whole point* of making the event repo a
+  // dependency of the medication repo. These tests lock down that
+  // every public mutation on `MedicationRepository` appends an
+  // event to the medication's timeline, and that a no-op edit
+  // (touched only ignored fields) doesn't clutter history.
+  group('history auto-logging', () {
+    test('create appends a `created` event with empty diffs', () async {
+      final med = await meds.create(personId: alexId, name: 'Concerta');
+
+      final history = await events.listForMedication(med.id);
+      expect(history, hasLength(1));
+      expect(history.single.kind, MedicationEventKind.created);
+      expect(history.single.diffs, isEmpty);
+      expect(history.single.medicationId, med.id);
+      expect(history.single.personId, alexId);
+    });
+
+    test(
+        'update with a medically-meaningful change appends a '
+        'fieldsChanged event with the right diffs', () async {
+      final med = await meds.create(
+        personId: alexId,
+        name: 'Concerta',
+        dose: '10mg',
+      );
+      await meds.update(med.copyWith(dose: '20mg', prescriberId: 'p-1'));
+
+      final history = await events.listForMedication(med.id);
+      expect(history.map((e) => e.kind), [
+        MedicationEventKind.fieldsChanged,
+        MedicationEventKind.created,
+      ]);
+      final latest = history.first;
+      final fields = {for (final d in latest.diffs) d.field};
+      expect(fields, {'dose', 'prescriberId'});
+    });
+
+    test('update with no medically-meaningful change emits no event',
+        () async {
+      final med = await meds.create(personId: alexId, name: 'Concerta');
+      await meds.update(med.copyWith(notes: 'take with food'));
+
+      final history = await events.listForMedication(med.id);
+      expect(history.map((e) => e.kind), [MedicationEventKind.created]);
+    });
+
+    test('archive appends an `archived` event', () async {
+      final med = await meds.create(personId: alexId, name: 'Concerta');
+      await meds.archive(med.id);
+
+      final history = await events.listForMedication(med.id);
+      expect(history.map((e) => e.kind), [
+        MedicationEventKind.archived,
+        MedicationEventKind.created,
+      ]);
+    });
+
+    test('restore appends a `restored` event', () async {
+      final med = await meds.create(personId: alexId, name: 'Concerta');
+      await meds.archive(med.id);
+      await meds.restore(med.id);
+
+      final history = await events.listForMedication(med.id);
+      expect(history.map((e) => e.kind), [
+        MedicationEventKind.restored,
+        MedicationEventKind.archived,
+        MedicationEventKind.created,
+      ]);
+    });
+
+    test('events bind to the medication personId, not the active person',
+        () async {
+      // Important for Phase 2: a medication created under one
+      // Person must not produce events owned by a different
+      // Person, even if some other Person is "active" on the
+      // device. This guarantees the AAD scoping.
+      final bob = await people.create(displayName: 'Bob');
+      final bobsMed = await meds.create(personId: bob.id, name: 'Concerta');
+
+      final history = await events.listForMedication(bobsMed.id);
+      expect(history.single.personId, bob.id);
     });
   });
 }

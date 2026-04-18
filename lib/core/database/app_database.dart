@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:were_all_in_this_together/core/database/tables/care_providers.dart';
 import 'package:were_all_in_this_together/core/database/tables/dose_logs.dart';
+import 'package:were_all_in_this_together/core/database/tables/medication_events.dart';
 import 'package:were_all_in_this_together/core/database/tables/medication_groups.dart';
 import 'package:were_all_in_this_together/core/database/tables/medications.dart';
 import 'package:were_all_in_this_together/core/database/tables/persons.dart';
@@ -27,8 +28,17 @@ part 'app_database.g.dart';
 /// * **v3** — adds DoseLogs.
 /// * **v4** — adds MedicationGroups.
 /// * **v5** — adds CareProviders.
+/// * **v6** — adds MedicationEvents (append-only history of regimen
+///   changes per medication: dose, prescriber, schedule, etc.).
 @DriftDatabase(
-  tables: [Persons, Medications, DoseLogs, MedicationGroups, CareProviders],
+  tables: [
+    Persons,
+    Medications,
+    DoseLogs,
+    MedicationGroups,
+    CareProviders,
+    MedicationEvents,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   // `super.executor` would be nicer but the drift-generated base constructor
@@ -42,7 +52,7 @@ class AppDatabase extends _$AppDatabase {
       AppDatabase(driftDatabase(name: 'were_all_in_this_together'));
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -65,6 +75,9 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 5) {
             await m.createTable(careProviders);
+          }
+          if (from < 6) {
+            await m.createTable(medicationEvents);
           }
         },
       );

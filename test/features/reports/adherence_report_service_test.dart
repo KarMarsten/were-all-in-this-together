@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:were_all_in_this_together/core/crypto/crypto_service.dart';
 import 'package:were_all_in_this_together/core/database/app_database.dart';
 import 'package:were_all_in_this_together/features/medications/data/dose_log_repository.dart';
+import 'package:were_all_in_this_together/features/medications/data/medication_event_repository.dart';
 import 'package:were_all_in_this_together/features/medications/data/medication_repository.dart';
 import 'package:were_all_in_this_together/features/medications/domain/dose_log.dart';
 import 'package:were_all_in_this_together/features/people/data/person_repository.dart';
@@ -43,6 +44,12 @@ void main() {
       crypto: crypto,
       keys: keys,
       clock: tickingClock,
+      events: MedicationEventRepository(
+        database: db,
+        crypto: crypto,
+        keys: keys,
+        clock: tickingClock,
+      ),
     );
     logs = DoseLogRepository(
       database: db,

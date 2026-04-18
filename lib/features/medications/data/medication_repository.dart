@@ -10,7 +10,10 @@ import 'package:were_all_in_this_together/core/crypto/encrypted_payload.dart';
 import 'package:were_all_in_this_together/core/crypto/key_storage.dart';
 import 'package:were_all_in_this_together/core/database/app_database.dart';
 import 'package:were_all_in_this_together/features/medications/data/encrypted_medication_payload.dart';
+import 'package:were_all_in_this_together/features/medications/data/medication_event_repository.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication.dart';
+import 'package:were_all_in_this_together/features/medications/domain/medication_diff.dart';
+import 'package:were_all_in_this_together/features/medications/domain/medication_event.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication_schedule.dart';
 
 /// Thrown when a medication row exists for a Person but that Person's
@@ -58,17 +61,20 @@ class MedicationRepository {
     required AppDatabase database,
     required CryptoService crypto,
     required KeyStorage keys,
+    required MedicationEventRepository events,
     Uuid? uuidGenerator,
     DateTime Function()? clock,
   })  : _db = database,
         _crypto = crypto,
         _keys = keys,
+        _events = events,
         _uuid = uuidGenerator ?? const Uuid(),
         _clock = clock ?? DateTime.now;
 
   final AppDatabase _db;
   final CryptoService _crypto;
   final KeyStorage _keys;
+  final MedicationEventRepository _events;
   final Uuid _uuid;
   final DateTime Function() _clock;
 
@@ -128,15 +134,26 @@ class MedicationRepository {
       key: key,
     );
 
-    await _db.into(_db.medications).insert(
-          MedicationsCompanion.insert(
-            id: id,
-            personId: personId,
-            createdAt: now.millisecondsSinceEpoch,
-            updatedAt: now.millisecondsSinceEpoch,
-            payload: encrypted.toBytes(),
-          ),
-        );
+    // Both writes go in a single transaction: a medication without
+    // its initial `created` event would be a silently lossy timeline,
+    // and an orphaned event without its medication would be worse.
+    await _db.transaction(() async {
+      await _db.into(_db.medications).insert(
+            MedicationsCompanion.insert(
+              id: id,
+              personId: personId,
+              createdAt: now.millisecondsSinceEpoch,
+              updatedAt: now.millisecondsSinceEpoch,
+              payload: encrypted.toBytes(),
+            ),
+          );
+      await _events.create(
+        medicationId: id,
+        personId: personId,
+        kind: MedicationEventKind.created,
+        occurredAt: now,
+      );
+    });
 
     return Medication(
       id: id,
@@ -245,6 +262,12 @@ class MedicationRepository {
       );
     }
 
+    // Decode the pre-update state so we can diff against the new
+    // one. Failures here are fatal — silently skipping diff
+    // generation would drop history without telling anyone.
+    final previous = await _decode(existing);
+    final diffs = diffMedicationFields(before: previous, after: updated);
+
     final now = _clock().toUtc();
     final payload = EncryptedMedicationPayload(
       schemaVersion: EncryptedMedicationPayload.currentSchemaVersion,
@@ -267,15 +290,30 @@ class MedicationRepository {
       key: key,
     );
 
-    await (_db.update(_db.medications)
-          ..where((m) => m.id.equals(updated.id)))
-        .write(
-      MedicationsCompanion(
-        updatedAt: Value(now.millisecondsSinceEpoch),
-        rowVersion: Value(updated.rowVersion + 1),
-        payload: Value(encrypted.toBytes()),
-      ),
-    );
+    await _db.transaction(() async {
+      await (_db.update(_db.medications)
+            ..where((m) => m.id.equals(updated.id)))
+          .write(
+        MedicationsCompanion(
+          updatedAt: Value(now.millisecondsSinceEpoch),
+          rowVersion: Value(updated.rowVersion + 1),
+          payload: Value(encrypted.toBytes()),
+        ),
+      );
+      // Only emit an event when something medically-meaningful
+      // changed — a save that only touched notes / reminder
+      // overrides / nothing at all should leave the timeline quiet.
+      // See `diffMedicationFields` for the exact field list.
+      if (diffs.isNotEmpty) {
+        await _events.create(
+          medicationId: updated.id,
+          personId: updated.personId,
+          kind: MedicationEventKind.fieldsChanged,
+          occurredAt: now,
+          diffs: diffs,
+        );
+      }
+    });
 
     return updated.copyWith(
       updatedAt: now,
@@ -286,36 +324,71 @@ class MedicationRepository {
   /// Archive (soft-delete) a medication. Idempotent-unfriendly: a second
   /// archive on an already-archived row throws, matching
   /// `PersonRepository.softDelete`'s semantics.
+  ///
+  /// Also appends an [MedicationEventKind.archived] event to the
+  /// medication's history so a later restore shows the complete
+  /// arc ("archived on X, restored on Y").
   Future<void> archive(String id) async {
-    final now = _clock().toUtc();
-    final affected = await (_db.update(_db.medications)
+    // Load first to grab the personId — the archive event is scoped
+    // to the owning Person for AAD, and loading also lets us throw
+    // the caller-expected NotFound early rather than after partial
+    // writes.
+    final existing = await (_db.select(_db.medications)
           ..where((m) => m.id.equals(id) & m.deletedAt.isNull()))
-        .write(
-      MedicationsCompanion(
-        updatedAt: Value(now.millisecondsSinceEpoch),
-        deletedAt: Value(now.millisecondsSinceEpoch),
-      ),
-    );
-    if (affected == 0) {
+        .getSingleOrNull();
+    if (existing == null) {
       throw MedicationNotFoundError(id);
     }
+
+    final now = _clock().toUtc();
+    await _db.transaction(() async {
+      await (_db.update(_db.medications)
+            ..where((m) => m.id.equals(id) & m.deletedAt.isNull()))
+          .write(
+        MedicationsCompanion(
+          updatedAt: Value(now.millisecondsSinceEpoch),
+          deletedAt: Value(now.millisecondsSinceEpoch),
+        ),
+      );
+      await _events.create(
+        medicationId: id,
+        personId: existing.personId,
+        kind: MedicationEventKind.archived,
+        occurredAt: now,
+      );
+    });
   }
 
   /// Un-archive a previously archived medication. Throws if the row is
   /// not archived — callers should check before asking.
+  ///
+  /// Appends an [MedicationEventKind.restored] event to the
+  /// medication's history for symmetry with [archive].
   Future<void> restore(String id) async {
-    final now = _clock().toUtc();
-    final affected = await (_db.update(_db.medications)
+    final existing = await (_db.select(_db.medications)
           ..where((m) => m.id.equals(id) & m.deletedAt.isNotNull()))
-        .write(
-      MedicationsCompanion(
-        updatedAt: Value(now.millisecondsSinceEpoch),
-        deletedAt: const Value(null),
-      ),
-    );
-    if (affected == 0) {
+        .getSingleOrNull();
+    if (existing == null) {
       throw MedicationNotFoundError(id);
     }
+
+    final now = _clock().toUtc();
+    await _db.transaction(() async {
+      await (_db.update(_db.medications)
+            ..where((m) => m.id.equals(id) & m.deletedAt.isNotNull()))
+          .write(
+        MedicationsCompanion(
+          updatedAt: Value(now.millisecondsSinceEpoch),
+          deletedAt: const Value(null),
+        ),
+      );
+      await _events.create(
+        medicationId: id,
+        personId: existing.personId,
+        kind: MedicationEventKind.restored,
+        occurredAt: now,
+      );
+    });
   }
 
   Future<EncryptedPayload> _sealPayload({
@@ -393,5 +466,6 @@ final medicationRepositoryProvider = Provider<MedicationRepository>((ref) {
     database: ref.watch(appDatabaseProvider),
     crypto: ref.watch(cryptoServiceProvider),
     keys: ref.watch(keyStorageProvider),
+    events: ref.watch(medicationEventRepositoryProvider),
   );
 });

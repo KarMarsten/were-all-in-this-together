@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:were_all_in_this_together/features/medications/data/medication_event_repository.dart';
 import 'package:were_all_in_this_together/features/medications/data/medication_group_repository.dart';
 import 'package:were_all_in_this_together/features/medications/data/medication_repository.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication.dart';
+import 'package:were_all_in_this_together/features/medications/domain/medication_event.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication_group.dart';
 import 'package:were_all_in_this_together/features/medications/notifications/reminder_sync.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/today_providers.dart';
@@ -47,8 +49,25 @@ void invalidateMedicationsState(WidgetRef ref) {
     // reconciliation via `reminderSyncProvider`'s listener — the
     // OS-level notification queue is treated as derived state and
     // must stay in lockstep with whatever the user just did.
-    ..invalidate(allActiveMedicationsProvider);
+    ..invalidate(allActiveMedicationsProvider)
+    // Any medication mutation also appends a history event, so the
+    // timeline has to re-fetch.
+    ..invalidate(medicationHistoryProvider);
 }
+
+/// Timeline of events for a medication, most-recent-first.
+///
+/// Family-keyed on `medicationId` so opening the history of one
+/// medication doesn't cache the others' lists. Archived events are
+/// excluded server-side.
+// ignore: specify_nonobvious_property_types
+final medicationHistoryProvider =
+    FutureProvider.family<List<MedicationEvent>, String>(
+  (ref, medicationId) async {
+    final repo = ref.watch(medicationEventRepositoryProvider);
+    return repo.listForMedication(medicationId);
+  },
+);
 
 /// Active (non-archived) medication groups for the currently-active
 /// Person. Mirrors [medicationsListProvider] in shape and invalidation

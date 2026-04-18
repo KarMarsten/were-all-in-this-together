@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:were_all_in_this_together/core/router/app_router.dart';
 import 'package:were_all_in_this_together/features/medications/data/medication_repository.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication_schedule.dart';
@@ -90,6 +91,22 @@ class _MedicationFormScreenState extends ConsumerState<MedicationFormScreen> {
       appBar: AppBar(
         title: Text(title),
         actions: [
+          // "History" is only meaningful once the medication exists,
+          // so we gate it on edit mode. It deliberately sits in the
+          // AppBar rather than mid-form: it's navigation away from
+          // editing, not an editable field.
+          if (widget.isEditing)
+            IconButton(
+              tooltip: 'History',
+              icon: const Icon(Icons.history),
+              onPressed: _saving
+                  ? null
+                  : () => context.push(
+                        Routes.medicationHistory(
+                          widget.initialMedication!.id,
+                        ),
+                      ),
+            ),
           TextButton(
             onPressed: _saving ? null : _save,
             child: const Text('Save'),

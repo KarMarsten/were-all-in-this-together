@@ -10,6 +10,7 @@ import 'package:were_all_in_this_together/features/medications/domain/medication
 import 'package:were_all_in_this_together/features/medications/presentation/medication_form_screen.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/medication_group_form_screen.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/medication_groups_list_screen.dart';
+import 'package:were_all_in_this_together/features/medications/presentation/medication_history_screen.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/medications_list_screen.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/today_screen.dart';
 import 'package:were_all_in_this_together/features/people/data/person_repository.dart';
@@ -45,8 +46,10 @@ abstract class Routes {
   static const medications = '/medications';
   static const medicationNew = '/medications/new';
   static const medicationEditPattern = '/medications/:id/edit';
+  static const medicationHistoryPattern = '/medications/:id/history';
 
   static String medicationEdit(String id) => '/medications/$id/edit';
+  static String medicationHistory(String id) => '/medications/$id/history';
 
   static const medicationGroups = '/medications/groups';
   static const medicationGroupNew = '/medications/groups/new';
@@ -130,6 +133,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final id = state.pathParameters['id']!;
           return _EditMedicationLoader(medicationId: id);
+        },
+      ),
+      GoRoute(
+        path: Routes.medicationHistoryPattern,
+        name: 'medication-history',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return MedicationHistoryScreen(medicationId: id);
         },
       ),
       GoRoute(
