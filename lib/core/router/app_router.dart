@@ -7,6 +7,7 @@ import 'package:were_all_in_this_together/features/medications/data/medication_g
 import 'package:were_all_in_this_together/features/medications/data/medication_repository.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication_group.dart';
+import 'package:were_all_in_this_together/features/medications/presentation/medication_event_form_screen.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/medication_form_screen.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/medication_group_form_screen.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/medication_groups_list_screen.dart';
@@ -47,9 +48,12 @@ abstract class Routes {
   static const medicationNew = '/medications/new';
   static const medicationEditPattern = '/medications/:id/edit';
   static const medicationHistoryPattern = '/medications/:id/history';
+  static const medicationHistoryNewPattern = '/medications/:id/history/new';
 
   static String medicationEdit(String id) => '/medications/$id/edit';
   static String medicationHistory(String id) => '/medications/$id/history';
+  static String medicationHistoryNew(String id) =>
+      '/medications/$id/history/new';
 
   static const medicationGroups = '/medications/groups';
   static const medicationGroupNew = '/medications/groups/new';
@@ -141,6 +145,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final id = state.pathParameters['id']!;
           return MedicationHistoryScreen(medicationId: id);
+        },
+      ),
+      GoRoute(
+        path: Routes.medicationHistoryNewPattern,
+        name: 'medication-history-new',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return _MedicationEventFormLoader(medicationId: id);
         },
       ),
       GoRoute(
@@ -310,6 +322,61 @@ class _EditMedicationLoader extends ConsumerWidget {
   /// archived list if that fails. Archived rows are scoped per Person and
   /// the list screen that links here is always scoped to the active
   /// Person, so that's the right scope to search.
+  Future<Medication?> _resolve(
+    MedicationRepository repo,
+    WidgetRef ref,
+  ) async {
+    final active = await repo.findById(medicationId);
+    if (active != null) return active;
+    final activePersonId =
+        await ref.read(activePersonIdProvider.future);
+    if (activePersonId == null) return null;
+    final archived = await repo.listArchivedForPerson(activePersonId);
+    for (final m in archived) {
+      if (m.id == medicationId) return m;
+    }
+    return null;
+  }
+}
+
+/// Resolver for the `/medications/:id/history/new` route.
+///
+/// The event form needs the owning Person's id (for AAD scoping on
+/// the encrypted payload), but the URL only carries the medication
+/// id. We resolve it here so deep links and app restarts both land
+/// on a ready-to-type form without the form having to do its own
+/// lookup. Uses the same active + archived fallback as
+/// `_EditMedicationLoader` so a user who opened history on an
+/// archived med can still append notes to its timeline.
+class _MedicationEventFormLoader extends ConsumerWidget {
+  const _MedicationEventFormLoader({required this.medicationId});
+
+  final String medicationId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repo = ref.watch(medicationRepositoryProvider);
+    return FutureBuilder<Medication?>(
+      future: _resolve(repo, ref),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const _EditLoading();
+        }
+        if (snapshot.hasError) {
+          return _EditError(message: snapshot.error.toString());
+        }
+        final med = snapshot.data;
+        if (med == null) {
+          return const _MedicationEditNotFound();
+        }
+        return MedicationEventFormScreen(
+          medicationId: med.id,
+          personId: med.personId,
+        );
+      },
+    );
+  }
+
   Future<Medication?> _resolve(
     MedicationRepository repo,
     WidgetRef ref,
