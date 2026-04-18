@@ -2,6 +2,18 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
+/// Stable wire values used in a notification payload's `kind` field
+/// to distinguish reminder families when both medications and
+/// appointments can schedule OS-level notifications.
+///
+/// Legacy builds (before v7) wrote payloads without `kind` at all;
+/// those must continue to decode as [medication]. That backward
+/// compatibility is the whole reason for the default.
+abstract final class ReminderPayloadKind {
+  static const String medication = 'med';
+  static const String appointment = 'appt';
+}
+
 /// A single, concrete, OS-level notification we expect to be scheduled.
 ///
 /// In contrast to a "recurring" reminder (which the OS fires daily /
@@ -107,6 +119,12 @@ class ScheduledReminder {
   String encodePayload() {
     return jsonEncode(<String, Object?>{
       'v': 1,
+      // `kind` distinguishes medication reminders from the
+      // appointment reminders introduced in PR 22. Old builds
+      // wrote no `kind` at all; decoders default to `med`, so
+      // previously-scheduled reminders still route correctly on
+      // upgrade.
+      'kind': ReminderPayloadKind.medication,
       'mid': medicationId,
       'pid': personId,
       'tsUtc': scheduledAt.millisecondsSinceEpoch,
@@ -174,10 +192,15 @@ class ReminderPayload {
     required this.siblingIds,
   });
 
-  /// Decode a JSON-encoded payload. Returns `null` (rather than
-  /// throwing) on any parse failure — notification payloads are
-  /// the kind of thing we should never crash on, even if a
-  /// future build changed the schema incompatibly.
+  /// Decode a JSON-encoded medication payload. Returns `null`
+  /// (rather than throwing) on any parse failure, including
+  /// payloads whose `kind` marks them as non-medication — the
+  /// medication ACK handler should silently ignore appointment
+  /// notifications rather than crash on them.
+  ///
+  /// Notification payloads are the kind of thing we should never
+  /// crash on, even if a future build changed the schema
+  /// incompatibly.
   static ReminderPayload? tryDecode(String? raw) {
     if (raw == null || raw.isEmpty) return null;
     try {
@@ -185,6 +208,15 @@ class ReminderPayload {
       if (decoded is! Map) return null;
       final v = decoded['v'];
       if (v is! int || v < 1) return null;
+      // `kind` is absent on payloads written before PR 22; those
+      // are all medication reminders. Present-and-not-'med'
+      // payloads (e.g. appointment reminders) are not our concern
+      // and must not be shoe-horned into a DoseLog.
+      final rawKind = decoded['kind'];
+      final kind = rawKind is String
+          ? rawKind
+          : ReminderPayloadKind.medication;
+      if (kind != ReminderPayloadKind.medication) return null;
       final mid = decoded['mid'];
       final pid = decoded['pid'];
       final tsUtc = decoded['tsUtc'];

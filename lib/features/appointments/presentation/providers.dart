@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:were_all_in_this_together/features/appointments/data/appointment_repository.dart';
 import 'package:were_all_in_this_together/features/appointments/domain/appointment.dart';
+import 'package:were_all_in_this_together/features/appointments/notifications/appointment_reminder_sync.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 
 /// Upcoming (scheduled >= now), non-archived appointments for the
@@ -57,5 +58,11 @@ void invalidateAppointmentsState(WidgetRef ref) {
   ref
     ..invalidate(upcomingAppointmentsProvider)
     ..invalidate(pastAppointmentsProvider)
-    ..invalidate(archivedAppointmentsProvider);
+    ..invalidate(archivedAppointmentsProvider)
+    // Invalidating the roster-wide list re-triggers reminder
+    // reconciliation via `appointmentReminderSyncProvider`'s
+    // listener — the OS notification queue is treated as derived
+    // state and must stay in lockstep with whatever the user just
+    // did (new appointment, time change, archive, restore).
+    ..invalidate(allUpcomingAppointmentsProvider);
 }

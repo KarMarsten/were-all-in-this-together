@@ -74,6 +74,11 @@ Future<void> _enqueueAckFromResponse(
     return;
   }
 
+  // Appointment reminders have no action buttons, so an actionId is
+  // inherently a medication thing. `ReminderPayload.tryDecode` also
+  // rejects non-`med` payload kinds, so this double-gate makes the
+  // handler robust even if a future reminder family ever sprouts
+  // Taken / Skip-shaped actions.
   final payload = ReminderPayload.tryDecode(response.payload);
   if (payload == null) {
     debugPrint(
