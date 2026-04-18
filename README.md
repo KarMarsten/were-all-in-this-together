@@ -54,14 +54,21 @@ access.
   phone, address, portal URL, free-text specialty, and notes, with
   one-tap actions to call, open the portal, or open the address in
   Maps. Archive preserves the record so historical references (e.g.
-  `prescriberId` on meds today, future `providerId` on appointments)
-  still resolve.
+  `prescriberId` on meds, `providerId` on appointments) still resolve.
+- **Appointments** — per-Person list with upcoming visits grouped by
+  day ("Today", "Tomorrow", weekday, ISO date) and a collapsible past
+  section. Each appointment has a title, scheduled time, optional
+  provider link (archived providers still selectable), location,
+  duration, notes, and reminder lead. Reminders are persisted now;
+  local notifications are wired in the next PR. Archive / restore
+  mirrors the other domain forms.
 - **Calm** — in-the-moment coping strategies and crisis contacts, reachable
   in one tap from anywhere, rendered in a dedicated low-stimulation theme.
 
 ## What's still to come
 
-- **Appointments & reminders** — calendar + local push notifications.
+- **Appointment reminders** — local push notifications for the
+  reminder lead already stored on each appointment (next PR).
 - **Programs** — schools, camps, after-care: calendars, holidays, contact
   trees, key phone numbers.
 - **Apps & Sites** — portals (IEP, telehealth, insurance): URLs + notes
