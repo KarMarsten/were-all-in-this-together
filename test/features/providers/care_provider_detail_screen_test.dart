@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 
@@ -104,8 +103,10 @@ void main() {
   });
 
   testWidgets('failed open surfaces a SnackBar', (tester) async {
-    final opener = await _seedAndOpenDetail(tester)
-      ..succeed = false;
+    // Exercise the failure branch: the opener reports `false`, and the
+    // detail screen surfaces a friendly SnackBar.
+    final opener = await _seedAndOpenDetail(tester);
+    opener.succeed = false;
 
     await tester.tap(find.text('+1 555-111-2222'));
     await tester.pumpAndSettle();
