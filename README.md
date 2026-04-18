@@ -27,6 +27,12 @@ access.
     medication they prescribed. Archived providers stay selectable so
     historical links don't break; a free-text fallback covers one-off
     prescribers that aren't in the Providers list.
+  - **History timeline** — every create / edit / archive / restore is
+    auto-logged as a `MedicationEvent`, so regimen changes over time
+    (dose up/down, schedule tweaks, prescriber swaps, start/end date
+    changes) become a first-class record rather than overwrites. A
+    **History** button on the edit screen opens a reverse-chron
+    timeline scoped to that medication.
 - **Today's doses** — the one screen a caregiver opens in the morning.
   Shows every dose due on the current local day (solo + group), with
   Taken / Skip / Undo, all stored as encrypted dose logs.
@@ -53,9 +59,10 @@ access.
 ## What's still to come
 
 - **Appointments & reminders** — calendar + local push notifications.
-- **Medication history** — dose / prescriber / frequency timeline per
-  medication (`MedicationEvent`), so regimen changes over time are a
-  first-class record rather than overwrites of the current row.
+- **Medication history — manual backfill** — the auto-logged timeline
+  already ships; a future PR will let you record past regimen
+  changes that predate the app ("started on Concerta 10mg on
+  2024-03-01 per Dr. Chen").
 - **Programs** — schools, camps, after-care: calendars, holidays, contact
   trees, key phone numbers.
 - **Apps & Sites** — portals (IEP, telehealth, insurance): URLs + notes
