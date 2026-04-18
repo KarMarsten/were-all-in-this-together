@@ -1,0 +1,5 @@
+# Mark generated files so GitHub collapses them in diffs by default.
+# These are produced by `dart run build_runner build` and are committed so
+# the repository is self-contained (CI does not need to run codegen).
+*.g.dart linguist-generated=true
+*.freezed.dart linguist-generated=true
