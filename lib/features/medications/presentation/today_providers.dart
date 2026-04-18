@@ -10,20 +10,13 @@ import 'package:were_all_in_this_together/features/medications/domain/today_item
 import 'package:were_all_in_this_together/features/medications/notifications/reminder_sync.dart';
 import 'package:were_all_in_this_together/features/people/presentation/providers.dart';
 
-/// Composite identity of a single scheduled dose: `(medicationId,
-/// scheduledAtUtcMs)`. Same shape as the DB's unique-key on
-/// `dose_logs`, so callers can zip logs and doses together without
-/// translating.
-typedef DoseIdentity = ({String medicationId, int scheduledAtUtcMs});
-
+/// Convenience: the [DoseIdentity] of a [ScheduledDose]. The log
+/// side lives in `dose_log.dart` (as `identityOfLog`) so the
+/// notifications layer can use it without importing presentation
+/// code.
 DoseIdentity identityOfDose(ScheduledDose d) => (
       medicationId: d.medicationId,
       scheduledAtUtcMs: d.scheduledAt.toUtc().millisecondsSinceEpoch,
-    );
-
-DoseIdentity identityOfLog(DoseLog l) => (
-      medicationId: l.medicationId,
-      scheduledAtUtcMs: l.scheduledAt.toUtc().millisecondsSinceEpoch,
     );
 
 /// "Now" as a provider so widget tests can override the clock.

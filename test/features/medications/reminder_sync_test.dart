@@ -9,7 +9,9 @@ import 'package:were_all_in_this_together/core/crypto/key_storage.dart';
 import 'package:were_all_in_this_together/core/database/app_database.dart';
 import 'package:were_all_in_this_together/core/notifications/local_notification_service.dart';
 import 'package:were_all_in_this_together/features/medications/data/medication_repository.dart';
+import 'package:were_all_in_this_together/features/medications/data/notification_preferences_repository.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication_schedule.dart';
+import 'package:were_all_in_this_together/features/medications/domain/notification_preferences.dart';
 import 'package:were_all_in_this_together/features/medications/notifications/reminder_sync.dart';
 import 'package:were_all_in_this_together/features/people/data/person_repository.dart';
 import 'package:were_all_in_this_together/features/people/presentation/providers.dart';
@@ -39,6 +41,10 @@ void main() {
         }),
         keyStorageProvider.overrideWith((_) => InMemoryKeyStorage()),
         notificationServiceProvider.overrideWith((_) => fake),
+        // Default prefs — SharedPreferences isn't wired in unit tests,
+        // so override the FutureProvider to resolve synchronously.
+        notificationPreferencesProvider
+            .overrideWith((_) async => const NotificationPreferences()),
       ],
     )
       // Subscribe to the sync provider; without this the `ref.listen`
@@ -88,12 +94,15 @@ void main() {
     await container.read(allActiveMedicationsProvider.future);
     await flush();
 
-    expect(fake.scheduled, hasLength(2));
-    expect(
-      fake.scheduled.map((r) => r.time.toWireString()).toSet(),
-      {'08:00', '20:00'},
-    );
+    // The reconciler now emits a per-instance chain (initial + nag
+    // cap=3) for every dose in the 48h window. Two times × two days
+    // × four reminders = 16 reminders; every one should be tagged
+    // "Alex · …" and cover both 08:00 and 20:00 local slots.
+    expect(fake.scheduled, hasLength(16));
     expect(fake.scheduled.every((r) => r.title.startsWith('Alex · ')), isTrue);
+    final localHours =
+        fake.scheduled.map((r) => r.scheduledAt.toLocal().hour).toSet();
+    expect(localHours, containsAll(<int>[8, 20]));
   });
 
   test('archiving the only medication cancels its reminder', () async {
@@ -115,8 +124,9 @@ void main() {
     container.invalidate(allActiveMedicationsProvider);
     await container.read(allActiveMedicationsProvider.future);
     await flush();
-    expect(fake.scheduled, hasLength(1));
-    final reminderId = fake.scheduled.single.id;
+    // Initial + nag chain for 2 dose instances = 8 reminders.
+    expect(fake.scheduled, hasLength(8));
+    final reminderIds = fake.scheduled.map((r) => r.id).toList();
 
     await medsRepo.archive(med.id);
     container.invalidate(allActiveMedicationsProvider);
@@ -124,6 +134,8 @@ void main() {
     await flush();
 
     expect(fake.scheduled, isEmpty);
-    expect(fake.cancelCalls, contains(reminderId));
+    for (final id in reminderIds) {
+      expect(fake.cancelCalls, contains(id));
+    }
   });
 }

@@ -32,7 +32,15 @@ mixin _$Medication {
  DateTime? get endDate;/// When and how often to take it. Defaults to
 /// [MedicationSchedule.asNeeded] so meds added before the schedule UI
 /// existed (v1 payloads) decode sensibly without spawning reminders.
- MedicationSchedule get schedule; DateTime? get deletedAt; int get rowVersion; String? get lastWriterDeviceId; int get keyVersion;
+ MedicationSchedule get schedule;/// Override for the global notification re-alert interval, in minutes.
+/// `null` means "use the device-wide default from
+/// NotificationPreferences". Per-med overrides exist so a
+/// time-sensitive med (insulin, anti-rejection) can nag faster than
+/// the global default, or a low-stakes one (topical cream) can be
+/// configured to not nag at all via [nagCapOverride] = 0.
+ int? get nagIntervalMinutesOverride;/// Override for the global nag cap. `null` means "use the device-wide
+/// default". `0` means "fire once and then stay silent".
+ int? get nagCapOverride; DateTime? get deletedAt; int get rowVersion; String? get lastWriterDeviceId; int get keyVersion;
 /// Create a copy of Medication
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -43,16 +51,16 @@ $MedicationCopyWith<Medication> get copyWith => _$MedicationCopyWithImpl<Medicat
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Medication&&(identical(other.id, id) || other.id == id)&&(identical(other.personId, personId) || other.personId == personId)&&(identical(other.name, name) || other.name == name)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.dose, dose) || other.dose == dose)&&(identical(other.form, form) || other.form == form)&&(identical(other.prescriber, prescriber) || other.prescriber == prescriber)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.endDate, endDate) || other.endDate == endDate)&&(identical(other.schedule, schedule) || other.schedule == schedule)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt)&&(identical(other.rowVersion, rowVersion) || other.rowVersion == rowVersion)&&(identical(other.lastWriterDeviceId, lastWriterDeviceId) || other.lastWriterDeviceId == lastWriterDeviceId)&&(identical(other.keyVersion, keyVersion) || other.keyVersion == keyVersion));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Medication&&(identical(other.id, id) || other.id == id)&&(identical(other.personId, personId) || other.personId == personId)&&(identical(other.name, name) || other.name == name)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.dose, dose) || other.dose == dose)&&(identical(other.form, form) || other.form == form)&&(identical(other.prescriber, prescriber) || other.prescriber == prescriber)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.endDate, endDate) || other.endDate == endDate)&&(identical(other.schedule, schedule) || other.schedule == schedule)&&(identical(other.nagIntervalMinutesOverride, nagIntervalMinutesOverride) || other.nagIntervalMinutesOverride == nagIntervalMinutesOverride)&&(identical(other.nagCapOverride, nagCapOverride) || other.nagCapOverride == nagCapOverride)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt)&&(identical(other.rowVersion, rowVersion) || other.rowVersion == rowVersion)&&(identical(other.lastWriterDeviceId, lastWriterDeviceId) || other.lastWriterDeviceId == lastWriterDeviceId)&&(identical(other.keyVersion, keyVersion) || other.keyVersion == keyVersion));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,personId,name,createdAt,updatedAt,dose,form,prescriber,notes,startDate,endDate,schedule,deletedAt,rowVersion,lastWriterDeviceId,keyVersion);
+int get hashCode => Object.hash(runtimeType,id,personId,name,createdAt,updatedAt,dose,form,prescriber,notes,startDate,endDate,schedule,nagIntervalMinutesOverride,nagCapOverride,deletedAt,rowVersion,lastWriterDeviceId,keyVersion);
 
 @override
 String toString() {
-  return 'Medication(id: $id, personId: $personId, name: $name, createdAt: $createdAt, updatedAt: $updatedAt, dose: $dose, form: $form, prescriber: $prescriber, notes: $notes, startDate: $startDate, endDate: $endDate, schedule: $schedule, deletedAt: $deletedAt, rowVersion: $rowVersion, lastWriterDeviceId: $lastWriterDeviceId, keyVersion: $keyVersion)';
+  return 'Medication(id: $id, personId: $personId, name: $name, createdAt: $createdAt, updatedAt: $updatedAt, dose: $dose, form: $form, prescriber: $prescriber, notes: $notes, startDate: $startDate, endDate: $endDate, schedule: $schedule, nagIntervalMinutesOverride: $nagIntervalMinutesOverride, nagCapOverride: $nagCapOverride, deletedAt: $deletedAt, rowVersion: $rowVersion, lastWriterDeviceId: $lastWriterDeviceId, keyVersion: $keyVersion)';
 }
 
 
@@ -63,7 +71,7 @@ abstract mixin class $MedicationCopyWith<$Res>  {
   factory $MedicationCopyWith(Medication value, $Res Function(Medication) _then) = _$MedicationCopyWithImpl;
 @useResult
 $Res call({
- String id, String personId, String name, DateTime createdAt, DateTime updatedAt, String? dose, MedicationForm? form, String? prescriber, String? notes, DateTime? startDate, DateTime? endDate, MedicationSchedule schedule, DateTime? deletedAt, int rowVersion, String? lastWriterDeviceId, int keyVersion
+ String id, String personId, String name, DateTime createdAt, DateTime updatedAt, String? dose, MedicationForm? form, String? prescriber, String? notes, DateTime? startDate, DateTime? endDate, MedicationSchedule schedule, int? nagIntervalMinutesOverride, int? nagCapOverride, DateTime? deletedAt, int rowVersion, String? lastWriterDeviceId, int keyVersion
 });
 
 
@@ -80,7 +88,7 @@ class _$MedicationCopyWithImpl<$Res>
 
 /// Create a copy of Medication
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? personId = null,Object? name = null,Object? createdAt = null,Object? updatedAt = null,Object? dose = freezed,Object? form = freezed,Object? prescriber = freezed,Object? notes = freezed,Object? startDate = freezed,Object? endDate = freezed,Object? schedule = null,Object? deletedAt = freezed,Object? rowVersion = null,Object? lastWriterDeviceId = freezed,Object? keyVersion = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? personId = null,Object? name = null,Object? createdAt = null,Object? updatedAt = null,Object? dose = freezed,Object? form = freezed,Object? prescriber = freezed,Object? notes = freezed,Object? startDate = freezed,Object? endDate = freezed,Object? schedule = null,Object? nagIntervalMinutesOverride = freezed,Object? nagCapOverride = freezed,Object? deletedAt = freezed,Object? rowVersion = null,Object? lastWriterDeviceId = freezed,Object? keyVersion = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,personId: null == personId ? _self.personId : personId // ignore: cast_nullable_to_non_nullable
@@ -94,7 +102,9 @@ as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullabl
 as String?,startDate: freezed == startDate ? _self.startDate : startDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,endDate: freezed == endDate ? _self.endDate : endDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,schedule: null == schedule ? _self.schedule : schedule // ignore: cast_nullable_to_non_nullable
-as MedicationSchedule,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
+as MedicationSchedule,nagIntervalMinutesOverride: freezed == nagIntervalMinutesOverride ? _self.nagIntervalMinutesOverride : nagIntervalMinutesOverride // ignore: cast_nullable_to_non_nullable
+as int?,nagCapOverride: freezed == nagCapOverride ? _self.nagCapOverride : nagCapOverride // ignore: cast_nullable_to_non_nullable
+as int?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,rowVersion: null == rowVersion ? _self.rowVersion : rowVersion // ignore: cast_nullable_to_non_nullable
 as int,lastWriterDeviceId: freezed == lastWriterDeviceId ? _self.lastWriterDeviceId : lastWriterDeviceId // ignore: cast_nullable_to_non_nullable
 as String?,keyVersion: null == keyVersion ? _self.keyVersion : keyVersion // ignore: cast_nullable_to_non_nullable
@@ -192,10 +202,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String personId,  String name,  DateTime createdAt,  DateTime updatedAt,  String? dose,  MedicationForm? form,  String? prescriber,  String? notes,  DateTime? startDate,  DateTime? endDate,  MedicationSchedule schedule,  DateTime? deletedAt,  int rowVersion,  String? lastWriterDeviceId,  int keyVersion)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String personId,  String name,  DateTime createdAt,  DateTime updatedAt,  String? dose,  MedicationForm? form,  String? prescriber,  String? notes,  DateTime? startDate,  DateTime? endDate,  MedicationSchedule schedule,  int? nagIntervalMinutesOverride,  int? nagCapOverride,  DateTime? deletedAt,  int rowVersion,  String? lastWriterDeviceId,  int keyVersion)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Medication() when $default != null:
-return $default(_that.id,_that.personId,_that.name,_that.createdAt,_that.updatedAt,_that.dose,_that.form,_that.prescriber,_that.notes,_that.startDate,_that.endDate,_that.schedule,_that.deletedAt,_that.rowVersion,_that.lastWriterDeviceId,_that.keyVersion);case _:
+return $default(_that.id,_that.personId,_that.name,_that.createdAt,_that.updatedAt,_that.dose,_that.form,_that.prescriber,_that.notes,_that.startDate,_that.endDate,_that.schedule,_that.nagIntervalMinutesOverride,_that.nagCapOverride,_that.deletedAt,_that.rowVersion,_that.lastWriterDeviceId,_that.keyVersion);case _:
   return orElse();
 
 }
@@ -213,10 +223,10 @@ return $default(_that.id,_that.personId,_that.name,_that.createdAt,_that.updated
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String personId,  String name,  DateTime createdAt,  DateTime updatedAt,  String? dose,  MedicationForm? form,  String? prescriber,  String? notes,  DateTime? startDate,  DateTime? endDate,  MedicationSchedule schedule,  DateTime? deletedAt,  int rowVersion,  String? lastWriterDeviceId,  int keyVersion)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String personId,  String name,  DateTime createdAt,  DateTime updatedAt,  String? dose,  MedicationForm? form,  String? prescriber,  String? notes,  DateTime? startDate,  DateTime? endDate,  MedicationSchedule schedule,  int? nagIntervalMinutesOverride,  int? nagCapOverride,  DateTime? deletedAt,  int rowVersion,  String? lastWriterDeviceId,  int keyVersion)  $default,) {final _that = this;
 switch (_that) {
 case _Medication():
-return $default(_that.id,_that.personId,_that.name,_that.createdAt,_that.updatedAt,_that.dose,_that.form,_that.prescriber,_that.notes,_that.startDate,_that.endDate,_that.schedule,_that.deletedAt,_that.rowVersion,_that.lastWriterDeviceId,_that.keyVersion);case _:
+return $default(_that.id,_that.personId,_that.name,_that.createdAt,_that.updatedAt,_that.dose,_that.form,_that.prescriber,_that.notes,_that.startDate,_that.endDate,_that.schedule,_that.nagIntervalMinutesOverride,_that.nagCapOverride,_that.deletedAt,_that.rowVersion,_that.lastWriterDeviceId,_that.keyVersion);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -233,10 +243,10 @@ return $default(_that.id,_that.personId,_that.name,_that.createdAt,_that.updated
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String personId,  String name,  DateTime createdAt,  DateTime updatedAt,  String? dose,  MedicationForm? form,  String? prescriber,  String? notes,  DateTime? startDate,  DateTime? endDate,  MedicationSchedule schedule,  DateTime? deletedAt,  int rowVersion,  String? lastWriterDeviceId,  int keyVersion)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String personId,  String name,  DateTime createdAt,  DateTime updatedAt,  String? dose,  MedicationForm? form,  String? prescriber,  String? notes,  DateTime? startDate,  DateTime? endDate,  MedicationSchedule schedule,  int? nagIntervalMinutesOverride,  int? nagCapOverride,  DateTime? deletedAt,  int rowVersion,  String? lastWriterDeviceId,  int keyVersion)?  $default,) {final _that = this;
 switch (_that) {
 case _Medication() when $default != null:
-return $default(_that.id,_that.personId,_that.name,_that.createdAt,_that.updatedAt,_that.dose,_that.form,_that.prescriber,_that.notes,_that.startDate,_that.endDate,_that.schedule,_that.deletedAt,_that.rowVersion,_that.lastWriterDeviceId,_that.keyVersion);case _:
+return $default(_that.id,_that.personId,_that.name,_that.createdAt,_that.updatedAt,_that.dose,_that.form,_that.prescriber,_that.notes,_that.startDate,_that.endDate,_that.schedule,_that.nagIntervalMinutesOverride,_that.nagCapOverride,_that.deletedAt,_that.rowVersion,_that.lastWriterDeviceId,_that.keyVersion);case _:
   return null;
 
 }
@@ -248,7 +258,7 @@ return $default(_that.id,_that.personId,_that.name,_that.createdAt,_that.updated
 
 
 class _Medication implements Medication {
-  const _Medication({required this.id, required this.personId, required this.name, required this.createdAt, required this.updatedAt, this.dose, this.form, this.prescriber, this.notes, this.startDate, this.endDate, this.schedule = MedicationSchedule.asNeeded, this.deletedAt, this.rowVersion = 1, this.lastWriterDeviceId, this.keyVersion = 1});
+  const _Medication({required this.id, required this.personId, required this.name, required this.createdAt, required this.updatedAt, this.dose, this.form, this.prescriber, this.notes, this.startDate, this.endDate, this.schedule = MedicationSchedule.asNeeded, this.nagIntervalMinutesOverride, this.nagCapOverride, this.deletedAt, this.rowVersion = 1, this.lastWriterDeviceId, this.keyVersion = 1});
   
 
 /// Client-generated UUID v4. Stable across devices, never reused.
@@ -281,6 +291,16 @@ class _Medication implements Medication {
 /// [MedicationSchedule.asNeeded] so meds added before the schedule UI
 /// existed (v1 payloads) decode sensibly without spawning reminders.
 @override@JsonKey() final  MedicationSchedule schedule;
+/// Override for the global notification re-alert interval, in minutes.
+/// `null` means "use the device-wide default from
+/// NotificationPreferences". Per-med overrides exist so a
+/// time-sensitive med (insulin, anti-rejection) can nag faster than
+/// the global default, or a low-stakes one (topical cream) can be
+/// configured to not nag at all via [nagCapOverride] = 0.
+@override final  int? nagIntervalMinutesOverride;
+/// Override for the global nag cap. `null` means "use the device-wide
+/// default". `0` means "fire once and then stay silent".
+@override final  int? nagCapOverride;
 @override final  DateTime? deletedAt;
 @override@JsonKey() final  int rowVersion;
 @override final  String? lastWriterDeviceId;
@@ -296,16 +316,16 @@ _$MedicationCopyWith<_Medication> get copyWith => __$MedicationCopyWithImpl<_Med
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Medication&&(identical(other.id, id) || other.id == id)&&(identical(other.personId, personId) || other.personId == personId)&&(identical(other.name, name) || other.name == name)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.dose, dose) || other.dose == dose)&&(identical(other.form, form) || other.form == form)&&(identical(other.prescriber, prescriber) || other.prescriber == prescriber)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.endDate, endDate) || other.endDate == endDate)&&(identical(other.schedule, schedule) || other.schedule == schedule)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt)&&(identical(other.rowVersion, rowVersion) || other.rowVersion == rowVersion)&&(identical(other.lastWriterDeviceId, lastWriterDeviceId) || other.lastWriterDeviceId == lastWriterDeviceId)&&(identical(other.keyVersion, keyVersion) || other.keyVersion == keyVersion));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Medication&&(identical(other.id, id) || other.id == id)&&(identical(other.personId, personId) || other.personId == personId)&&(identical(other.name, name) || other.name == name)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.dose, dose) || other.dose == dose)&&(identical(other.form, form) || other.form == form)&&(identical(other.prescriber, prescriber) || other.prescriber == prescriber)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.endDate, endDate) || other.endDate == endDate)&&(identical(other.schedule, schedule) || other.schedule == schedule)&&(identical(other.nagIntervalMinutesOverride, nagIntervalMinutesOverride) || other.nagIntervalMinutesOverride == nagIntervalMinutesOverride)&&(identical(other.nagCapOverride, nagCapOverride) || other.nagCapOverride == nagCapOverride)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt)&&(identical(other.rowVersion, rowVersion) || other.rowVersion == rowVersion)&&(identical(other.lastWriterDeviceId, lastWriterDeviceId) || other.lastWriterDeviceId == lastWriterDeviceId)&&(identical(other.keyVersion, keyVersion) || other.keyVersion == keyVersion));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,personId,name,createdAt,updatedAt,dose,form,prescriber,notes,startDate,endDate,schedule,deletedAt,rowVersion,lastWriterDeviceId,keyVersion);
+int get hashCode => Object.hash(runtimeType,id,personId,name,createdAt,updatedAt,dose,form,prescriber,notes,startDate,endDate,schedule,nagIntervalMinutesOverride,nagCapOverride,deletedAt,rowVersion,lastWriterDeviceId,keyVersion);
 
 @override
 String toString() {
-  return 'Medication(id: $id, personId: $personId, name: $name, createdAt: $createdAt, updatedAt: $updatedAt, dose: $dose, form: $form, prescriber: $prescriber, notes: $notes, startDate: $startDate, endDate: $endDate, schedule: $schedule, deletedAt: $deletedAt, rowVersion: $rowVersion, lastWriterDeviceId: $lastWriterDeviceId, keyVersion: $keyVersion)';
+  return 'Medication(id: $id, personId: $personId, name: $name, createdAt: $createdAt, updatedAt: $updatedAt, dose: $dose, form: $form, prescriber: $prescriber, notes: $notes, startDate: $startDate, endDate: $endDate, schedule: $schedule, nagIntervalMinutesOverride: $nagIntervalMinutesOverride, nagCapOverride: $nagCapOverride, deletedAt: $deletedAt, rowVersion: $rowVersion, lastWriterDeviceId: $lastWriterDeviceId, keyVersion: $keyVersion)';
 }
 
 
@@ -316,7 +336,7 @@ abstract mixin class _$MedicationCopyWith<$Res> implements $MedicationCopyWith<$
   factory _$MedicationCopyWith(_Medication value, $Res Function(_Medication) _then) = __$MedicationCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String personId, String name, DateTime createdAt, DateTime updatedAt, String? dose, MedicationForm? form, String? prescriber, String? notes, DateTime? startDate, DateTime? endDate, MedicationSchedule schedule, DateTime? deletedAt, int rowVersion, String? lastWriterDeviceId, int keyVersion
+ String id, String personId, String name, DateTime createdAt, DateTime updatedAt, String? dose, MedicationForm? form, String? prescriber, String? notes, DateTime? startDate, DateTime? endDate, MedicationSchedule schedule, int? nagIntervalMinutesOverride, int? nagCapOverride, DateTime? deletedAt, int rowVersion, String? lastWriterDeviceId, int keyVersion
 });
 
 
@@ -333,7 +353,7 @@ class __$MedicationCopyWithImpl<$Res>
 
 /// Create a copy of Medication
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? personId = null,Object? name = null,Object? createdAt = null,Object? updatedAt = null,Object? dose = freezed,Object? form = freezed,Object? prescriber = freezed,Object? notes = freezed,Object? startDate = freezed,Object? endDate = freezed,Object? schedule = null,Object? deletedAt = freezed,Object? rowVersion = null,Object? lastWriterDeviceId = freezed,Object? keyVersion = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? personId = null,Object? name = null,Object? createdAt = null,Object? updatedAt = null,Object? dose = freezed,Object? form = freezed,Object? prescriber = freezed,Object? notes = freezed,Object? startDate = freezed,Object? endDate = freezed,Object? schedule = null,Object? nagIntervalMinutesOverride = freezed,Object? nagCapOverride = freezed,Object? deletedAt = freezed,Object? rowVersion = null,Object? lastWriterDeviceId = freezed,Object? keyVersion = null,}) {
   return _then(_Medication(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,personId: null == personId ? _self.personId : personId // ignore: cast_nullable_to_non_nullable
@@ -347,7 +367,9 @@ as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullabl
 as String?,startDate: freezed == startDate ? _self.startDate : startDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,endDate: freezed == endDate ? _self.endDate : endDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,schedule: null == schedule ? _self.schedule : schedule // ignore: cast_nullable_to_non_nullable
-as MedicationSchedule,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
+as MedicationSchedule,nagIntervalMinutesOverride: freezed == nagIntervalMinutesOverride ? _self.nagIntervalMinutesOverride : nagIntervalMinutesOverride // ignore: cast_nullable_to_non_nullable
+as int?,nagCapOverride: freezed == nagCapOverride ? _self.nagCapOverride : nagCapOverride // ignore: cast_nullable_to_non_nullable
+as int?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,rowVersion: null == rowVersion ? _self.rowVersion : rowVersion // ignore: cast_nullable_to_non_nullable
 as int,lastWriterDeviceId: freezed == lastWriterDeviceId ? _self.lastWriterDeviceId : lastWriterDeviceId // ignore: cast_nullable_to_non_nullable
 as String?,keyVersion: null == keyVersion ? _self.keyVersion : keyVersion // ignore: cast_nullable_to_non_nullable

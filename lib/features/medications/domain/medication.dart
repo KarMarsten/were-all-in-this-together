@@ -105,6 +105,18 @@ abstract class Medication with _$Medication {
     /// existed (v1 payloads) decode sensibly without spawning reminders.
     @Default(MedicationSchedule.asNeeded) MedicationSchedule schedule,
 
+    /// Override for the global notification re-alert interval, in minutes.
+    /// `null` means "use the device-wide default from
+    /// NotificationPreferences". Per-med overrides exist so a
+    /// time-sensitive med (insulin, anti-rejection) can nag faster than
+    /// the global default, or a low-stakes one (topical cream) can be
+    /// configured to not nag at all via [nagCapOverride] = 0.
+    int? nagIntervalMinutesOverride,
+
+    /// Override for the global nag cap. `null` means "use the device-wide
+    /// default". `0` means "fire once and then stay silent".
+    int? nagCapOverride,
+
     DateTime? deletedAt,
     @Default(1) int rowVersion,
     String? lastWriterDeviceId,

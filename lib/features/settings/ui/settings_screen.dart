@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:were_all_in_this_together/core/router/app_router.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -8,28 +11,37 @@ class SettingsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
-        children: const [
-          ListTile(
+        children: [
+          const ListTile(
             leading: Icon(Icons.person_outline),
             title: Text('People'),
             subtitle: Text('Who this app manages'),
           ),
           ListTile(
+            leading: const Icon(Icons.notifications_outlined),
+            title: const Text('Reminder nagging'),
+            subtitle: const Text(
+              'How often we re-alert, how many times',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push(Routes.notificationSettings),
+          ),
+          const ListTile(
             leading: Icon(Icons.lock_outline),
             title: Text('App lock'),
             subtitle: Text('Face ID / passcode (coming soon)'),
           ),
-          ListTile(
+          const ListTile(
             leading: Icon(Icons.sync_outlined),
             title: Text('Sync & co-parent access'),
             subtitle: Text('Phase 2 — end-to-end encrypted'),
           ),
-          ListTile(
+          const ListTile(
             leading: Icon(Icons.backup_outlined),
             title: Text('Backup & recovery'),
             subtitle: Text('Recovery phrase (coming soon)'),
           ),
-          ListTile(
+          const ListTile(
             leading: Icon(Icons.info_outline),
             title: Text('About'),
           ),

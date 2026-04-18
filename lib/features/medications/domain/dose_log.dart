@@ -77,3 +77,19 @@ abstract class DoseLog with _$DoseLog {
     @Default(1) int keyVersion,
   }) = _DoseLog;
 }
+
+/// Composite identity of a single scheduled dose: `(medicationId,
+/// scheduledAtUtcMs)`.
+///
+/// Matches the DB's unique key on `dose_logs` so callers can zip
+/// logs and doses together without translating. Lives in the domain
+/// layer (rather than `today_providers.dart`) so code in
+/// `notifications/` and elsewhere can depend on it without pulling
+/// in presentation-layer providers.
+typedef DoseIdentity = ({String medicationId, int scheduledAtUtcMs});
+
+/// Convenience: the [DoseIdentity] of [log].
+DoseIdentity identityOfLog(DoseLog log) => (
+      medicationId: log.medicationId,
+      scheduledAtUtcMs: log.scheduledAt.toUtc().millisecondsSinceEpoch,
+    );
