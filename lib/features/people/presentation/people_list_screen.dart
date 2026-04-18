@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:were_all_in_this_together/core/router/app_router.dart';
 import 'package:were_all_in_this_together/features/people/domain/person.dart';
+import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 import 'package:were_all_in_this_together/features/people/presentation/providers.dart';
 import 'package:were_all_in_this_together/features/people/presentation/widgets/person_avatar.dart';
 
@@ -45,20 +46,39 @@ class PeopleListScreen extends ConsumerWidget {
   }
 }
 
-class _PersonTile extends StatelessWidget {
+class _PersonTile extends ConsumerWidget {
   const _PersonTile({required this.person});
 
   final Person person;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final subtitle = _composeSubtitle(person);
+    final scheme = Theme.of(context).colorScheme;
+    final activeId = ref.watch(activePersonIdProvider).value;
+    final isActive = activeId == person.id;
+
     return Card(
       elevation: 0,
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       child: ListTile(
         leading: PersonAvatar(person: person),
-        title: Text(person.displayName),
+        title: Row(
+          children: [
+            Flexible(child: Text(person.displayName)),
+            if (isActive) ...[
+              const SizedBox(width: 8),
+              Semantics(
+                label: 'Currently active',
+                child: Icon(
+                  Icons.check_circle,
+                  size: 18,
+                  color: scheme.primary,
+                ),
+              ),
+            ],
+          ],
+        ),
         subtitle: subtitle == null ? null : Text(subtitle),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => context.push(Routes.personEdit(person.id)),
