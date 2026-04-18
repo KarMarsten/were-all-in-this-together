@@ -3,7 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:were_all_in_this_together/features/home/ui/home_screen.dart';
+import 'package:were_all_in_this_together/features/medications/data/medication_repository.dart';
+import 'package:were_all_in_this_together/features/medications/domain/medication.dart';
+import 'package:were_all_in_this_together/features/medications/presentation/medication_form_screen.dart';
+import 'package:were_all_in_this_together/features/medications/presentation/medications_list_screen.dart';
 import 'package:were_all_in_this_together/features/people/data/person_repository.dart';
+import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 import 'package:were_all_in_this_together/features/people/presentation/people_list_screen.dart';
 import 'package:were_all_in_this_together/features/people/presentation/person_form_screen.dart';
 import 'package:were_all_in_this_together/features/safety_plan/ui/calm_screen.dart';
@@ -23,6 +28,12 @@ abstract class Routes {
   static const personEditPattern = '/people/:id/edit';
 
   static String personEdit(String id) => '/people/$id/edit';
+
+  static const medications = '/medications';
+  static const medicationNew = '/medications/new';
+  static const medicationEditPattern = '/medications/:id/edit';
+
+  static String medicationEdit(String id) => '/medications/$id/edit';
 }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -64,6 +75,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           // means deep links and back-navigation after an app restart also
           // work.
           return _EditPersonLoader(personId: id);
+        },
+      ),
+      GoRoute(
+        path: Routes.medications,
+        name: 'medications',
+        builder: (context, state) => const MedicationsListScreen(),
+      ),
+      GoRoute(
+        path: Routes.medicationNew,
+        name: 'medication-new',
+        builder: (context, state) => const MedicationFormScreen(),
+      ),
+      GoRoute(
+        path: Routes.medicationEditPattern,
+        name: 'medication-edit',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return _EditMedicationLoader(medicationId: id);
         },
       ),
     ],
@@ -137,6 +166,76 @@ class _EditNotFound extends StatelessWidget {
         child: Center(
           child: Text(
             "That person isn't in this app anymore.",
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Same pattern as [_EditPersonLoader] — resolve the medication by id so
+/// deep links and app restarts both land on the editor with real data.
+/// Looks in both active and archived rows so the Archive → Edit → Restore
+/// flow round-trips cleanly.
+class _EditMedicationLoader extends ConsumerWidget {
+  const _EditMedicationLoader({required this.medicationId});
+
+  final String medicationId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repo = ref.watch(medicationRepositoryProvider);
+    return FutureBuilder<Medication?>(
+      future: _resolve(repo, ref),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const _EditLoading();
+        }
+        if (snapshot.hasError) {
+          return _EditError(message: snapshot.error.toString());
+        }
+        final med = snapshot.data;
+        if (med == null) {
+          return const _MedicationEditNotFound();
+        }
+        return MedicationFormScreen(initialMedication: med);
+      },
+    );
+  }
+
+  /// `findById` only returns active rows, so we fall back to scanning the
+  /// archived list if that fails. Archived rows are scoped per Person and
+  /// the list screen that links here is always scoped to the active
+  /// Person, so that's the right scope to search.
+  Future<Medication?> _resolve(
+    MedicationRepository repo,
+    WidgetRef ref,
+  ) async {
+    final active = await repo.findById(medicationId);
+    if (active != null) return active;
+    final activePersonId =
+        await ref.read(activePersonIdProvider.future);
+    if (activePersonId == null) return null;
+    final archived = await repo.listArchivedForPerson(activePersonId);
+    for (final m in archived) {
+      if (m.id == medicationId) return m;
+    }
+    return null;
+  }
+}
+
+class _MedicationEditNotFound extends StatelessWidget {
+  const _MedicationEditNotFound();
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(),
+      body: const Padding(
+        padding: EdgeInsets.all(24),
+        child: Center(
+          child: Text(
+            "That medication isn't in this app anymore.",
             textAlign: TextAlign.center,
           ),
         ),
