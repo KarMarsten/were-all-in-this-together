@@ -45,3 +45,73 @@ jobs:
 
       - name: Test
         run: flutter test
+
+  security:
+    name: Security (Snyk Code)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Required so the workflow can upload SARIF results into GitHub Code
+    # Scanning (visible under the "Security" tab and inline in PRs).
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+    # Skip on PRs opened from forks — they can't read repository secrets, so
+    # the Snyk CLI would fail to authenticate. Forks still run the analyze
+    # & test job above; maintainers get the security signal on push to main
+    # and on PRs from branches in this repo.
+    if: >-
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Installs the Snyk CLI onto $PATH. Pinned to the setup action's
+      # master ref — that's the pattern Snyk publishes in its docs; we
+      # trade sub-version stability for timely detection-rule updates.
+      - name: Set up Snyk CLI
+        uses: snyk/actions/setup@master
+
+      # Snyk Code = static analysis (SAST). It supports Dart, so this
+      # catches code-level issues across lib/ and test/.
+      #
+      # We deliberately don't run `snyk test` (Open Source / dependency
+      # scanning) — Snyk does not support pub.dev packages, so running it
+      # on a Flutter pubspec would produce a misleading "no issues" result.
+      # For pub.dev dependency CVEs use a scanner that reads the public
+      # OSV database (e.g. google/osv-scanner); we can add that alongside
+      # Snyk in a follow-up.
+      #
+      # --severity-threshold=high means we fail the job on High and
+      # Critical findings only. Mediums and lows still appear in the SARIF
+      # upload but don't block merges while the rule baseline settles.
+      #
+      # If SNYK_TOKEN is not configured in repo secrets yet, we emit a
+      # GitHub Actions warning and exit cleanly instead of failing — this
+      # lets the workflow plumbing merge before the secret is in place,
+      # and the warning keeps the gap visible until it's fixed.
+      - name: Snyk Code test
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          if [ -z "${SNYK_TOKEN}" ]; then
+            echo "::warning title=Snyk skipped::SNYK_TOKEN is not set; skipping Snyk Code scan. Add a SNYK_TOKEN repository secret (https://app.snyk.io/account) to enable vulnerability scanning."
+            exit 0
+          fi
+          snyk code test \
+            --severity-threshold=high \
+            --sarif-file-output=snyk-code.sarif
+
+      # Upload only when the SARIF file was produced (i.e. the scan
+      # actually ran). Runs even on failure so high-severity findings
+      # still surface in the Security tab and inline on the PR.
+      - name: Upload Snyk Code results to GitHub Code Scanning
+        if: ${{ always() && hashFiles('snyk-code.sarif') != '' }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: snyk-code.sarif
+          category: snyk-code
