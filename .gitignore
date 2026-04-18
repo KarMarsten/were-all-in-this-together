@@ -1,0 +1,81 @@
+# =============================================================================
+# Flutter / Dart
+# =============================================================================
+/build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+pubspec_overrides.yaml
+
+# App-level: we DO commit pubspec.lock (apps, not libraries).
+# Generated files (*.g.dart, *.freezed.dart) are committed too, so builds on
+# fresh clones don't require codegen before the app will run.
+
+# =============================================================================
+# FVM (Flutter Version Management)
+# =============================================================================
+# `.fvmrc` at the repo root is the version pin and IS committed.
+# Everything under `.fvm/` is a local cache and should not be.
+.fvm/
+
+# =============================================================================
+# IDEs / editors
+# =============================================================================
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.code-workspace
+
+# =============================================================================
+# OS junk
+# =============================================================================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# =============================================================================
+# iOS / Xcode (supplements ios/.gitignore)
+# =============================================================================
+**/xcuserdata/
+**/DerivedData/
+*.xccheckout
+*.moved-aside
+*.xcuserstate
+*.xcscmblueprint
+
+# CocoaPods: Pods/ is already ignored by ios/.gitignore.
+# Podfile.lock IS committed (it pins native dep versions).
+
+# =============================================================================
+# Android (supplements android/.gitignore)
+# =============================================================================
+**/local.properties
+*.jks
+*.keystore
+key.properties
+
+# =============================================================================
+# Environment / secrets — never commit
+# =============================================================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p8
+*.p12
+*.mobileprovision
+secrets/
+
+# =============================================================================
+# Test / coverage artifacts
+# =============================================================================
+coverage/
+test/.test_coverage.dart
+*.lcov

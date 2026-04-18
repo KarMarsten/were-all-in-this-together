@@ -1,0 +1,36 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "**/*.gr.dart"
+    - "**/generated/**"
+    - "build/**"
+  errors:
+    # Treat missing_required_param and missing_return as errors, not warnings.
+    missing_required_param: error
+    missing_return: error
+    # Downgrade these from errors to warnings to keep iteration friendly.
+    invalid_annotation_target: ignore
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+
+linter:
+  rules:
+    # Enforce const where possible for performance.
+    prefer_const_constructors: true
+    prefer_const_declarations: true
+    prefer_const_literals_to_create_immutables: true
+
+    # Public APIs must be documented — we'll enable this once the codebase stabilizes.
+    public_member_api_docs: false
+
+    # Allow TODOs during development.
+    flutter_style_todos: false
+
+    # We organise pubspec by category with comments, not alphabetically.
+    # Readability > mechanical sorting here.
+    sort_pub_dependencies: false

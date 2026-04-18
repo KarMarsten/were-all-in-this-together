@@ -1,0 +1,67 @@
+name: were_all_in_this_together
+description: >-
+  Private, end-to-end encrypted life-admin for families supporting a
+  neurodivergent child, a neurodivergent parent, or both.
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.11.5
+  flutter: ">=3.41.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  flutter_riverpod: ^3.3.1
+
+  # Navigation
+  go_router: ^17.2.1
+
+  # Local database (SQLite, type-safe)
+  drift: ^2.32.1
+  drift_flutter: ^0.3.0
+  sqlite3_flutter_libs: ^0.6.0+eol
+  path_provider: ^2.1.5
+
+  # Crypto (E2E encryption, keys, signing)
+  cryptography: ^2.9.0
+  cryptography_flutter: ^2.3.4
+  flutter_secure_storage: ^10.0.0
+
+  # Local notifications (reminders)
+  flutter_local_notifications: ^21.0.0
+  timezone: ^0.11.0
+  flutter_timezone: ^5.0.2
+
+  # PDF report generation (med reports, etc.)
+  pdf: ^3.12.0
+  printing: ^5.14.3
+
+  # Data classes + serialization
+  freezed_annotation: ^3.1.0
+  json_annotation: ^4.11.0
+
+  # Utilities
+  intl: ^0.20.2
+  uuid: ^4.5.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # Linting (strict)
+  very_good_analysis: ^10.2.0
+
+  # Code generation
+  build_runner: ^2.13.1
+  freezed: ^3.2.5
+  json_serializable: ^6.13.1
+  drift_dev: ^2.32.1
+
+  # Testing
+  mocktail: ^1.0.5
+
+flutter:
+  uses-material-design: true
