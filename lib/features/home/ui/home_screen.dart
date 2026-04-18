@@ -222,11 +222,13 @@ class _FeatureTile extends StatelessWidget {
   }
 }
 
-/// Persistent footer that opens the Calm / safety-plan screen.
+/// Persistent footer that opens the Calm / safety-plan screen and exposes
+/// the People roster.
 ///
-/// Always reachable in one tap from Home. When the rest of the app is
-/// navigable we'll hoist this into a shared shell so it's present on every
-/// screen, not just home.
+/// Calm stays visually dominant (deliberately — it needs to be reachable in
+/// one panicked tap) and People sits next to it as a smaller companion. We
+/// resist building this out into a full BottomNavigationBar because Calm is
+/// not "a tab"; it's a regulation tool.
 class _CalmBar extends StatelessWidget {
   const _CalmBar();
 
@@ -237,19 +239,38 @@ class _CalmBar extends StatelessWidget {
       top: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        child: FilledButton.icon(
-          onPressed: () => context.push(Routes.calm),
-          icon: const Icon(Icons.spa_outlined),
-          label: const Text('Calm'),
-          style: FilledButton.styleFrom(
-            minimumSize: const Size.fromHeight(56),
-            backgroundColor: scheme.secondaryContainer,
-            foregroundColor: scheme.onSecondaryContainer,
-            textStyle: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
+        child: Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: FilledButton.icon(
+                onPressed: () => context.push(Routes.calm),
+                icon: const Icon(Icons.spa_outlined),
+                label: const Text('Calm'),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(56),
+                  backgroundColor: scheme.secondaryContainer,
+                  foregroundColor: scheme.onSecondaryContainer,
+                  textStyle: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
             ),
-          ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => context.push(Routes.people),
+                icon: const Icon(Icons.people_outline),
+                label: const Text('People'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(56),
+                  foregroundColor: scheme.onSurface,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
