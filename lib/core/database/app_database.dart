@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:were_all_in_this_together/core/database/tables/dose_logs.dart';
 import 'package:were_all_in_this_together/core/database/tables/medications.dart';
 import 'package:were_all_in_this_together/core/database/tables/persons.dart';
 
@@ -21,7 +22,8 @@ part 'app_database.g.dart';
 ///
 /// * **v1** — Persons.
 /// * **v2** — adds Medications.
-@DriftDatabase(tables: [Persons, Medications])
+/// * **v3** — adds DoseLogs.
+@DriftDatabase(tables: [Persons, Medications, DoseLogs])
 class AppDatabase extends _$AppDatabase {
   // `super.executor` would be nicer but the drift-generated base constructor
   // names its parameter `e`, which would leak into our call sites.
@@ -34,7 +36,7 @@ class AppDatabase extends _$AppDatabase {
       AppDatabase(driftDatabase(name: 'were_all_in_this_together'));
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -48,6 +50,9 @@ class AppDatabase extends _$AppDatabase {
           // schema without rerunning finished migrations.
           if (from < 2) {
             await m.createTable(medications);
+          }
+          if (from < 3) {
+            await m.createTable(doseLogs);
           }
         },
       );

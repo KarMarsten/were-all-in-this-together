@@ -241,6 +241,12 @@ class _FeatureGrid extends StatelessWidget {
 
   static const _tiles = <_FeatureTileData>[
     _FeatureTileData(
+      label: "Today's doses",
+      icon: Icons.brightness_5_outlined,
+      description: "What's due today",
+      route: Routes.today,
+    ),
+    _FeatureTileData(
       label: 'Appointments',
       icon: Icons.event_outlined,
       description: 'Upcoming visits & reminders',
