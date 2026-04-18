@@ -250,6 +250,7 @@ class _FeatureGrid extends StatelessWidget {
       label: 'Appointments',
       icon: Icons.event_outlined,
       description: 'Upcoming visits & reminders',
+      route: Routes.appointments,
     ),
     _FeatureTileData(
       label: 'Medications',

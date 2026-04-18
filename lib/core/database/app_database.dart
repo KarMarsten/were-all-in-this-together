@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:were_all_in_this_together/core/database/tables/appointments.dart';
 import 'package:were_all_in_this_together/core/database/tables/care_providers.dart';
 import 'package:were_all_in_this_together/core/database/tables/dose_logs.dart';
 import 'package:were_all_in_this_together/core/database/tables/medication_events.dart';
@@ -30,6 +31,7 @@ part 'app_database.g.dart';
 /// * **v5** — adds CareProviders.
 /// * **v6** — adds MedicationEvents (append-only history of regimen
 ///   changes per medication: dose, prescriber, schedule, etc.).
+/// * **v7** — adds Appointments.
 @DriftDatabase(
   tables: [
     Persons,
@@ -38,6 +40,7 @@ part 'app_database.g.dart';
     MedicationGroups,
     CareProviders,
     MedicationEvents,
+    Appointments,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -52,7 +55,7 @@ class AppDatabase extends _$AppDatabase {
       AppDatabase(driftDatabase(name: 'were_all_in_this_together'));
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -78,6 +81,9 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 6) {
             await m.createTable(medicationEvents);
+          }
+          if (from < 7) {
+            await m.createTable(appointments);
           }
         },
       );

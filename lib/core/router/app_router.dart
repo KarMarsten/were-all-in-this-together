@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:were_all_in_this_together/features/appointments/data/appointment_repository.dart';
+import 'package:were_all_in_this_together/features/appointments/domain/appointment.dart';
+import 'package:were_all_in_this_together/features/appointments/presentation/appointment_form_screen.dart';
+import 'package:were_all_in_this_together/features/appointments/presentation/appointments_list_screen.dart';
 import 'package:were_all_in_this_together/features/home/ui/home_screen.dart';
 import 'package:were_all_in_this_together/features/medications/data/medication_group_repository.dart';
 import 'package:were_all_in_this_together/features/medications/data/medication_repository.dart';
@@ -73,6 +77,12 @@ abstract class Routes {
 
   static String careProviderDetail(String id) => '/providers/$id';
   static String careProviderEdit(String id) => '/providers/$id/edit';
+
+  static const appointments = '/appointments';
+  static const appointmentNew = '/appointments/new';
+  static const appointmentEditPattern = '/appointments/:id/edit';
+
+  static String appointmentEdit(String id) => '/appointments/$id/edit';
 }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -207,6 +217,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final id = state.pathParameters['id']!;
           return _CareProviderEditLoader(providerId: id);
+        },
+      ),
+      GoRoute(
+        path: Routes.appointments,
+        name: 'appointments',
+        builder: (context, state) => const AppointmentsListScreen(),
+      ),
+      GoRoute(
+        path: Routes.appointmentNew,
+        name: 'appointment-new',
+        builder: (context, state) => const AppointmentFormScreen(),
+      ),
+      GoRoute(
+        path: Routes.appointmentEditPattern,
+        name: 'appointment-edit',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return _AppointmentEditLoader(appointmentId: id);
         },
       ),
     ],
@@ -532,6 +560,56 @@ class _CareProviderEditLoader extends ConsumerWidget {
         }
         return CareProviderFormScreen(initialProvider: prov);
       },
+    );
+  }
+}
+
+/// Same pattern as [_EditMedicationLoader] — resolve the
+/// appointment by id so deep links and app restarts land on the
+/// editor with real data. `findById` looks at active and archived
+/// rows so Archive → Edit → Restore round-trips cleanly.
+class _AppointmentEditLoader extends ConsumerWidget {
+  const _AppointmentEditLoader({required this.appointmentId});
+
+  final String appointmentId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repo = ref.watch(appointmentRepositoryProvider);
+    return FutureBuilder<Appointment?>(
+      future: repo.findById(appointmentId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const _EditLoading();
+        }
+        if (snapshot.hasError) {
+          return _EditError(message: snapshot.error.toString());
+        }
+        final appt = snapshot.data;
+        if (appt == null) {
+          return const _AppointmentNotFound();
+        }
+        return AppointmentFormScreen(initialAppointment: appt);
+      },
+    );
+  }
+}
+
+class _AppointmentNotFound extends StatelessWidget {
+  const _AppointmentNotFound();
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(),
+      body: const Padding(
+        padding: EdgeInsets.all(24),
+        child: Center(
+          child: Text(
+            "That appointment isn't in this app anymore.",
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
     );
   }
 }
