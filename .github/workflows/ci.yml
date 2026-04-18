@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel stale runs on the same ref when a new push arrives.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze-and-test:
+    name: Analyze & test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Keep CI's Flutter version in lockstep with the dev SDK pinned in .fvmrc,
+      # so "works on CI" really means "works with the pinned toolchain."
+      - name: Read Flutter version from .fvmrc
+        id: fvm
+        run: echo "version=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ steps.fvm.outputs.version }}
+          cache: true
+
+      - name: Verify Flutter
+        run: flutter --version
+
+      - name: Fetch dependencies
+        run: flutter pub get
+
+      # --fatal-infos promotes `info`-level analyzer results to failures, so we
+      # can't accidentally let lint noise accumulate.
+      - name: Analyze
+        run: flutter analyze --fatal-infos --fatal-warnings
+
+      - name: Test
+        run: flutter test
