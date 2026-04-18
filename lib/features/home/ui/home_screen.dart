@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:were_all_in_this_together/core/router/app_router.dart';
+import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
+import 'package:were_all_in_this_together/features/people/presentation/widgets/person_avatar.dart';
+import 'package:were_all_in_this_together/features/people/presentation/widgets/person_switcher_sheet.dart';
 
 /// Home screen.
 ///
@@ -42,12 +46,73 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-class _PersonBanner extends StatelessWidget {
+/// Banner at the top of home that declares who the app is focused on right
+/// now, and lets the user switch.
+///
+/// Three states:
+///
+/// * **Loading** — shows a neutral skeleton so the layout doesn't jump when
+///   the roster resolves (usually too fast to see in practice, but this
+///   keeps accessibility scanning stable).
+/// * **Empty roster** — calls the user to add the first Person.
+/// * **Has active Person** — shows the Person's avatar + name, with a
+///   switcher affordance that opens the bottom sheet.
+class _PersonBanner extends ConsumerWidget {
   const _PersonBanner();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
+    final activeAsync = ref.watch(activePersonProvider);
+
+    final child = activeAsync.when(
+      loading: () => const _BannerSkeleton(),
+      error: (err, _) => _BannerError(message: err.toString()),
+      data: (person) {
+        if (person == null) {
+          return const _BannerEmpty();
+        }
+        return _BannerPopulated(
+          onSwitch: () => showPersonSwitcherSheet(context),
+          child: Row(
+            children: [
+              PersonAvatar(person: person, size: 48),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Focused on',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color:
+                            scheme.onPrimaryContainer.withValues(alpha: 0.7),
+                      ),
+                    ),
+                    Text(
+                      person.displayName,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                        color: scheme.onPrimaryContainer,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'Switch person',
+                icon: Icon(Icons.unfold_more, color: scheme.onPrimaryContainer),
+                onPressed: () => showPersonSwitcherSheet(context),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -55,44 +120,116 @@ class _PersonBanner extends StatelessWidget {
         color: scheme.primaryContainer,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor: scheme.primary,
-            child: Icon(Icons.person, color: scheme.onPrimary),
+      child: child,
+    );
+  }
+}
+
+class _BannerPopulated extends StatelessWidget {
+  const _BannerPopulated({required this.child, required this.onSwitch});
+  final Widget child;
+  final VoidCallback onSwitch;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onSwitch,
+      child: child,
+    );
+  }
+}
+
+class _BannerEmpty extends StatelessWidget {
+  const _BannerEmpty();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        CircleAvatar(
+          backgroundColor: scheme.primary,
+          child: Icon(Icons.person_add_alt_1, color: scheme.onPrimary),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Let's start",
+                style: TextStyle(
+                  fontSize: 12,
+                  color: scheme.onPrimaryContainer.withValues(alpha: 0.7),
+                ),
+              ),
+              Text(
+                'Add the first person',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  color: scheme.onPrimaryContainer,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Who are we managing?',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: scheme.onPrimaryContainer.withValues(alpha: 0.7),
-                  ),
-                ),
-                Text(
-                  'Demo Person',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                    color: scheme.onPrimaryContainer,
-                  ),
-                ),
-              ],
+        ),
+        FilledButton.icon(
+          onPressed: () => context.push(Routes.personNew),
+          icon: const Icon(Icons.add),
+          label: const Text('Add'),
+        ),
+      ],
+    );
+  }
+}
+
+class _BannerSkeleton extends StatelessWidget {
+  const _BannerSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        CircleAvatar(
+          backgroundColor: scheme.primary.withValues(alpha: 0.3),
+          radius: 24,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            'Loading…',
+            style: TextStyle(
+              color: scheme.onPrimaryContainer.withValues(alpha: 0.6),
             ),
           ),
-          IconButton(
-            tooltip: 'Switch person',
-            icon: Icon(Icons.unfold_more, color: scheme.onPrimaryContainer),
-            onPressed: () {
-              // TODO(people): open person switcher bottom sheet.
-            },
+        ),
+      ],
+    );
+  }
+}
+
+class _BannerError extends StatelessWidget {
+  const _BannerError({required this.message});
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        Icon(Icons.error_outline, color: scheme.error),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            message,
+            style: TextStyle(color: scheme.onPrimaryContainer),
+            overflow: TextOverflow.ellipsis,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

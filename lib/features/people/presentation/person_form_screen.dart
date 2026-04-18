@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:were_all_in_this_together/features/people/data/person_repository.dart';
 import 'package:were_all_in_this_together/features/people/domain/person.dart';
-import 'package:were_all_in_this_together/features/people/presentation/providers.dart';
+import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 
 /// Form for creating or editing a [Person].
 ///
@@ -159,7 +159,7 @@ class _PersonFormScreenState extends ConsumerState<PersonFormScreen> {
           preferredFramingNotes: _nullIfBlank(_framingNotes.text),
         );
       }
-      ref.invalidate(peopleListProvider);
+      invalidatePeopleState(ref);
       if (!mounted) return;
       context.pop();
     } on Exception catch (e) {
@@ -295,7 +295,7 @@ class _RemoveButton extends ConsumerWidget {
     final repo = ref.read(personRepositoryProvider);
     try {
       await repo.softDelete(person.id);
-      ref.invalidate(peopleListProvider);
+      invalidatePeopleState(ref);
       if (!context.mounted) return;
       context.pop();
     } on Exception catch (e) {
