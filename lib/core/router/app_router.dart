@@ -17,6 +17,7 @@ import 'package:were_all_in_this_together/features/people/presentation/active_pe
 import 'package:were_all_in_this_together/features/people/presentation/people_list_screen.dart';
 import 'package:were_all_in_this_together/features/people/presentation/person_form_screen.dart';
 import 'package:were_all_in_this_together/features/safety_plan/ui/calm_screen.dart';
+import 'package:were_all_in_this_together/features/settings/ui/notification_settings_screen.dart';
 import 'package:were_all_in_this_together/features/settings/ui/settings_screen.dart';
 
 /// App-wide routes, centralised so deep links and navigation both go through
@@ -25,6 +26,7 @@ abstract class Routes {
   static const home = '/';
   static const calm = '/calm';
   static const settings = '/settings';
+  static const notificationSettings = '/settings/notifications';
   static const people = '/people';
   static const personNew = '/people/new';
 
@@ -68,6 +70,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: Routes.settings,
         name: 'settings',
         builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: Routes.notificationSettings,
+        name: 'notification-settings',
+        builder: (context, state) => const NotificationSettingsScreen(),
       ),
       GoRoute(
         path: Routes.people,

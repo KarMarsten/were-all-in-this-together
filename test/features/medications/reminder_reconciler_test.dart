@@ -1,11 +1,24 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:were_all_in_this_together/core/notifications/scheduled_reminder.dart';
+import 'package:were_all_in_this_together/features/medications/domain/dose_log.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication_schedule.dart';
+import 'package:were_all_in_this_together/features/medications/domain/notification_preferences.dart';
 import 'package:were_all_in_this_together/features/medications/notifications/reminder_reconciler.dart';
 
 import '../../helpers/fake_notification_service.dart';
+
+/// "Now" used by every test — a Monday morning at 07:00 *local*
+/// time so a local 08:00 dose is comfortably in the future and the
+/// weekday stays Monday regardless of the machine's timezone.
+///
+/// Using a local wall-clock instant (then `.toUtc()`) keeps the
+/// reconciler's local-date expansion stable across CI timezones.
+/// A UTC instant would shift the perceived local weekday when
+/// CI crosses zones.
+final DateTime _fixedLocalNow = DateTime(2030, 1, 7, 7);
+final DateTime _fixedNow = _fixedLocalNow.toUtc();
 
 Medication _med({
   required String id,
@@ -14,17 +27,21 @@ Medication _med({
   MedicationSchedule schedule = MedicationSchedule.asNeeded,
   DateTime? deletedAt,
   String? dose,
+  int? nagIntervalMinutesOverride,
+  int? nagCapOverride,
 }) {
-  final now = DateTime.utc(2030);
+  final created = DateTime.utc(2030);
   return Medication(
     id: id,
     personId: personId,
     name: name,
-    createdAt: now,
-    updatedAt: now,
+    createdAt: created,
+    updatedAt: created,
     dose: dose,
     schedule: schedule,
     deletedAt: deletedAt,
+    nagIntervalMinutesOverride: nagIntervalMinutesOverride,
+    nagCapOverride: nagCapOverride,
   );
 }
 
@@ -34,30 +51,60 @@ OwnedMedication _owned(
 }) =>
     OwnedMedication(medication: med, personDisplayName: personDisplayName);
 
+ReminderReconciler _buildReconciler(
+  FakeNotificationService service, {
+  DateTime? now,
+  Duration window = const Duration(hours: 48),
+}) {
+  final when = now ?? _fixedNow;
+  return ReminderReconciler(
+    service: service,
+    windowDuration: window,
+    clock: () => when,
+  );
+}
+
+/// Default prefs: 10-minute interval, cap of 3 — matches production
+/// defaults so tests exercise the same arithmetic the real app runs.
+const _defaultPrefs = NotificationPreferences();
+
+/// Daily-at-08:00 schedule used in most tests. 08:00 is chosen to
+/// land comfortably after `_fixedNow` (07:00 UTC) so the initial
+/// reminder is in the future on the same day.
+MedicationSchedule _daily08() => const MedicationSchedule(
+      kind: ScheduleKind.daily,
+      times: [ScheduledTime(hour: 8, minute: 0)],
+    );
+
 void main() {
   late FakeNotificationService service;
-  late ReminderReconciler reconciler;
 
   setUp(() {
     service = FakeNotificationService();
-    reconciler = ReminderReconciler(service: service);
   });
 
-  group('expansion', () {
+  group('reconcile — empty / no-op cases', () {
     test('empty list cancels every pending reminder', () async {
-      // Seed a pending reminder that should be swept on reconcile.
+      // Seed a stale reminder the reconciler should sweep.
       await service.scheduleReminder(
         ScheduledReminder(
           medicationId: 'stale',
           personId: 'p1',
           medicationName: 'Stale',
           personDisplayName: 'Alex',
-          time: const ScheduledTime(hour: 8, minute: 0),
+          scheduledAt: _fixedNow.add(const Duration(hours: 2)),
+          fireAt: _fixedNow.add(const Duration(hours: 2)),
+          nagIndex: 0,
+          totalInChain: 1,
         ),
       );
       expect(service.scheduled, hasLength(1));
 
-      final result = await reconciler.reconcile([]);
+      final reconciler = _buildReconciler(service);
+      final result = await reconciler.reconcile(
+        meds: const [],
+        preferences: _defaultPrefs,
+      );
 
       expect(result, isEmpty);
       expect(service.scheduled, isEmpty);
@@ -65,8 +112,12 @@ void main() {
 
     test('asNeeded meds produce zero reminders', () async {
       final med = _med(id: 'm1', personId: 'p1');
+      final reconciler = _buildReconciler(service);
 
-      final result = await reconciler.reconcile([_owned(med)]);
+      final result = await reconciler.reconcile(
+        meds: [_owned(med)],
+        preferences: _defaultPrefs,
+      );
 
       expect(result, isEmpty);
       expect(service.scheduled, isEmpty);
@@ -76,266 +127,327 @@ void main() {
       final med = _med(
         id: 'm1',
         personId: 'p1',
-        schedule: const MedicationSchedule(
-          kind: ScheduleKind.daily,
-          times: [ScheduledTime(hour: 8, minute: 0)],
-        ),
-        deletedAt: DateTime.utc(2030, 1, 2),
+        schedule: _daily08(),
+        deletedAt: DateTime.utc(2030),
       );
 
-      final result = await reconciler.reconcile([_owned(med)]);
+      final reconciler = _buildReconciler(service);
+      final result = await reconciler.reconcile(
+        meds: [_owned(med)],
+        preferences: _defaultPrefs,
+      );
 
       expect(result, isEmpty);
     });
 
-    test('daily schedule with N times produces N reminders', () async {
+    test('daily schedule with no times produces zero reminders', () async {
       final med = _med(
         id: 'm1',
         personId: 'p1',
-        name: 'Methylphenidate',
-        schedule: const MedicationSchedule(
-          kind: ScheduleKind.daily,
-          times: [
-            ScheduledTime(hour: 8, minute: 0),
-            ScheduledTime(hour: 12, minute: 0),
-            ScheduledTime(hour: 20, minute: 30),
-          ],
-        ),
+        schedule: const MedicationSchedule(kind: ScheduleKind.daily),
       );
+      final reconciler = _buildReconciler(service);
 
-      final result = await reconciler.reconcile([_owned(med)]);
-
-      expect(result, hasLength(3));
-      expect(
-        result.map((r) => r.time.toWireString()).toList(),
-        containsAll(<String>['08:00', '12:00', '20:30']),
+      final result = await reconciler.reconcile(
+        meds: [_owned(med)],
+        preferences: _defaultPrefs,
       );
-      expect(result.every((r) => r.weekday == null), isTrue);
-    });
-
-    test('weekly schedule produces days × times reminders', () async {
-      final med = _med(
-        id: 'm1',
-        personId: 'p1',
-        schedule: const MedicationSchedule(
-          kind: ScheduleKind.weekly,
-          days: {1, 3, 5},
-          times: [
-            ScheduledTime(hour: 9, minute: 0),
-            ScheduledTime(hour: 21, minute: 0),
-          ],
-        ),
-      );
-
-      final result = await reconciler.reconcile([_owned(med)]);
-
-      expect(result, hasLength(6));
-      // Each (day, time) pair appears exactly once.
-      final pairs = result
-          .map((r) => '${r.weekday}@${r.time.toWireString()}')
-          .toSet();
-      expect(pairs, {
-        '1@09:00',
-        '1@21:00',
-        '3@09:00',
-        '3@21:00',
-        '5@09:00',
-        '5@21:00',
-      });
-    });
-
-    test(
-        'reminder-eligible but empty-times schedule produces nothing '
-        '(weekday picked, no time yet)', () async {
-      final med = _med(
-        id: 'm1',
-        personId: 'p1',
-        schedule: const MedicationSchedule(
-          kind: ScheduleKind.weekly,
-          days: {1, 2},
-        ),
-      );
-
-      final result = await reconciler.reconcile([_owned(med)]);
 
       expect(result, isEmpty);
     });
   });
 
-  group('diff behaviour', () {
+  group('nag chain', () {
     test(
-        'second reconcile with same input does not re-schedule or cancel '
-        'anything', () async {
-      final med = _med(
-        id: 'm1',
-        personId: 'p1',
-        schedule: const MedicationSchedule(
-          kind: ScheduleKind.daily,
-          times: [ScheduledTime(hour: 8, minute: 0)],
+      'daily med emits one chain (initial + cap nags) per dose in window',
+      () async {
+        final med = _med(id: 'm1', personId: 'p1', schedule: _daily08());
+        final reconciler = _buildReconciler(service);
+
+        final result = await reconciler.reconcile(
+          meds: [_owned(med)],
+          preferences: _defaultPrefs,
+        );
+
+        // 48h window, 1 dose/day = 2 dose instances × (1 + cap=3)
+        // reminders each = 8 reminders.
+        expect(result, hasLength(8));
+        expect(service.scheduled, hasLength(8));
+
+        // Check the initial reminder of the first dose: fireAt ==
+        // scheduledAt, nagIndex 0, totalInChain 4.
+        final firstDay = result.where((r) => r.nagIndex == 0).toList()
+          ..sort((a, b) => a.fireAt.compareTo(b.fireAt));
+        expect(firstDay, hasLength(2));
+        expect(firstDay.first.fireAt, firstDay.first.scheduledAt);
+        expect(firstDay.first.totalInChain, 4);
+      },
+    );
+
+    test('nag follow-ups are spaced by the configured interval', () async {
+      final med = _med(id: 'm1', personId: 'p1', schedule: _daily08());
+      final reconciler = _buildReconciler(service);
+
+      final result = await reconciler.reconcile(
+        meds: [_owned(med)],
+        preferences: const NotificationPreferences(
+          nagIntervalMinutes: 15,
+          nagCap: 2,
         ),
       );
 
-      await reconciler.reconcile([_owned(med)]);
-      final scheduleCallsAfterFirst = service.scheduleCalls.length;
-      final cancelCallsAfterFirst = service.cancelCalls.length;
-
-      await reconciler.reconcile([_owned(med)]);
-
-      // IDs are deterministic, so the reminder id is already in the
-      // pending set the second time through — no side effects expected.
-      expect(service.scheduleCalls, hasLength(scheduleCallsAfterFirst));
-      expect(service.cancelCalls, hasLength(cancelCallsAfterFirst));
+      final firstDose = result
+          .where((r) => r.scheduledAt == result.first.scheduledAt)
+          .toList()
+        ..sort((a, b) => a.nagIndex.compareTo(b.nagIndex));
+      expect(firstDose, hasLength(3));
+      expect(
+        firstDose[1].fireAt.difference(firstDose[0].fireAt),
+        const Duration(minutes: 15),
+      );
+      expect(
+        firstDose[2].fireAt.difference(firstDose[0].fireAt),
+        const Duration(minutes: 30),
+      );
     });
 
-    test('removing a med cancels its reminder only', () async {
-      final a = _med(
+    test('cap=0 disables nagging — one reminder per dose', () async {
+      final med = _med(id: 'm1', personId: 'p1', schedule: _daily08());
+      final reconciler = _buildReconciler(service);
+
+      final result = await reconciler.reconcile(
+        meds: [_owned(med)],
+        preferences: const NotificationPreferences(nagCap: 0),
+      );
+
+      // 2 dose instances in a 48h window, 1 reminder each.
+      expect(result, hasLength(2));
+      expect(result.every((r) => r.nagIndex == 0), isTrue);
+      expect(result.every((r) => r.totalInChain == 1), isTrue);
+    });
+
+    test('per-medication override beats global defaults', () async {
+      final medA = _med(
         id: 'a',
         personId: 'p1',
-        schedule: const MedicationSchedule(
-          kind: ScheduleKind.daily,
-          times: [ScheduledTime(hour: 8, minute: 0)],
-        ),
+        name: 'A',
+        schedule: _daily08(),
       );
-      final b = _med(
+      final medB = _med(
         id: 'b',
         personId: 'p1',
-        schedule: const MedicationSchedule(
-          kind: ScheduleKind.daily,
-          times: [ScheduledTime(hour: 20, minute: 0)],
-        ),
+        name: 'B',
+        schedule: _daily08(),
+        nagCapOverride: 0,
+        nagIntervalMinutesOverride: 5,
+      );
+      final reconciler = _buildReconciler(service);
+
+      final result = await reconciler.reconcile(
+        meds: [_owned(medA), _owned(medB)],
+        preferences: _defaultPrefs,
       );
 
-      await reconciler.reconcile([_owned(a), _owned(b)]);
-      expect(service.scheduled, hasLength(2));
+      final forA = result.where((r) => r.medicationId == 'a').toList();
+      final forB = result.where((r) => r.medicationId == 'b').toList();
 
-      await reconciler.reconcile([_owned(a)]);
-
-      expect(service.scheduled, hasLength(1));
-      expect(service.scheduled.single.medicationId, 'a');
-    });
-
-    test('changing a time cancels the old reminder and schedules the new',
-        () async {
-      final initial = _med(
-        id: 'm1',
-        personId: 'p1',
-        schedule: const MedicationSchedule(
-          kind: ScheduleKind.daily,
-          times: [ScheduledTime(hour: 8, minute: 0)],
-        ),
-      );
-      await reconciler.reconcile([_owned(initial)]);
-      final firstId = service.scheduled.single.id;
-
-      final edited = _med(
-        id: 'm1',
-        personId: 'p1',
-        schedule: const MedicationSchedule(
-          kind: ScheduleKind.daily,
-          times: [ScheduledTime(hour: 9, minute: 0)],
-        ),
-      );
-      await reconciler.reconcile([_owned(edited)]);
-
-      expect(service.scheduled, hasLength(1));
-      expect(service.scheduled.single.id, isNot(firstId));
-      expect(service.cancelCalls, contains(firstId));
+      // A uses the defaults: 2 × 4 = 8 reminders.
+      expect(forA, hasLength(8));
+      // B turns nagging off: 2 × 1 = 2 reminders.
+      expect(forB, hasLength(2));
+      expect(forB.every((r) => r.totalInChain == 1), isTrue);
     });
   });
 
-  group('reminder content', () {
-    test(
-        'title carries Person name and med name so multi-person families '
-        'can see whose reminder fired at a glance', () async {
-      final med = _med(
-        id: 'm1',
-        personId: 'p1',
-        name: 'Methylphenidate',
-        dose: '10mg',
-        schedule: const MedicationSchedule(
-          kind: ScheduleKind.daily,
-          times: [ScheduledTime(hour: 8, minute: 0)],
-        ),
+  group('window', () {
+    test('past dose instances are skipped', () async {
+      // Med is scheduled daily at 08:00 local; the clock is pinned to
+      // 09:00 local on the same day. Today's 08:00 instance is in the
+      // past and should be dropped; the next two days' 08:00 are
+      // still inside the 48-hour window.
+      final med = _med(id: 'm1', personId: 'p1', schedule: _daily08());
+      final clock = DateTime(2030, 1, 7, 9).toUtc();
+      final today08 = DateTime(2030, 1, 7, 8).toUtc();
+      final reconciler = _buildReconciler(service, now: clock);
+
+      final result = await reconciler.reconcile(
+        meds: [_owned(med)],
+        preferences: _defaultPrefs,
       );
 
-      await reconciler.reconcile([_owned(med)]);
-      final r = service.scheduled.single;
-
-      expect(r.title, 'Alex · Methylphenidate');
-      expect(r.body, contains('10mg'));
+      // 2 future doses × 4 reminders = 8; today's past dose contributes
+      // zero.
+      expect(result, hasLength(8));
+      expect(
+        result.every((r) => r.scheduledAt != today08),
+        isTrue,
+        reason: "today's past 08:00 dose must not be scheduled",
+      );
     });
 
-    test('missing dose falls back to a generic body', () async {
+    test('weekly schedule only fires on selected ISO weekdays', () async {
+      // `_fixedNow` is Monday 07:00 UTC; a Wed/Fri schedule should emit
+      // nothing in a 48h window (Mon+Tue).
       final med = _med(
         id: 'm1',
         personId: 'p1',
         schedule: const MedicationSchedule(
-          kind: ScheduleKind.daily,
+          kind: ScheduleKind.weekly,
           times: [ScheduledTime(hour: 8, minute: 0)],
+          days: {3, 5},
         ),
       );
+      final reconciler = _buildReconciler(service);
 
-      await reconciler.reconcile([_owned(med)]);
+      final result = await reconciler.reconcile(
+        meds: [_owned(med)],
+        preferences: _defaultPrefs,
+      );
 
-      expect(service.scheduled.single.body, 'Time for a dose.');
+      expect(result, isEmpty);
+    });
+
+    test('already-logged dose is dropped from the desired set', () async {
+      final med = _med(id: 'm1', personId: 'p1', schedule: _daily08());
+      final reconciler = _buildReconciler(service);
+
+      // Build the identity for today's 08:00 (the dose the reconciler
+      // will emit if we don't intervene). Computed from the local
+      // wall-clock calendar of `_fixedLocalNow` so this matches what
+      // the reconciler's local-day expansion will produce.
+      final today08Local =
+          DateTime(_fixedLocalNow.year, _fixedLocalNow.month,
+                  _fixedLocalNow.day, 8)
+              .toUtc();
+      final identity = (
+        medicationId: med.id,
+        scheduledAtUtcMs: today08Local.millisecondsSinceEpoch,
+      );
+
+      final log = DoseLog(
+        id: 'log1',
+        personId: med.personId,
+        medicationId: med.id,
+        scheduledAt: today08Local,
+        loggedAt: today08Local,
+        outcome: DoseOutcome.taken,
+        createdAt: today08Local,
+        updatedAt: today08Local,
+      );
+
+      final result = await reconciler.reconcile(
+        meds: [_owned(med)],
+        preferences: _defaultPrefs,
+        doseLogsByIdentity: {identity: log},
+      );
+
+      // Today's chain is suppressed; tomorrow's (4 reminders) still ships.
+      expect(result, hasLength(4));
+      expect(
+        result.every((r) => r.scheduledAt != today08Local),
+        isTrue,
+      );
     });
   });
 
-  group('ScheduledReminder id stability', () {
-    test(
-        'two reminders with the same (medicationId, weekday, time) compare '
-        'equal and share an id', () {
-      final a = ScheduledReminder(
-        medicationId: 'med-1',
-        personId: 'p1',
-        medicationName: 'x',
-        personDisplayName: 'Alex',
-        time: const ScheduledTime(hour: 8, minute: 0),
-        weekday: 3,
+  group('diff semantics', () {
+    test('second reconcile with same inputs is a no-op', () async {
+      final med = _med(id: 'm1', personId: 'p1', schedule: _daily08());
+      final reconciler = _buildReconciler(service);
+
+      await reconciler.reconcile(
+        meds: [_owned(med)],
+        preferences: _defaultPrefs,
       );
-      final b = ScheduledReminder(
-        medicationId: 'med-1',
-        personId: 'p1',
-        // Person rename: title would differ but the id must not.
-        medicationName: 'x',
-        personDisplayName: 'Alexandra',
-        time: const ScheduledTime(hour: 8, minute: 0),
-        weekday: 3,
+      final firstCalls = service.scheduleCalls.length;
+
+      await reconciler.reconcile(
+        meds: [_owned(med)],
+        preferences: _defaultPrefs,
       );
 
-      expect(a.id, b.id);
-      expect(a, b);
+      expect(service.scheduleCalls.length, firstCalls,
+          reason: 'stable ids should mean no rescheduling on second pass');
+      expect(service.cancelCalls, isEmpty);
     });
 
-    test('different medication ids produce different reminder ids', () {
-      final a = ScheduledReminder(
-        medicationId: 'med-1',
-        personId: 'p1',
-        medicationName: 'x',
-        personDisplayName: 'Alex',
-        time: const ScheduledTime(hour: 8, minute: 0),
+    test('reducing cap cancels the now-unwanted nag tail', () async {
+      final med = _med(id: 'm1', personId: 'p1', schedule: _daily08());
+      final reconciler = _buildReconciler(service);
+
+      await reconciler.reconcile(
+        meds: [_owned(med)],
+        preferences: _defaultPrefs,
       );
-      final b = ScheduledReminder(
-        medicationId: 'med-2',
-        personId: 'p1',
-        medicationName: 'x',
-        personDisplayName: 'Alex',
-        time: const ScheduledTime(hour: 8, minute: 0),
+      expect(service.scheduled, hasLength(8));
+
+      await reconciler.reconcile(
+        meds: [_owned(med)],
+        preferences: const NotificationPreferences(nagCap: 1),
       );
 
-      expect(a.id, isNot(b.id));
+      // 2 doses × (1 + 1) = 4 reminders.
+      expect(service.scheduled, hasLength(4));
+      // 4 former nag-index=2/3 ids got cancelled.
+      expect(service.cancelCalls, hasLength(4));
     });
 
-    test('IDs are non-negative 31-bit ints', () {
-      final r = ScheduledReminder(
-        medicationId: 'med-1',
-        personId: 'p1',
-        medicationName: 'x',
-        personDisplayName: 'Alex',
-        time: const ScheduledTime(hour: 8, minute: 0),
+    test('archiving a med cancels its chains', () async {
+      final med = _med(id: 'm1', personId: 'p1', schedule: _daily08());
+      final reconciler = _buildReconciler(service);
+
+      await reconciler.reconcile(
+        meds: [_owned(med)],
+        preferences: _defaultPrefs,
       );
-      expect(r.id, greaterThanOrEqualTo(0));
-      expect(r.id, lessThan(0x80000000));
+      expect(service.scheduled, hasLength(8));
+
+      final archived = med.copyWith(deletedAt: DateTime.utc(2030, 1, 7, 6));
+      await reconciler.reconcile(
+        meds: [_owned(archived)],
+        preferences: _defaultPrefs,
+      );
+
+      expect(service.scheduled, isEmpty);
+      expect(service.cancelCalls, hasLength(8));
+    });
+  });
+
+  group('reminder metadata', () {
+    test('title uses Person display name and medication name', () async {
+      final med = _med(
+        id: 'm1',
+        personId: 'p1',
+        name: 'Vitamin D',
+        schedule: _daily08(),
+      );
+      final reconciler = _buildReconciler(service);
+
+      final result = await reconciler.reconcile(
+        meds: [_owned(med, personDisplayName: 'Sam')],
+        preferences: const NotificationPreferences(nagCap: 0),
+      );
+
+      expect(result.first.title, 'Sam · Vitamin D');
+    });
+
+    test('siblingIds includes every index in the chain', () async {
+      final med = _med(id: 'm1', personId: 'p1', schedule: _daily08());
+      final reconciler = _buildReconciler(service);
+
+      final result = await reconciler.reconcile(
+        meds: [_owned(med)],
+        preferences: const NotificationPreferences(nagCap: 2),
+      );
+
+      final firstChain = result
+          .where((r) => r.scheduledAt == result.first.scheduledAt)
+          .toList();
+      final sibs = firstChain.first.siblingIds();
+      expect(sibs, hasLength(firstChain.length));
+      for (final r in firstChain) {
+        expect(sibs, contains(r.id));
+      }
     });
   });
 }

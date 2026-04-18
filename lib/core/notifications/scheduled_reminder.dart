@@ -1,18 +1,30 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 
-import 'package:were_all_in_this_together/features/medications/domain/medication_schedule.dart';
-
-/// A single OS-level reminder we expect to be scheduled.
+/// A single, concrete, OS-level notification we expect to be scheduled.
 ///
-/// Reminders are derived (pure) from medications + their schedules by
-/// `ReminderReconciler`. They are intentionally self-contained — the
-/// reconciler diffs "desired" against "pending" without reading any
-/// further state.
+/// In contrast to a "recurring" reminder (which the OS fires daily /
+/// weekly from one registration), a [ScheduledReminder] is always a
+/// **one-shot** fired at a specific [fireAt] wall-clock instant. Every
+/// dose instance therefore gets its own reminder id, and every
+/// follow-up nag after an unacknowledged dose gets its own id too.
 ///
-/// `id` is a deterministic 31-bit non-negative hash of the reminder's
-/// identity fields. Two runs of the app will compute the same id for
-/// the same medication + weekday + time, so reconciliation is
-/// stateless.
+/// This shape is what powers:
+///
+/// * The Taken / Skip action buttons on the notification — the payload
+///   carries enough context for the background handler to record a
+///   dose log and cancel the remaining nag chain.
+/// * Pre-scheduled nag chains: a dose at 08:00 with a 10-minute
+///   interval and a cap of 3 produces four reminders (08:00, 08:10,
+///   08:20, 08:30), each pointing at the same `scheduledAt` so the
+///   handler knows they're the same dose instance.
+///
+/// Ids are deterministic hashes of `(medicationId, scheduledAtUtcMs,
+/// nagIndex)`. The reconciler can therefore diff "pending" vs
+/// "desired" across runs without any side-channel state — a reminder
+/// the user has already ACK'd becomes a pending id that the next
+/// reconciliation pass cancels.
 @immutable
 class ScheduledReminder {
   ScheduledReminder({
@@ -20,52 +32,117 @@ class ScheduledReminder {
     required this.personId,
     required this.medicationName,
     required this.personDisplayName,
-    required this.time,
-    this.weekday,
+    required this.scheduledAt,
+    required this.fireAt,
+    required this.nagIndex,
+    required this.totalInChain,
     this.dose,
-  })  : assert(
-          weekday == null || (weekday >= 1 && weekday <= 7),
-          'weekday must be null or ISO 1..7',
+  })  : assert(nagIndex >= 0, 'nagIndex must be non-negative'),
+        assert(
+          totalInChain > nagIndex,
+          'totalInChain must be strictly greater than nagIndex',
         ),
-        id = _computeId(medicationId, weekday, time);
+        assert(scheduledAt.isUtc, 'scheduledAt must be UTC'),
+        id = _computeId(medicationId, scheduledAt, nagIndex);
 
-  /// ISO-8601 weekday (1 = Monday ... 7 = Sunday), or null for a
-  /// daily reminder that fires every day at [time].
-  final int? weekday;
-  final ScheduledTime time;
+  /// UTC instant of the *original* scheduled dose (nagIndex=0). All
+  /// reminders in a nag chain share the same `scheduledAt` even
+  /// though their [fireAt] differs.
+  final DateTime scheduledAt;
+
+  /// Concrete wall-clock instant the OS should fire this reminder.
+  /// For the initial reminder this equals [scheduledAt]; for nag
+  /// index `k` it equals `scheduledAt + k * nagInterval`.
+  final DateTime fireAt;
+
+  /// `0` for the initial reminder, `1..cap` for follow-ups. Used in
+  /// the notification body copy ("reminder 1 of 3") and in the
+  /// payload so the handler knows how far along the chain we are.
+  final int nagIndex;
+
+  /// Size of the whole nag chain, including the initial reminder.
+  /// Present so the notification body can say "reminder 2 of 4"
+  /// without the handler having to recompute.
+  final int totalInChain;
+
   final String medicationId;
   final String personId;
   final String medicationName;
   final String personDisplayName;
 
-  /// Optional free-form dose string to include in the notification body.
+  /// Optional free-form dose string to include in the notification
+  /// body. Same rationale as before — the most common question
+  /// ("how much?") answered without opening the app.
   final String? dose;
 
-  /// Deterministic OS-level notification id.
-  ///
-  /// `flutter_local_notifications` requires an `int`; we derive one from
-  /// the reminder's identity so the reconciler can diff "pending" vs
-  /// "desired" without any side-channel state. Masked to 31 bits to
-  /// keep it positive on platforms that treat these as signed.
+  /// Deterministic OS-level notification id. Masked to 31 bits to
+  /// stay positive on platforms that treat ids as signed.
   final int id;
 
-  static int _computeId(String medicationId, int? weekday, ScheduledTime time) {
-    return Object.hash(medicationId, weekday ?? 0, time.hour, time.minute) &
-        0x7FFFFFFF;
+  /// `true` when this is the first reminder in the chain. Sugar
+  /// around `nagIndex == 0`.
+  bool get isInitial => nagIndex == 0;
+
+  /// All ids in this dose's nag chain, including this one. Sorted
+  /// so the background handler can cancel them deterministically.
+  ///
+  /// This is computed from the chain metadata rather than stored so
+  /// the reconciler doesn't have to thread sibling lists through
+  /// every reminder — every participant in the chain can derive it.
+  List<int> siblingIds() {
+    final ids = <int>[
+      for (var i = 0; i < totalInChain; i++)
+        _computeId(medicationId, scheduledAt, i),
+    ]..sort();
+    return ids;
   }
 
-  /// Human-visible notification title. Keeps the Person's name in front
-  /// so a parent watching multiple people's meds sees *whose* reminder
-  /// it is at a glance.
+  /// Payload string persisted on the OS notification. Consumed by
+  /// the action handler when the user taps Taken / Skip; also
+  /// returned when the user taps the notification body.
+  ///
+  /// We encode explicitly as JSON (rather than a delimited string)
+  /// so adding a new field later doesn't break existing in-flight
+  /// notifications scheduled by older app versions.
+  String encodePayload() {
+    return jsonEncode(<String, Object?>{
+      'v': 1,
+      'mid': medicationId,
+      'pid': personId,
+      'tsUtc': scheduledAt.millisecondsSinceEpoch,
+      'nag': nagIndex,
+      'total': totalInChain,
+      'siblings': siblingIds(),
+    });
+  }
+
+  /// Title shown in the OS banner. Keeps the Person's name in front
+  /// so a parent watching multiple people's meds sees *whose*
+  /// reminder it is at a glance.
   String get title => '$personDisplayName · $medicationName';
 
-  /// Notification body. Includes the dose if we have one so the user
-  /// doesn't have to open the app for the most common question
-  /// ("how much?"). Time is omitted — iOS shows the current time
-  /// alongside notifications natively.
+  /// Body line. Appends a nag counter ("reminder 2 of 4") for
+  /// follow-ups so the caregiver can tell at a glance whether it's
+  /// a fresh dose or a nudge, and how many more nudges are coming.
   String get body {
-    if (dose == null || dose!.trim().isEmpty) return 'Time for a dose.';
-    return 'Time for ${dose!.trim()}.';
+    final base = (dose == null || dose!.trim().isEmpty)
+        ? 'Time for a dose'
+        : 'Time for ${dose!.trim()}';
+    if (nagIndex == 0) return '$base.';
+    return '$base — reminder $nagIndex of ${totalInChain - 1}.';
+  }
+
+  static int _computeId(
+    String medicationId,
+    DateTime scheduledAt,
+    int nagIndex,
+  ) {
+    return Object.hash(
+          medicationId,
+          scheduledAt.toUtc().millisecondsSinceEpoch,
+          nagIndex,
+        ) &
+        0x7FFFFFFF;
   }
 
   @override
@@ -79,5 +156,68 @@ class ScheduledReminder {
   @override
   String toString() =>
       'ScheduledReminder(id=$id, med=$medicationName, '
-      'time=${time.toWireString()}, weekday=$weekday)';
+      'scheduledAt=$scheduledAt, nag=$nagIndex/$totalInChain)';
+}
+
+/// Parsed form of [ScheduledReminder.encodePayload]. Used by the
+/// notification action handler to route Taken / Skip taps back to
+/// the right dose instance without loading every piece of state a
+/// full [ScheduledReminder] carries.
+@immutable
+class ReminderPayload {
+  const ReminderPayload({
+    required this.medicationId,
+    required this.personId,
+    required this.scheduledAtUtcMs,
+    required this.nagIndex,
+    required this.totalInChain,
+    required this.siblingIds,
+  });
+
+  /// Decode a JSON-encoded payload. Returns `null` (rather than
+  /// throwing) on any parse failure — notification payloads are
+  /// the kind of thing we should never crash on, even if a
+  /// future build changed the schema incompatibly.
+  static ReminderPayload? tryDecode(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return null;
+      final v = decoded['v'];
+      if (v is! int || v < 1) return null;
+      final mid = decoded['mid'];
+      final pid = decoded['pid'];
+      final tsUtc = decoded['tsUtc'];
+      final nag = decoded['nag'];
+      final total = decoded['total'];
+      final siblings = decoded['siblings'];
+      if (mid is! String || pid is! String) return null;
+      if (tsUtc is! int || nag is! int || total is! int) return null;
+      if (siblings is! List) return null;
+      final sibIds = <int>[];
+      for (final s in siblings) {
+        if (s is int) sibIds.add(s);
+      }
+      return ReminderPayload(
+        medicationId: mid,
+        personId: pid,
+        scheduledAtUtcMs: tsUtc,
+        nagIndex: nag,
+        totalInChain: total,
+        siblingIds: List.unmodifiable(sibIds),
+      );
+    } on FormatException {
+      return null;
+    }
+  }
+
+  final String medicationId;
+  final String personId;
+  final int scheduledAtUtcMs;
+  final int nagIndex;
+  final int totalInChain;
+  final List<int> siblingIds;
+
+  DateTime get scheduledAt =>
+      DateTime.fromMillisecondsSinceEpoch(scheduledAtUtcMs, isUtc: true);
 }

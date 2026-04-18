@@ -87,6 +87,8 @@ class MedicationRepository {
     DateTime? startDate,
     DateTime? endDate,
     MedicationSchedule schedule = MedicationSchedule.asNeeded,
+    int? nagIntervalMinutesOverride,
+    int? nagCapOverride,
   }) async {
     if (name.trim().isEmpty) {
       throw ArgumentError.value(name, 'name', 'must not be empty');
@@ -114,6 +116,8 @@ class MedicationRepository {
       startDate: startDate,
       endDate: endDate,
       schedule: schedule,
+      nagIntervalMinutesOverride: nagIntervalMinutesOverride,
+      nagCapOverride: nagCapOverride,
     );
     final encrypted = await _sealPayload(
       medicationId: id,
@@ -143,6 +147,8 @@ class MedicationRepository {
       startDate: startDate,
       endDate: endDate,
       schedule: schedule,
+      nagIntervalMinutesOverride: nagIntervalMinutesOverride,
+      nagCapOverride: nagCapOverride,
       createdAt: now,
       updatedAt: now,
     );
@@ -247,6 +253,8 @@ class MedicationRepository {
       startDate: updated.startDate,
       endDate: updated.endDate,
       schedule: updated.schedule,
+      nagIntervalMinutesOverride: updated.nagIntervalMinutesOverride,
+      nagCapOverride: updated.nagCapOverride,
     );
     final encrypted = await _sealPayload(
       medicationId: updated.id,
@@ -348,6 +356,8 @@ class MedicationRepository {
       startDate: payload.startDate,
       endDate: payload.endDate,
       schedule: payload.schedule,
+      nagIntervalMinutesOverride: payload.nagIntervalMinutesOverride,
+      nagCapOverride: payload.nagCapOverride,
       createdAt:
           DateTime.fromMillisecondsSinceEpoch(row.createdAt, isUtc: true),
       updatedAt:

@@ -8,6 +8,7 @@ import 'package:were_all_in_this_together/features/medications/domain/medication
 import 'package:were_all_in_this_together/features/medications/presentation/providers.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/widgets/medication_icon.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/widgets/medication_schedule_editor.dart';
+import 'package:were_all_in_this_together/features/medications/presentation/widgets/reminder_override_editor.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 
 /// Form for creating or editing a [Medication].
@@ -44,6 +45,8 @@ class _MedicationFormScreenState extends ConsumerState<MedicationFormScreen> {
   DateTime? _startDate;
   DateTime? _endDate;
   MedicationSchedule _schedule = MedicationSchedule.asNeeded;
+  int? _nagIntervalOverride;
+  int? _nagCapOverride;
   bool _saving = false;
 
   @override
@@ -58,6 +61,8 @@ class _MedicationFormScreenState extends ConsumerState<MedicationFormScreen> {
     _startDate = seed?.startDate;
     _endDate = seed?.endDate;
     _schedule = seed?.schedule ?? MedicationSchedule.asNeeded;
+    _nagIntervalOverride = seed?.nagIntervalMinutesOverride;
+    _nagCapOverride = seed?.nagCapOverride;
   }
 
   @override
@@ -148,6 +153,14 @@ class _MedicationFormScreenState extends ConsumerState<MedicationFormScreen> {
                   value: _schedule,
                   onChanged: (s) => setState(() => _schedule = s),
                 ),
+                const SizedBox(height: 24),
+                ReminderOverrideEditor(
+                  intervalMinutesOverride: _nagIntervalOverride,
+                  capOverride: _nagCapOverride,
+                  onIntervalChanged: (v) =>
+                      setState(() => _nagIntervalOverride = v),
+                  onCapChanged: (v) => setState(() => _nagCapOverride = v),
+                ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _notes,
@@ -196,6 +209,8 @@ class _MedicationFormScreenState extends ConsumerState<MedicationFormScreen> {
             startDate: _startDate,
             endDate: _endDate,
             schedule: _schedule,
+            nagIntervalMinutesOverride: _nagIntervalOverride,
+            nagCapOverride: _nagCapOverride,
           ),
         );
       } else {

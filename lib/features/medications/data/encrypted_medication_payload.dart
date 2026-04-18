@@ -19,6 +19,9 @@ import 'package:were_all_in_this_together/features/medications/domain/medication
 /// * **v2** — adds `schedule` (kind + times + weekdays). v1 payloads
 ///   decode to `MedicationSchedule.asNeeded` so legacy rows don't
 ///   accidentally produce reminders.
+/// * **v3** — adds optional `nagIntervalMinutes` and `nagCap` per-med
+///   overrides. v1/v2 payloads decode with both fields `null`, which
+///   means "inherit the device-wide default".
 class EncryptedMedicationPayload {
   const EncryptedMedicationPayload({
     required this.schemaVersion,
@@ -30,6 +33,8 @@ class EncryptedMedicationPayload {
     this.notes,
     this.startDate,
     this.endDate,
+    this.nagIntervalMinutesOverride,
+    this.nagCapOverride,
   });
 
   /// Decode a JSON map previously produced by `toJson` (possibly by an
@@ -71,7 +76,20 @@ class EncryptedMedicationPayload {
       startDate: startRaw is String ? _parseDateOnly(startRaw) : null,
       endDate: endRaw is String ? _parseDateOnly(endRaw) : null,
       schedule: MedicationSchedule.fromWireJson(json['schedule']),
+      nagIntervalMinutesOverride: _asInt(json['nagIntervalMinutes']),
+      nagCapOverride: _asInt(json['nagCap']),
     );
+  }
+
+  /// Narrow an untyped JSON value to `int?`. Tolerates `num`s that
+  /// happen to decode as `double` (round-trip via plists can do this)
+  /// but rejects strings — we'd rather drop a bad value than let a
+  /// `"10"` sneak through as something the scheduler must clamp
+  /// later.
+  static int? _asInt(Object? raw) {
+    if (raw is int) return raw;
+    if (raw is double) return raw.toInt();
+    return null;
   }
 
   /// Parse a `YYYY-MM-DD` string as a UTC midnight instant. Same rationale
@@ -93,8 +111,9 @@ class EncryptedMedicationPayload {
 
   /// The schema version written by this build.
   ///
-  /// Bumped from 1 → 2 when the optional `schedule` sub-object was added.
-  static const int currentSchemaVersion = 2;
+  /// * 1 → 2: added optional `schedule` sub-object.
+  /// * 2 → 3: added optional `nagIntervalMinutes` / `nagCap` overrides.
+  static const int currentSchemaVersion = 3;
 
   final int schemaVersion;
   final String name;
@@ -105,6 +124,8 @@ class EncryptedMedicationPayload {
   final DateTime? startDate;
   final DateTime? endDate;
   final MedicationSchedule schedule;
+  final int? nagIntervalMinutesOverride;
+  final int? nagCapOverride;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
         'v': schemaVersion,
@@ -121,6 +142,9 @@ class EncryptedMedicationPayload {
         // Phase 2 sync ships.
         if (schedule.kind != ScheduleKind.asNeeded)
           'schedule': schedule.toWireJson(),
+        if (nagIntervalMinutesOverride != null)
+          'nagIntervalMinutes': nagIntervalMinutesOverride,
+        if (nagCapOverride != null) 'nagCap': nagCapOverride,
       };
 
   static String _dateOnly(DateTime d) {

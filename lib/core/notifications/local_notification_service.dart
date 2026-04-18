@@ -7,26 +7,30 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
+import 'package:were_all_in_this_together/core/notifications/background_ack_handler.dart';
+import 'package:were_all_in_this_together/core/notifications/notification_action_ids.dart';
 import 'package:were_all_in_this_together/core/notifications/notification_service.dart';
 import 'package:were_all_in_this_together/core/notifications/scheduled_reminder.dart';
-import 'package:were_all_in_this_together/features/medications/domain/medication_schedule.dart';
 
 /// Real platform implementation of [NotificationService], wrapping
 /// `flutter_local_notifications`.
 ///
 /// Design choices:
 ///
-/// * All of our medication reminders go into a single Android channel
-///   id ([_channelId]). There's no meaningful priority difference
-///   between, say, a morning dose and an evening dose — they're all
-///   "dose reminder".
-/// * iOS uses `DateTimeComponents.time` for daily reminders and
-///   `DateTimeComponents.dayOfWeekAndTime` for weekly reminders so the
-///   OS handles the recurrence for us. That way the reconciler never
-///   needs to re-fire on a timer.
-/// * We schedule at the device's *local* wall time, not UTC: "take at
-///   8am" should mean 8am wherever the user wakes up. We set the
-///   timezone on first init so `tz.TZDateTime` resolves correctly.
+/// * Reminders are **one-shot**: one OS registration per dose
+///   instance per nag step. The reconciler tracks the full set and
+///   re-schedules a rolling 48-hour window on demand. This is
+///   necessary for nag chains (an unacknowledged 08:00 dose can't
+///   trigger follow-ups unless those follow-ups were pre-scheduled)
+///   and for dose-level ACK (each fires on a distinct `fireAt` so
+///   taking the 08:00 pill doesn't cancel the 20:00 one).
+/// * Taken and Skip live as **notification actions** on a shared
+///   iOS category. Both are declared *without* the `foreground`
+///   option so a tap resolves in a short-lived background isolate
+///   — the caregiver sees the OS banner collapse, the app does
+///   not come to the front.
+/// * We schedule at the device's *local* wall time. "Take at 08:00"
+///   means 08:00 wherever the user is.
 class LocalNotificationService implements NotificationService {
   LocalNotificationService({
     FlutterLocalNotificationsPlugin? plugin,
@@ -40,32 +44,31 @@ class LocalNotificationService implements NotificationService {
   /// any notifications the user had scheduled, so keep it stable.
   static const String _channelId = 'medication_reminders';
 
-  /// Category identifier for reminder-style notifications. Reserved
-  /// for a future PR that will attach Taken / Snooze actions to it.
+  /// iOS category identifier. Must match the id Flutter registers
+  /// with `DarwinNotificationCategory` below and must match what the
+  /// AppDelegate declares in native code, otherwise action buttons
+  /// silently disappear.
   static const String _categoryId = 'MEDICATION_REMINDER';
 
   @override
   Future<void> initialize() async {
     if (_initialized) return;
 
-    // Timezone database is bundled by the `timezone` package; it
-    // needs loading exactly once per process.
     tzdata.initializeTimeZones();
     try {
       final info = await FlutterTimezone.getLocalTimezone();
       tz.setLocalLocation(tz.getLocation(info.identifier));
     } on Exception catch (e, st) {
-      // If for some reason we can't resolve the device timezone,
-      // UTC is still a sane fallback — reminders will fire, just
-      // possibly at a surprising local time. Worth logging, not
-      // worth crashing startup over.
+      // If we can't resolve the device timezone, UTC is a sane
+      // fallback — reminders still fire, just possibly at a
+      // surprising local time. Log, don't crash startup.
       debugPrint('LocalNotificationService: timezone fallback to UTC ($e)');
       debugPrintStack(stackTrace: st);
       tz.setLocalLocation(tz.UTC);
     }
 
-    const initSettings = InitializationSettings(
-      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+    final initSettings = InitializationSettings(
+      android: const AndroidInitializationSettings('@mipmap/ic_launcher'),
       iOS: DarwinInitializationSettings(
         // We request permissions explicitly via requestPermission(),
         // not during init — initialising shouldn't surprise the user
@@ -74,12 +77,43 @@ class LocalNotificationService implements NotificationService {
         requestBadgePermission: false,
         requestSoundPermission: false,
         notificationCategories: [
-          DarwinNotificationCategory(_categoryId),
+          DarwinNotificationCategory(
+            _categoryId,
+            actions: [
+              // `Taken` intentionally not destructive: the user just
+              // confirmed they took it, that's a *good* thing.
+              // `destructiveHint` is reserved for things like
+              // "delete".
+              DarwinNotificationAction.plain(
+                NotificationActionIds.taken,
+                'Taken',
+              ),
+              // `Skip` isn't destructive either — skipping a dose
+              // is a legitimate medical choice ("doctor said skip
+              // if you've already taken ibuprofen today"). No
+              // foreground option so a tap dismisses silently.
+              DarwinNotificationAction.plain(
+                NotificationActionIds.skip,
+                'Skip',
+              ),
+            ],
+          ),
         ],
       ),
     );
 
-    await _plugin.initialize(settings: initSettings);
+    await _plugin.initialize(
+      settings: initSettings,
+      // Foreground handler runs on the main isolate — lightweight
+      // wrapper that just routes the action into the Riverpod-
+      // backed drainer.
+      onDidReceiveNotificationResponse: onForegroundNotificationResponse,
+      // Background handler runs in a disposable isolate without
+      // Riverpod. Must be a top-level, `@pragma('vm:entry-point')`
+      // function so AOT compilation keeps it alive.
+      onDidReceiveBackgroundNotificationResponse:
+          onBackgroundNotificationResponse,
+    );
     _initialized = true;
   }
 
@@ -93,11 +127,10 @@ class LocalNotificationService implements NotificationService {
       if (opts == null) return NotificationPermission.notDetermined;
       if (opts.isAlertEnabled) return NotificationPermission.granted;
       // iOS collapses "never asked" and "explicitly denied" into the
-      // same `false` once the user has interacted. Callers rely on
-      // `requestPermission` being safe to re-call, so treating this
-      // as `denied` is fine — the banner will disappear after the
-      // first grant and the "turn on reminders" button is the only
-      // thing that changes state.
+      // same `false` once the user has interacted. Treating it as
+      // `denied` is fine — the banner disappears after first grant
+      // and the "turn on reminders" button is the only thing that
+      // moves state.
       return NotificationPermission.denied;
     }
     if (Platform.isAndroid) {
@@ -159,31 +192,26 @@ class LocalNotificationService implements NotificationService {
       ),
       iOS: DarwinNotificationDetails(
         categoryIdentifier: _categoryId,
-        // interruptionLevel.timeSensitive would bypass Focus modes,
-        // but that's opinionated — the user may well want Focus to
-        // suppress meds during sleep. Leave it at the default
+        // interruptionLevel.timeSensitive would bypass Focus modes
+        // but that's opinionated — the user may well want Focus
+        // to suppress meds during sleep. Leave it at the default
         // `active` and let users opt in via iOS Settings.
       ),
     );
 
-    final firstFire = _nextFireTime(
-      weekday: reminder.weekday,
-      time: reminder.time,
-    );
+    final fireAt = tz.TZDateTime.from(reminder.fireAt, tz.local);
     await _plugin.zonedSchedule(
       id: reminder.id,
       title: reminder.title,
       body: reminder.body,
-      scheduledDate: firstFire,
+      scheduledDate: fireAt,
       notificationDetails: notificationDetails,
-      // Inexact-while-idle is fine for the low-volume / daily nature
-      // of meds and doesn't require the Android 12+ "alarms &
-      // reminders" special permission that exact schedules trigger.
+      // Inexact-while-idle is fine for the low-volume / daily
+      // nature of meds and doesn't require the Android 12+
+      // "alarms & reminders" special permission that exact
+      // schedules trigger.
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      matchDateTimeComponents: reminder.weekday == null
-          ? DateTimeComponents.time
-          : DateTimeComponents.dayOfWeekAndTime,
-      payload: reminder.medicationId,
+      payload: reminder.encodePayload(),
     );
   }
 
@@ -197,42 +225,6 @@ class LocalNotificationService implements NotificationService {
   Future<void> cancelAll() async {
     await initialize();
     await _plugin.cancelAll();
-  }
-
-  /// Compute the next wall-clock instant the reminder should fire.
-  ///
-  /// `zonedSchedule` requires a concrete first-fire timestamp even when
-  /// the notification is declared recurring via
-  /// `matchDateTimeComponents`. For a daily reminder we pick today at
-  /// the given time if still in the future, else tomorrow. For a
-  /// weekly reminder we advance to the next occurrence of the given
-  /// weekday.
-  tz.TZDateTime _nextFireTime({
-    required ScheduledTime time,
-    int? weekday,
-  }) {
-    final now = tz.TZDateTime.now(tz.local);
-    var candidate = tz.TZDateTime(
-      tz.local,
-      now.year,
-      now.month,
-      now.day,
-      time.hour,
-      time.minute,
-    );
-
-    if (weekday == null) {
-      if (!candidate.isAfter(now)) {
-        candidate = candidate.add(const Duration(days: 1));
-      }
-      return candidate;
-    }
-
-    // ISO weekday matches `DateTime.weekday` (1..7, Mon..Sun).
-    while (candidate.weekday != weekday || !candidate.isAfter(now)) {
-      candidate = candidate.add(const Duration(days: 1));
-    }
-    return candidate;
   }
 }
 
