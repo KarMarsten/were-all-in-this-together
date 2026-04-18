@@ -142,4 +142,79 @@ void main() {
     expect(find.text('Archived'), findsOneWidget);
     expect(find.text('Restored'), findsOneWidget);
   });
+
+  testWidgets('swipe an event + confirm removes it from the timeline',
+      (tester) async {
+    // Two distinct events so the user has something left on screen
+    // after dismissing one — otherwise the list collapses to the
+    // empty state, which is its own fine behavior but wouldn't
+    // prove the surviving row still renders.
+    await events.create(
+      medicationId: 'med-1',
+      personId: alexId,
+      kind: MedicationEventKind.note,
+      occurredAt: DateTime.utc(2026),
+      note: 'Keeper note',
+    );
+    await events.create(
+      medicationId: 'med-1',
+      personId: alexId,
+      kind: MedicationEventKind.note,
+      occurredAt: DateTime.utc(2026, 2),
+      note: 'Oops — mistake',
+    );
+
+    await tester.pumpWidget(wrapScreen('med-1'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Oops — mistake'), findsOneWidget);
+    expect(find.text('Keeper note'), findsOneWidget);
+
+    await tester.drag(
+      find.text('Oops — mistake'),
+      const Offset(-500, 0),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Remove this event?'), findsOneWidget);
+
+    await tester.tap(find.text('Remove'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Oops — mistake'), findsNothing);
+    expect(find.text('Keeper note'), findsOneWidget);
+
+    // And the row must actually be archived at the repo level — a
+    // dismissed Dismissible that forgot to call `archive` would
+    // pass the UI check above but leave the DB full of ghosts.
+    final remaining = await events.listForMedication('med-1');
+    expect(remaining, hasLength(1));
+    expect(remaining.single.note, 'Keeper note');
+  });
+
+  testWidgets('swipe then Cancel keeps the event on the timeline',
+      (tester) async {
+    await events.create(
+      medicationId: 'med-1',
+      personId: alexId,
+      kind: MedicationEventKind.note,
+      note: 'Keeper note',
+    );
+
+    await tester.pumpWidget(wrapScreen('med-1'));
+    await tester.pumpAndSettle();
+
+    await tester.drag(
+      find.text('Keeper note'),
+      const Offset(-500, 0),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Keeper note'), findsOneWidget);
+    final remaining = await events.listForMedication('med-1');
+    expect(remaining, hasLength(1));
+  });
 }

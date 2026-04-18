@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:were_all_in_this_together/core/router/app_router.dart';
+import 'package:were_all_in_this_together/features/medications/data/medication_event_repository.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication_event.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/providers.dart';
 import 'package:were_all_in_this_together/features/providers/presentation/providers.dart';
@@ -30,23 +33,133 @@ class MedicationHistoryScreen extends ConsumerWidget {
             ? const _EmptyState()
             : _HistoryList(events: events),
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () =>
+            context.push(Routes.medicationHistoryNew(medicationId)),
+        icon: const Icon(Icons.add),
+        label: const Text('Add note'),
+      ),
     );
   }
 }
 
-class _HistoryList extends ConsumerWidget {
+/// Stateful because of swipe-to-archive. The interaction needs a
+/// local "dismissed" set so that `Dismissible.onDismissed` returns
+/// to a tree where the widget is actually gone on the very next
+/// frame — relying on the Riverpod `FutureProvider` to re-emit
+/// would leave Flutter asserting "a dismissed Dismissible is still
+/// part of the tree" because the provider reload is async.
+class _HistoryList extends ConsumerStatefulWidget {
   const _HistoryList({required this.events});
 
   final List<MedicationEvent> events;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_HistoryList> createState() => _HistoryListState();
+}
+
+class _HistoryListState extends ConsumerState<_HistoryList> {
+  final _locallyArchived = <String>{};
+
+  @override
+  Widget build(BuildContext context) {
+    final visible = widget.events
+        .where((e) => !_locallyArchived.contains(e.id))
+        .toList();
     return ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: events.length,
+      padding: const EdgeInsets.fromLTRB(0, 8, 0, 96),
+      itemCount: visible.length,
       separatorBuilder: (_, _) => const Divider(height: 1),
-      itemBuilder: (context, index) =>
-          _EventTile(event: events[index]),
+      itemBuilder: (context, index) => _DismissibleEvent(
+        event: visible[index],
+        onConfirmedArchive: _handleArchive,
+      ),
+    );
+  }
+
+  Future<void> _handleArchive(MedicationEvent event) async {
+    // Optimistic UI: drop the row now, undo if the repo write fails.
+    setState(() => _locallyArchived.add(event.id));
+    final messenger = ScaffoldMessenger.of(context);
+    final repo = ref.read(medicationEventRepositoryProvider);
+    try {
+      await repo.archive(event.id);
+    } on Object catch (e) {
+      if (!mounted) return;
+      setState(() => _locallyArchived.remove(event.id));
+      messenger.showSnackBar(
+        SnackBar(content: Text("Couldn't remove: $e")),
+      );
+      return;
+    }
+    if (!mounted) return;
+    // Provider reload will eventually arrive with the archived row
+    // excluded. Once it does the local set is harmless — events
+    // only ever come in via the provider, and archived rows aren't
+    // returned.
+    ref.invalidate(
+      medicationHistoryProvider(event.medicationId),
+    );
+  }
+}
+
+/// Swipe-to-archive wrapper around [_EventTile].
+///
+/// Archiving (the event repo's soft-delete) is used to correct a
+/// mis-logged event — the user typoed the date, meant to attach a
+/// note to a different med, or wants to clean up auto-log noise.
+/// A confirmation dialog prevents fat-fingered swipes from quietly
+/// destroying history; archive under the hood is soft-delete, so
+/// even a confirmed remove is recoverable at the data layer.
+class _DismissibleEvent extends StatelessWidget {
+  const _DismissibleEvent({
+    required this.event,
+    required this.onConfirmedArchive,
+  });
+
+  final MedicationEvent event;
+  final Future<void> Function(MedicationEvent event) onConfirmedArchive;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Dismissible(
+      key: ValueKey(event.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        color: theme.colorScheme.errorContainer,
+        child: Icon(
+          Icons.delete_outline,
+          color: theme.colorScheme.onErrorContainer,
+        ),
+      ),
+      // `confirmDismiss` treats a null/false result as "don't
+      // dismiss", so we can return the dialog's Future<bool?>
+      // directly — null (tapped outside) == Cancel.
+      confirmDismiss: (_) => showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Remove this event?'),
+          content: const Text(
+            'It will disappear from the timeline. You can '
+            'always add a new note if this was a mistake.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Remove'),
+            ),
+          ],
+        ),
+      ),
+      onDismissed: (_) => onConfirmedArchive(event),
+      child: _EventTile(event: event),
     );
   }
 }

@@ -32,7 +32,10 @@ access.
     (dose up/down, schedule tweaks, prescriber swaps, start/end date
     changes) become a first-class record rather than overwrites. A
     **History** button on the edit screen opens a reverse-chron
-    timeline scoped to that medication.
+    timeline scoped to that medication. **Manual backfill** lets you
+    add free-text notes dated to any day in the past (or future —
+    "new dose starts next Monday"), and any event can be swiped away
+    to correct a mistake.
 - **Today's doses** — the one screen a caregiver opens in the morning.
   Shows every dose due on the current local day (solo + group), with
   Taken / Skip / Undo, all stored as encrypted dose logs.
@@ -59,10 +62,6 @@ access.
 ## What's still to come
 
 - **Appointments & reminders** — calendar + local push notifications.
-- **Medication history — manual backfill** — the auto-logged timeline
-  already ships; a future PR will let you record past regimen
-  changes that predate the app ("started on Concerta 10mg on
-  2024-03-01 per Dr. Chen").
 - **Programs** — schools, camps, after-care: calendars, holidays, contact
   trees, key phone numbers.
 - **Apps & Sites** — portals (IEP, telehealth, insurance): URLs + notes
