@@ -54,7 +54,7 @@ void main() {
     await db.close();
   });
 
-  group('create + listActiveForProfile', () {
+  group('create + listForProfile', () {
     test('round-trips label and details', () async {
       final person = await people.listActive().then((l) => l.single);
       final profile = await profiles.getOrCreateForPerson(person.id);
@@ -69,7 +69,7 @@ void main() {
       expect(created.label, 'Fluorescent lights');
       expect(created.details, '  Wear hat indoors.  ');
 
-      final list = await entries.listActiveForProfile(
+      final list = await entries.listForProfile(
         profileId: profile.id,
         personId: person.id,
       );
@@ -265,14 +265,14 @@ void main() {
       );
 
       await entries.archive(created.id);
-      final active = await entries.listActiveForProfile(
+      final active = await entries.listForProfile(
         profileId: profile.id,
         personId: person.id,
       );
       expect(active, isEmpty);
 
       await entries.restore(created.id);
-      final active2 = await entries.listActiveForProfile(
+      final active2 = await entries.listForProfile(
         profileId: profile.id,
         personId: person.id,
       );

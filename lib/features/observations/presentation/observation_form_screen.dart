@@ -12,9 +12,16 @@ import 'package:were_all_in_this_together/features/profile/presentation/provider
 
 /// Create or edit a dated note (Observation) for the active Person.
 class ObservationFormScreen extends ConsumerStatefulWidget {
-  const ObservationFormScreen({this.initialObservation, super.key});
+  const ObservationFormScreen({
+    this.initialObservation,
+    this.initialProfileEntryId,
+    super.key,
+  });
 
   final Observation? initialObservation;
+
+  /// When starting a new note from a deep link (`/notes/new?profileEntry=`).
+  final String? initialProfileEntryId;
 
   bool get isEditing => initialObservation != null;
 
@@ -42,7 +49,8 @@ class _ObservationFormScreenState extends ConsumerState<ObservationFormScreen> {
     _tags = TextEditingController(text: seed?.tags.join(', ') ?? '');
     _category = seed?.category ?? ObservationCategory.general;
     _observedAt = seed?.observedAt.toUtc() ?? DateTime.now().toUtc();
-    _profileEntryId = seed?.profileEntryId;
+    _profileEntryId =
+        seed?.profileEntryId ?? widget.initialProfileEntryId;
   }
 
   @override
@@ -56,6 +64,15 @@ class _ObservationFormScreenState extends ConsumerState<ObservationFormScreen> {
   static String? _nullIfBlank(String s) {
     final t = s.trim();
     return t.isEmpty ? null : t;
+  }
+
+  static String _menuTitleForLinkedProfileEntry(ProfileEntry e) {
+    final sec = labelForProfileEntrySection(e.section);
+    if (e.status == ProfileEntryStatus.active) {
+      return '${e.label} ($sec)';
+    }
+    final st = labelForProfileEntryStatus(e.status);
+    return '${e.label} ($sec) · $st';
   }
 
   static List<String> _parseTags(String raw) {
@@ -228,7 +245,9 @@ class _ObservationFormScreenState extends ConsumerState<ObservationFormScreen> {
                 const SizedBox(height: 16),
                 Consumer(
                   builder: (context, ref, _) {
-                    final async = ref.watch(activeProfileEntriesProvider);
+                    final async = ref.watch(
+                      profileEntriesForActivePersonProvider,
+                    );
                     return async.when(
                       loading: () => const LinearProgressIndicator(
                         minHeight: 2,
@@ -258,6 +277,9 @@ class _ObservationFormScreenState extends ConsumerState<ObservationFormScreen> {
                           isExpanded: true,
                           decoration: const InputDecoration(
                             labelText: 'Link to profile line (optional)',
+                            helperText:
+                                'Active lines match Calm; paused or resolved '
+                                'lines stay linkable for history.',
                             border: OutlineInputBorder(),
                           ),
                           items: [
@@ -268,8 +290,7 @@ class _ObservationFormScreenState extends ConsumerState<ObservationFormScreen> {
                               DropdownMenuItem(
                                 value: e.id,
                                 child: Text(
-                                  '${e.label} '
-                                  '(${labelForProfileEntrySection(e.section)})',
+                                  _menuTitleForLinkedProfileEntry(e),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
