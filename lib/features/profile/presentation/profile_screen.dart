@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import 'package:were_all_in_this_together/core/router/app_router.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
@@ -151,6 +152,35 @@ class _ProfileEditorState extends ConsumerState<_ProfileEditor> {
     return t.isEmpty ? null : t;
   }
 
+  /// Section, status, optional routine parent, optional noted dates.
+  static String _profileEntryListSubtitle(
+    ProfileEntry e,
+    List<ProfileEntry> entries,
+  ) {
+    final fmt = DateFormat.yMMMd();
+    final parts = <String>[
+      labelForProfileEntrySection(e.section),
+      labelForProfileEntryStatus(e.status),
+    ];
+    if (e.section == ProfileEntrySection.routineStep &&
+        e.parentEntryId != null) {
+      for (final p in entries) {
+        if (p.id == e.parentEntryId &&
+            p.section == ProfileEntrySection.routineBlock) {
+          parts.add('Under ${p.label}');
+          break;
+        }
+      }
+    }
+    if (e.firstNoted != null) {
+      parts.add('from ${fmt.format(e.firstNoted!.toLocal())}');
+    }
+    if (e.lastNoted != null) {
+      parts.add('to ${fmt.format(e.lastNoted!.toLocal())}');
+    }
+    return parts.join(' · ');
+  }
+
   @override
   Widget build(BuildContext context) {
     final entriesAsync = ref.watch(activeProfileEntriesProvider);
@@ -263,8 +293,7 @@ class _ProfileEditorState extends ConsumerState<_ProfileEditor> {
                     contentPadding: EdgeInsets.zero,
                     title: Text(e.label),
                     subtitle: Text(
-                      '${labelForProfileEntrySection(e.section)} · '
-                      '${labelForProfileEntryStatus(e.status)}',
+                      _profileEntryListSubtitle(e, entries),
                     ),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => context.push(Routes.profileEntryEdit(e.id)),

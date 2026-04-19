@@ -41,6 +41,17 @@ class ProfileEntryNotFoundError implements Exception {
       'ProfileEntryNotFoundError: no profile entry with id $entryId';
 }
 
+/// Thrown when a routine step has an invalid parent link.
+class ProfileEntryInvalidParentError implements Exception {
+  ProfileEntryInvalidParentError(this.message);
+
+  final String message;
+
+  @override
+  String toString() =>
+      'ProfileEntryInvalidParentError: $message';
+}
+
 /// Encrypted child rows under a profile — stims, preferences,
 /// triggers, what helps, etc.
 ///
@@ -102,6 +113,15 @@ class ProfileEntryRepository {
       );
     }
 
+    final resolvedParent = await _resolveParentEntryId(
+      profileId: profileId,
+      personId: personId,
+      section: section,
+      parentEntryId: parentEntryId,
+      excludeEntryId: null,
+    );
+    _assertFirstNotedBeforeLastNoted(firstNoted, lastNoted);
+
     final id = _uuid.v4();
     final now = _clock().toUtc();
     final payload = EncryptedProfileEntryPayload(
@@ -125,7 +145,7 @@ class ProfileEntryRepository {
             personId: personId,
             section: section.index,
             status: status.index,
-            parentEntryId: Value(parentEntryId),
+            parentEntryId: Value(resolvedParent),
             firstNoted: Value(firstNoted?.toUtc().millisecondsSinceEpoch),
             lastNoted: Value(lastNoted?.toUtc().millisecondsSinceEpoch),
             createdAt: now.millisecondsSinceEpoch,
@@ -143,7 +163,7 @@ class ProfileEntryRepository {
       label: label.trim(),
       createdAt: now,
       updatedAt: now,
-      parentEntryId: parentEntryId,
+      parentEntryId: resolvedParent,
       firstNoted: firstNoted,
       lastNoted: lastNoted,
       details: details,
@@ -206,42 +226,55 @@ class ProfileEntryRepository {
       );
     }
 
+    final resolvedParent = await _resolveParentEntryId(
+      profileId: updated.profileId,
+      personId: updated.personId,
+      section: updated.section,
+      parentEntryId: updated.parentEntryId,
+      excludeEntryId: updated.id,
+    );
+    final normalized = updated.copyWith(parentEntryId: resolvedParent);
+    _assertFirstNotedBeforeLastNoted(
+      normalized.firstNoted,
+      normalized.lastNoted,
+    );
+
     final now = _clock().toUtc();
     final payload = EncryptedProfileEntryPayload(
       schemaVersion: EncryptedProfileEntryPayload.currentSchemaVersion,
-      label: updated.label.trim(),
-      details: updated.details,
+      label: normalized.label.trim(),
+      details: normalized.details,
     );
     final encrypted = await _sealPayload(
-      entryId: updated.id,
-      personId: updated.personId,
+      entryId: normalized.id,
+      personId: normalized.personId,
       payload: payload,
       key: key,
     );
 
     await (_db.update(
       _db.profileEntries,
-    )..where((e) => e.id.equals(updated.id))).write(
+    )..where((e) => e.id.equals(normalized.id))).write(
       ProfileEntriesCompanion(
-        section: Value(updated.section.index),
-        status: Value(updated.status.index),
-        parentEntryId: Value(updated.parentEntryId),
+        section: Value(normalized.section.index),
+        status: Value(normalized.status.index),
+        parentEntryId: Value(normalized.parentEntryId),
         firstNoted: Value(
-          updated.firstNoted?.toUtc().millisecondsSinceEpoch,
+          normalized.firstNoted?.toUtc().millisecondsSinceEpoch,
         ),
         lastNoted: Value(
-          updated.lastNoted?.toUtc().millisecondsSinceEpoch,
+          normalized.lastNoted?.toUtc().millisecondsSinceEpoch,
         ),
         updatedAt: Value(now.millisecondsSinceEpoch),
-        rowVersion: Value(updated.rowVersion + 1),
+        rowVersion: Value(normalized.rowVersion + 1),
         payload: Value(encrypted.toBytes()),
       ),
     );
 
-    return updated.copyWith(
-      label: updated.label.trim(),
+    return normalized.copyWith(
+      label: normalized.label.trim(),
       updatedAt: now,
-      rowVersion: updated.rowVersion + 1,
+      rowVersion: normalized.rowVersion + 1,
     );
   }
 
@@ -356,6 +389,66 @@ class ProfileEntryRepository {
       lastWriterDeviceId: row.lastWriterDeviceId,
       keyVersion: row.keyVersion,
     );
+  }
+
+  void _assertFirstNotedBeforeLastNoted(DateTime? first, DateTime? last) {
+    if (first == null || last == null) return;
+    final a = DateTime(first.year, first.month, first.day);
+    final b = DateTime(last.year, last.month, last.day);
+    if (a.isAfter(b)) {
+      throw ArgumentError(
+        'firstNoted must be on or before lastNoted (calendar dates).',
+      );
+    }
+  }
+
+  /// Non–routine-step rows never keep a parent id. Routine steps must
+  /// point at an active routine block in the same profile.
+  Future<String?> _resolveParentEntryId({
+    required String profileId,
+    required String personId,
+    required ProfileEntrySection section,
+    required String? parentEntryId,
+    required String? excludeEntryId,
+  }) async {
+    if (section != ProfileEntrySection.routineStep) {
+      return null;
+    }
+    final pid = parentEntryId?.trim();
+    if (pid == null || pid.isEmpty) {
+      throw ProfileEntryInvalidParentError(
+        'Routine steps must be placed under a routine block.',
+      );
+    }
+    if (pid == excludeEntryId) {
+      throw ProfileEntryInvalidParentError(
+        'A routine step cannot be its own parent.',
+      );
+    }
+    final parentRow = await (_db.select(
+      _db.profileEntries,
+    )..where((e) => e.id.equals(pid))).getSingleOrNull();
+    if (parentRow == null) {
+      throw ProfileEntryInvalidParentError('Parent entry not found.');
+    }
+    if (parentRow.profileId != profileId || parentRow.personId != personId) {
+      throw ProfileEntryInvalidParentError(
+        'Parent entry does not belong to this profile.',
+      );
+    }
+    if (parentRow.deletedAt != null) {
+      throw ProfileEntryInvalidParentError(
+        'That routine block is archived — pick an active block or '
+        'restore it first.',
+      );
+    }
+    final parentSection = _sectionFromIndex(parentRow.section);
+    if (parentSection != ProfileEntrySection.routineBlock) {
+      throw ProfileEntryInvalidParentError(
+        'Routine steps can only sit under a routine block.',
+      );
+    }
+    return pid;
   }
 
   ProfileEntrySection _sectionFromIndex(int index) {
