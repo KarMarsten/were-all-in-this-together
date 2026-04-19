@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:were_all_in_this_together/core/database/tables/app_sites.dart';
 import 'package:were_all_in_this_together/core/database/tables/appointments.dart';
 import 'package:were_all_in_this_together/core/database/tables/care_providers.dart';
 import 'package:were_all_in_this_together/core/database/tables/dose_logs.dart';
@@ -13,6 +14,7 @@ import 'package:were_all_in_this_together/core/database/tables/observations.dart
 import 'package:were_all_in_this_together/core/database/tables/persons.dart';
 import 'package:were_all_in_this_together/core/database/tables/profile_entries.dart';
 import 'package:were_all_in_this_together/core/database/tables/profiles.dart';
+import 'package:were_all_in_this_together/core/database/tables/programs.dart';
 
 part 'app_database.g.dart';
 
@@ -44,6 +46,7 @@ part 'app_database.g.dart';
 ///   each profile: stims, preferences, triggers, etc.).
 /// * **v11** — adds Observations (dated "Notes" timeline per Person,
 ///   optional link to a profile entry).
+/// * **v12** — adds Programs and AppSites (per-person encrypted rows).
 @DriftDatabase(
   tables: [
     Persons,
@@ -57,6 +60,8 @@ part 'app_database.g.dart';
     Profiles,
     ProfileEntries,
     Observations,
+    Programs,
+    AppSites,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -71,7 +76,7 @@ class AppDatabase extends _$AppDatabase {
       AppDatabase(driftDatabase(name: 'were_all_in_this_together'));
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -112,6 +117,10 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 11) {
             await m.createTable(observations);
+          }
+          if (from < 12) {
+            await m.createTable(programs);
+            await m.createTable(appSites);
           }
         },
       );

@@ -18,8 +18,8 @@ through Riverpod providers or shared `core/` services).
 | `medications/`     | implemented   | Meds + groups + schedule + Today + dose logs + notifications + adherence PDF.             |
 | `reports/`         | implemented   | Adherence report PDF + **care summary** PDF (baselines + active structured + crisis).   |
 | `providers/`       | implemented   | Care providers, phone/address/portal, archive-safe references.                          |
-| `programs/`        | placeholder   | Schools / camps / after-care — screen + route; encrypted list UI next.                    |
-| `apps_sites/`      | placeholder   | Portals & tools — URLs + notes (no passwords); data layer next.                           |
+| `programs/`        | implemented   | Schools / camps / after-care — encrypted list, edit, archive.                           |
+| `apps_sites/`      | implemented   | Portal URLs + notes (no passwords), open-in-browser, archive.                             |
 | `milestones/`      | implemented   | Milestones & dates: typed life-log, archive / restore.                                    |
 
 See [`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md) for the data model

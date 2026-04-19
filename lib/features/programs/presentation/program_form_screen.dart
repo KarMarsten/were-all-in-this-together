@@ -1,0 +1,256 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
+import 'package:were_all_in_this_together/features/programs/data/program_repository.dart';
+import 'package:were_all_in_this_together/features/programs/domain/program.dart';
+import 'package:were_all_in_this_together/features/programs/presentation/providers.dart';
+
+class ProgramFormScreen extends ConsumerStatefulWidget {
+  const ProgramFormScreen({this.initialProgram, super.key});
+
+  final Program? initialProgram;
+
+  bool get isEditing => initialProgram != null;
+
+  @override
+  ConsumerState<ProgramFormScreen> createState() => _ProgramFormScreenState();
+}
+
+class _ProgramFormScreenState extends ConsumerState<ProgramFormScreen> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _name;
+  late final TextEditingController _phone;
+  late final TextEditingController _notes;
+  late ProgramKind _kind;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final s = widget.initialProgram;
+    _name = TextEditingController(text: s?.name ?? '');
+    _phone = TextEditingController(text: s?.phone ?? '');
+    _notes = TextEditingController(text: s?.notes ?? '');
+    _kind = s?.kind ?? ProgramKind.school;
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _phone.dispose();
+    _notes.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate() || _saving) return;
+    setState(() => _saving = true);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final repo = ref.read(programRepositoryProvider);
+      if (widget.isEditing) {
+        final cur = widget.initialProgram!;
+        await repo.update(
+          cur.copyWith(
+            kind: _kind,
+            name: _name.text.trim(),
+            phone: _nullIfBlank(_phone.text),
+            notes: _nullIfBlank(_notes.text),
+          ),
+        );
+      } else {
+        final personId = await ref.read(activePersonIdProvider.future);
+        if (personId == null) {
+          messenger.showSnackBar(
+            const SnackBar(content: Text('No active person selected.')),
+          );
+          return;
+        }
+        await repo.create(
+          personId: personId,
+          kind: _kind,
+          name: _name.text.trim(),
+          phone: _nullIfBlank(_phone.text),
+          notes: _nullIfBlank(_notes.text),
+        );
+      }
+      invalidateProgramsState(ref);
+      if (!mounted) return;
+      messenger.showSnackBar(const SnackBar(content: Text('Saved')));
+      context.pop();
+    } on Object catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text("Couldn't save: $e")),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  static String? _nullIfBlank(String s) {
+    final t = s.trim();
+    return t.isEmpty ? null : t;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final title = widget.isEditing ? 'Edit program' : 'Add program';
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title),
+        actions: [
+          TextButton(
+            onPressed: _saving ? null : _save,
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                DropdownButtonFormField<ProgramKind>(
+                  key: ValueKey(_kind),
+                  initialValue: _kind,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Kind',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: [
+                    for (final k in ProgramKind.values)
+                      DropdownMenuItem(
+                        value: k,
+                        child: Text(labelForProgramKind(k)),
+                      ),
+                  ],
+                  onChanged: (v) {
+                    if (v != null) setState(() => _kind = v);
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _name,
+                  autofocus: !widget.isEditing,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Name',
+                    hintText: 'Roosevelt Elementary, summer camp…',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
+                      return 'Please add a name';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _phone,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Main phone (optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _notes,
+                  minLines: 3,
+                  maxLines: 8,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Notes (optional)',
+                    hintText: 'Office hours, who to ask for, car line…',
+                    border: OutlineInputBorder(),
+                    alignLabelWithHint: true,
+                  ),
+                ),
+                if (widget.isEditing) ...[
+                  const SizedBox(height: 32),
+                  _ArchiveOrRestore(program: widget.initialProgram!),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ArchiveOrRestore extends ConsumerWidget {
+  const _ArchiveOrRestore({required this.program});
+
+  final Program program;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final archived = program.deletedAt != null;
+    final scheme = Theme.of(context).colorScheme;
+    if (archived) {
+      return OutlinedButton.icon(
+        icon: const Icon(Icons.unarchive_outlined),
+        label: const Text('Restore program'),
+        onPressed: () async {
+          final messenger = ScaffoldMessenger.of(context);
+          try {
+            await ref.read(programRepositoryProvider).restore(program.id);
+            invalidateProgramsState(ref);
+            messenger.showSnackBar(const SnackBar(content: Text('Restored')));
+            if (context.mounted) context.pop();
+          } on Object catch (e) {
+            messenger.showSnackBar(
+              SnackBar(content: Text("Couldn't restore: $e")),
+            );
+          }
+        },
+      );
+    }
+    return OutlinedButton.icon(
+      icon: Icon(Icons.archive_outlined, color: scheme.error),
+      label: Text('Archive program', style: TextStyle(color: scheme.error)),
+      onPressed: () async {
+        final ok = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Archive this program?'),
+            content: const Text(
+              'Archived programs disappear from the main list. You can '
+              'restore them from this screen.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Archive'),
+              ),
+            ],
+          ),
+        );
+        if (ok != true || !context.mounted) return;
+        final messenger = ScaffoldMessenger.of(context);
+        try {
+          await ref.read(programRepositoryProvider).archive(program.id);
+          invalidateProgramsState(ref);
+          messenger.showSnackBar(const SnackBar(content: Text('Archived')));
+          if (context.mounted) context.pop();
+        } on Object catch (e) {
+          messenger.showSnackBar(
+            SnackBar(content: Text("Couldn't archive: $e")),
+          );
+        }
+      },
+    );
+  }
+}

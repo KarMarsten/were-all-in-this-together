@@ -8,10 +8,9 @@ access.
 > **Status:** Phase 1 (local-only MVP) in progress. Crypto, encrypted
 > local database, People, Medications, **Profile** (baselines + structured
 > lines + Calm surfacing), **Notes** (observations timeline), **Care summary
-> PDF**, **global search** (people only for now), and **Programs / Apps &
-> Sites** entry screens (placeholders ahead of encrypted lists) are in the
-> app. Multi-device sync is Phase 2. See
-> [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the plan.
+> PDF**, **global search** (people only for now), **Programs**, and **Apps &
+> Sites** (encrypted per-person lists) are in the app. Multi-device sync is
+> Phase 2. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the plan.
 
 ---
 
@@ -91,8 +90,9 @@ access.
   adherence report).
 - **Search** — app-bar entry on Home; filters the **People** roster by
   display name (more domains later).
-- **Programs** and **Apps & Sites** — routed from Home with per-person
-  placeholder copy; encrypted school/portal data models come next.
+- **Programs** and **Apps & Sites** — per-person encrypted lists (school /
+  camp / after-care with optional phone; portal URLs with open-in-browser).
+  Archive and restore match other domains.
 - **Calm** — in-the-moment coping strategies and crisis contacts, reachable
   in one tap from anywhere, rendered in a dedicated low-stimulation theme.
 
@@ -103,8 +103,8 @@ Priorities **0–5** for Phase 1 (see recent commits and
 
 0. **Keep docs honest** — this README and `lib/features/README.md` track what
    shipped vs placeholder.
-1. **Programs & Apps & Sites (data)** — real encrypted lists, URLs, and tap
-   actions on top of the current placeholder screens.
+1. **Programs & Apps & Sites (depth)** — richer fields (contacts tree,
+   calendars deferred), validation, and cross-links as needs emerge.
 2. **Care summary depth** — optional Calm-only sections, richer crisis block,
    locale-specific hotlines where we can cite them safely.
 3. **Calm** — continue replacing any remaining generic copy with concrete,
@@ -155,8 +155,8 @@ lib/
     ├── providers/         care-provider CRUD + detail with tap actions
     ├── profile/           per-Person baselines (communication, sleep, appetite)
     ├── appointments/      visits + local reminders + Today integration
-    ├── programs/          placeholder UI (data layer next)
-    ├── apps_sites/        placeholder UI (data layer next)
+    ├── programs/          schools, camps, after-care (encrypted)
+    ├── apps_sites/        portal URLs + notes (encrypted)
     ├── search/            global search (People only in v1)
     └── milestones/        per-Person life-log of dated events
 docs/

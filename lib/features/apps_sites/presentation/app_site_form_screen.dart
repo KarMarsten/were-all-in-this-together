@@ -1,0 +1,260 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:were_all_in_this_together/features/apps_sites/data/app_site_repository.dart';
+import 'package:were_all_in_this_together/features/apps_sites/domain/app_site.dart';
+import 'package:were_all_in_this_together/features/apps_sites/presentation/providers.dart';
+import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
+import 'package:were_all_in_this_together/features/providers/presentation/url_opener.dart';
+
+class AppSiteFormScreen extends ConsumerStatefulWidget {
+  const AppSiteFormScreen({this.initialSite, super.key});
+
+  final AppSite? initialSite;
+
+  bool get isEditing => initialSite != null;
+
+  @override
+  ConsumerState<AppSiteFormScreen> createState() => _AppSiteFormScreenState();
+}
+
+class _AppSiteFormScreenState extends ConsumerState<AppSiteFormScreen> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _title;
+  late final TextEditingController _url;
+  late final TextEditingController _notes;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final s = widget.initialSite;
+    _title = TextEditingController(text: s?.title ?? '');
+    _url = TextEditingController(text: s?.url ?? '');
+    _notes = TextEditingController(text: s?.notes ?? '');
+  }
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _url.dispose();
+    _notes.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate() || _saving) return;
+    setState(() => _saving = true);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final repo = ref.read(appSiteRepositoryProvider);
+      if (widget.isEditing) {
+        final cur = widget.initialSite!;
+        await repo.update(
+          cur.copyWith(
+            title: _title.text.trim(),
+            url: _url.text.trim(),
+            notes: _nullIfBlank(_notes.text),
+          ),
+        );
+      } else {
+        final personId = await ref.read(activePersonIdProvider.future);
+        if (personId == null) {
+          messenger.showSnackBar(
+            const SnackBar(content: Text('No active person selected.')),
+          );
+          return;
+        }
+        await repo.create(
+          personId: personId,
+          title: _title.text.trim(),
+          url: _url.text.trim(),
+          notes: _nullIfBlank(_notes.text),
+        );
+      }
+      invalidateAppSitesState(ref);
+      if (!mounted) return;
+      messenger.showSnackBar(const SnackBar(content: Text('Saved')));
+      context.pop();
+    } on Object catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text("Couldn't save: $e")),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  static String? _nullIfBlank(String s) {
+    final t = s.trim();
+    return t.isEmpty ? null : t;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final opener = ref.watch(urlOpenerProvider);
+    final title = widget.isEditing ? 'Edit link' : 'Add link';
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title),
+        actions: [
+          TextButton(
+            onPressed: _saving ? null : _save,
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextFormField(
+                  controller: _title,
+                  autofocus: !widget.isEditing,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Title',
+                    hintText: 'District parent portal, telehealth login…',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
+                      return 'Please add a title';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _url,
+                  keyboardType: TextInputType.url,
+                  decoration: const InputDecoration(
+                    labelText: 'URL',
+                    hintText: 'https://… or example.com',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
+                      return 'Please add a URL';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final raw = _url.text.trim();
+                    if (raw.isEmpty) return;
+                    final normalized = AppSiteRepository.normalizeUserUrl(raw);
+                    final ok = await opener.openWeb(normalized);
+                    if (!ok && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Couldn't open URL — check the link."),
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.open_in_new),
+                  label: const Text('Try URL'),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _notes,
+                  minLines: 3,
+                  maxLines: 8,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Notes (optional)',
+                    hintText: 'Which account is yours, bookmark tips — never '
+                        'passwords.',
+                    border: OutlineInputBorder(),
+                    alignLabelWithHint: true,
+                  ),
+                ),
+                if (widget.isEditing) ...[
+                  const SizedBox(height: 32),
+                  _AppSiteArchiveOrRestore(site: widget.initialSite!),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AppSiteArchiveOrRestore extends ConsumerWidget {
+  const _AppSiteArchiveOrRestore({required this.site});
+
+  final AppSite site;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final archived = site.deletedAt != null;
+    final scheme = Theme.of(context).colorScheme;
+    if (archived) {
+      return OutlinedButton.icon(
+        icon: const Icon(Icons.unarchive_outlined),
+        label: const Text('Restore link'),
+        onPressed: () async {
+          final messenger = ScaffoldMessenger.of(context);
+          try {
+            await ref.read(appSiteRepositoryProvider).restore(site.id);
+            invalidateAppSitesState(ref);
+            messenger.showSnackBar(const SnackBar(content: Text('Restored')));
+            if (context.mounted) context.pop();
+          } on Object catch (e) {
+            messenger.showSnackBar(
+              SnackBar(content: Text("Couldn't restore: $e")),
+            );
+          }
+        },
+      );
+    }
+    return OutlinedButton.icon(
+      icon: Icon(Icons.archive_outlined, color: scheme.error),
+      label: Text('Archive link', style: TextStyle(color: scheme.error)),
+      onPressed: () async {
+        final ok = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Archive this link?'),
+            content: const Text(
+              'Archived links disappear from the main list. You can restore '
+              'them from this screen.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Archive'),
+              ),
+            ],
+          ),
+        );
+        if (ok != true || !context.mounted) return;
+        final messenger = ScaffoldMessenger.of(context);
+        try {
+          await ref.read(appSiteRepositoryProvider).archive(site.id);
+          invalidateAppSitesState(ref);
+          messenger.showSnackBar(const SnackBar(content: Text('Archived')));
+          if (context.mounted) context.pop();
+        } on Object catch (e) {
+          messenger.showSnackBar(
+            SnackBar(content: Text("Couldn't archive: $e")),
+          );
+        }
+      },
+    );
+  }
+}

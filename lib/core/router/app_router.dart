@@ -6,7 +6,10 @@ import 'package:were_all_in_this_together/features/appointments/data/appointment
 import 'package:were_all_in_this_together/features/appointments/domain/appointment.dart';
 import 'package:were_all_in_this_together/features/appointments/presentation/appointment_form_screen.dart';
 import 'package:were_all_in_this_together/features/appointments/presentation/appointments_list_screen.dart';
-import 'package:were_all_in_this_together/features/apps_sites/ui/apps_sites_screen.dart';
+import 'package:were_all_in_this_together/features/apps_sites/data/app_site_repository.dart';
+import 'package:were_all_in_this_together/features/apps_sites/domain/app_site.dart';
+import 'package:were_all_in_this_together/features/apps_sites/presentation/app_site_form_screen.dart';
+import 'package:were_all_in_this_together/features/apps_sites/presentation/app_sites_list_screen.dart';
 import 'package:were_all_in_this_together/features/home/ui/home_screen.dart';
 import 'package:were_all_in_this_together/features/medications/data/medication_group_repository.dart';
 import 'package:were_all_in_this_together/features/medications/data/medication_repository.dart';
@@ -34,7 +37,10 @@ import 'package:were_all_in_this_together/features/profile/data/profile_entry_re
 import 'package:were_all_in_this_together/features/profile/domain/profile_entry.dart';
 import 'package:were_all_in_this_together/features/profile/presentation/profile_entry_form_screen.dart';
 import 'package:were_all_in_this_together/features/profile/presentation/profile_screen.dart';
-import 'package:were_all_in_this_together/features/programs/ui/programs_screen.dart';
+import 'package:were_all_in_this_together/features/programs/data/program_repository.dart';
+import 'package:were_all_in_this_together/features/programs/domain/program.dart';
+import 'package:were_all_in_this_together/features/programs/presentation/program_form_screen.dart';
+import 'package:were_all_in_this_together/features/programs/presentation/programs_list_screen.dart';
 import 'package:were_all_in_this_together/features/providers/data/care_provider_repository.dart';
 import 'package:were_all_in_this_together/features/providers/domain/care_provider.dart';
 import 'package:were_all_in_this_together/features/providers/presentation/care_provider_detail_screen.dart';
@@ -91,7 +97,19 @@ abstract class Routes {
 
   static const programs = '/programs';
 
+  static const programNew = '/programs/new';
+
+  static const programEditPattern = '/programs/:id/edit';
+
+  static String programEdit(String id) => '/programs/$id/edit';
+
   static const appsSites = '/apps-sites';
+
+  static const appSiteNew = '/apps-sites/new';
+
+  static const appSiteEditPattern = '/apps-sites/:id/edit';
+
+  static String appSiteEdit(String id) => '/apps-sites/$id/edit';
 
   static const careProviders = '/providers';
   static const careProviderNew = '/providers/new';
@@ -256,12 +274,38 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.programs,
         name: 'programs',
-        builder: (context, state) => const ProgramsScreen(),
+        builder: (context, state) => const ProgramsListScreen(),
+      ),
+      GoRoute(
+        path: Routes.programNew,
+        name: 'program-new',
+        builder: (context, state) => const ProgramFormScreen(),
+      ),
+      GoRoute(
+        path: Routes.programEditPattern,
+        name: 'program-edit',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return _ProgramEditLoader(programId: id);
+        },
       ),
       GoRoute(
         path: Routes.appsSites,
         name: 'apps-sites',
-        builder: (context, state) => const AppsSitesScreen(),
+        builder: (context, state) => const AppSitesListScreen(),
+      ),
+      GoRoute(
+        path: Routes.appSiteNew,
+        name: 'app-site-new',
+        builder: (context, state) => const AppSiteFormScreen(),
+      ),
+      GoRoute(
+        path: Routes.appSiteEditPattern,
+        name: 'app-site-edit',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return _AppSiteEditLoader(appSiteId: id);
+        },
       ),
       GoRoute(
         path: Routes.careProviders,
@@ -895,6 +939,100 @@ class _ProfileEntryNotFound extends StatelessWidget {
         child: Center(
           child: Text(
             "That profile entry isn't in this app anymore.",
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProgramEditLoader extends ConsumerWidget {
+  const _ProgramEditLoader({required this.programId});
+
+  final String programId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repo = ref.watch(programRepositoryProvider);
+    return FutureBuilder<Program?>(
+      future: repo.findById(programId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const _EditLoading();
+        }
+        if (snapshot.hasError) {
+          return _EditError(message: snapshot.error.toString());
+        }
+        final program = snapshot.data;
+        if (program == null) {
+          return const _ProgramNotFound();
+        }
+        return ProgramFormScreen(initialProgram: program);
+      },
+    );
+  }
+}
+
+class _ProgramNotFound extends StatelessWidget {
+  const _ProgramNotFound();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(),
+      body: const Padding(
+        padding: EdgeInsets.all(24),
+        child: Center(
+          child: Text(
+            "That program isn't in this app anymore.",
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AppSiteEditLoader extends ConsumerWidget {
+  const _AppSiteEditLoader({required this.appSiteId});
+
+  final String appSiteId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repo = ref.watch(appSiteRepositoryProvider);
+    return FutureBuilder<AppSite?>(
+      future: repo.findById(appSiteId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const _EditLoading();
+        }
+        if (snapshot.hasError) {
+          return _EditError(message: snapshot.error.toString());
+        }
+        final site = snapshot.data;
+        if (site == null) {
+          return const _AppSiteNotFound();
+        }
+        return AppSiteFormScreen(initialSite: site);
+      },
+    );
+  }
+}
+
+class _AppSiteNotFound extends StatelessWidget {
+  const _AppSiteNotFound();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(),
+      body: const Padding(
+        padding: EdgeInsets.all(24),
+        child: Center(
+          child: Text(
+            "That saved link isn't in this app anymore.",
             textAlign: TextAlign.center,
           ),
         ),

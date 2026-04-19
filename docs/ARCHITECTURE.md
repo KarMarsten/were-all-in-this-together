@@ -366,8 +366,8 @@ and holding a consistent vocabulary is a feature, not a polish task.
 - Providers.
 - Medications + history + **Medication report** PDF.
 - Milestones & dates.
-- Apps & Sites (placeholder routes + copy; encrypted URL list next).
-- Programs (placeholder routes + copy; contact tree / calendar next).
+- Apps & Sites — **shipped** (encrypted URL + title + notes per Person).
+- Programs — **shipped** (encrypted name / phone / notes; kind for grouping).
 - Profile + Notes — **shipped** locally (structured entries, Calm surfacing,
   observation timeline, profile-line links).
 - Safety plan (Calm: authored coping + crisis + profile blocks) — iterate on
