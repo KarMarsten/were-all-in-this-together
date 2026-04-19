@@ -9,10 +9,10 @@ import 'package:were_all_in_this_together/features/medications/data/medication_r
 import 'package:were_all_in_this_together/features/medications/domain/medication.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication_schedule.dart';
 import 'package:were_all_in_this_together/features/medications/notifications/reminder_sync.dart';
-import 'package:were_all_in_this_together/features/medications/presentation/today_providers.dart';
 import 'package:were_all_in_this_together/features/people/data/person_repository.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 import 'package:were_all_in_this_together/features/people/presentation/providers.dart';
+import 'package:were_all_in_this_together/features/today/presentation/today_providers.dart';
 
 import '../../helpers/test_app_scope.dart';
 

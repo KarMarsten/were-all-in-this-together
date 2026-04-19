@@ -7,8 +7,8 @@ import 'package:were_all_in_this_together/features/medications/domain/medication
 import 'package:were_all_in_this_together/features/medications/domain/medication_event.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication_group.dart';
 import 'package:were_all_in_this_together/features/medications/notifications/reminder_sync.dart';
-import 'package:were_all_in_this_together/features/medications/presentation/today_providers.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
+import 'package:were_all_in_this_together/features/today/presentation/today_providers.dart';
 
 /// Active (non-archived) medications for the currently-active Person.
 ///

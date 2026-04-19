@@ -1,16 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:were_all_in_this_together/features/appointments/domain/today_appointment_item.dart';
 import 'package:were_all_in_this_together/features/appointments/presentation/providers.dart';
 import 'package:were_all_in_this_together/features/medications/data/dose_log_repository.dart';
 import 'package:were_all_in_this_together/features/medications/data/medication_group_repository.dart';
 import 'package:were_all_in_this_together/features/medications/domain/dose_log.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication_group.dart';
 import 'package:were_all_in_this_together/features/medications/domain/scheduled_dose.dart';
-import 'package:were_all_in_this_together/features/medications/domain/today_item.dart';
 import 'package:were_all_in_this_together/features/medications/notifications/reminder_sync.dart';
 import 'package:were_all_in_this_together/features/people/presentation/providers.dart';
+import 'package:were_all_in_this_together/features/today/domain/today_appointment_item.dart';
+import 'package:were_all_in_this_together/features/today/domain/today_item.dart';
 
 /// Convenience: the [DoseIdentity] of a [ScheduledDose]. The log
 /// side lives in `dose_log.dart` (as `identityOfLog`) so the

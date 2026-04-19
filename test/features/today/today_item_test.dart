@@ -3,7 +3,7 @@ import 'package:were_all_in_this_together/features/medications/domain/medication
 import 'package:were_all_in_this_together/features/medications/domain/medication_group.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication_schedule.dart';
 import 'package:were_all_in_this_together/features/medications/domain/scheduled_dose.dart';
-import 'package:were_all_in_this_together/features/medications/domain/today_item.dart';
+import 'package:were_all_in_this_together/features/today/domain/today_item.dart';
 
 Medication _med({
   String id = 'm1',
