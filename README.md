@@ -101,8 +101,8 @@ access.
 Priorities **0–5** for Phase 1 (see recent commits and
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) § Phase plan):
 
-0. **Keep docs honest** — this README and `lib/features/README.md` track what
-   shipped vs placeholder.
+0. **Doc sync** — keep this README, `lib/features/README.md`, and the repo
+   layout tree aligned with shipped routes and schema bumps.
 1. **Programs & Apps & Sites (depth)** — richer fields (contacts tree,
    calendars deferred), validation, and cross-links as needs emerge.
 2. **Care summary depth** — optional Calm-only sections, richer crisis block,
@@ -141,19 +141,20 @@ lib/
 ├── app.dart               MaterialApp.router wiring + pending-ACK drainer
 ├── core/
 │   ├── crypto/            XChaCha20-Poly1305 envelope + Keychain key storage
-│   ├── database/          Drift schema + migrations (v1–v9)
+│   ├── database/          Drift schema + migrations (v1–v12)
 │   ├── notifications/     local notifications + background ACK queue
 │   ├── router/            go_router config
 │   └── theme/             Material 3 + Calm low-stim theme
 └── features/
     ├── home/              tabbed home + persistent Calm button
     ├── safety_plan/       Calm screen (low-stim theme)
-    ├── settings/          settings + reminder-nag preferences
+    ├── settings/          settings, care summary entry, reminder-nag prefs
     ├── people/            Person CRUD + active-Person switcher
     ├── medications/       meds + groups + schedule + Today + dose logs + notifications
     ├── reports/           adherence report + care summary PDFs
     ├── providers/         care-provider CRUD + detail with tap actions
-    ├── profile/           per-Person baselines (communication, sleep, appetite)
+    ├── profile/           baselines + structured entries + Notes / Calm hooks
+    ├── observations/      Notes timeline (Observation)
     ├── appointments/      visits + local reminders + Today integration
     ├── programs/          schools, camps, after-care (encrypted)
     ├── apps_sites/        portal URLs + notes (encrypted)

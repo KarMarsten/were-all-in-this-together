@@ -1,7 +1,8 @@
 # `lib/features/`
 
 One folder per feature domain. Each feature is self-contained with its own
-`data/`, `domain/`, and `ui/` subtrees and may depend on `lib/core/` but
+`data/`, `domain/`, and `presentation/` or `ui/` subtrees and may depend on
+`lib/core/` but
 **never on a sibling feature directly** (cross-feature communication goes
 through Riverpod providers or shared `core/` services).
 

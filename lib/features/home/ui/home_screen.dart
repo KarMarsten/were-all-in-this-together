@@ -327,16 +327,12 @@ class _FeatureTileData {
     required this.label,
     required this.icon,
     required this.description,
-    this.route,
+    required this.route,
   });
   final String label;
   final IconData icon;
   final String description;
-
-  /// If non-null, tapping the tile navigates here. Otherwise we show a
-  /// "coming soon" snackbar — so the grid can grow ahead of the
-  /// implementation without stubs behind each tile.
-  final String? route;
+  final String route;
 }
 
 class _FeatureTile extends StatelessWidget {
@@ -349,14 +345,7 @@ class _FeatureTile extends StatelessWidget {
     return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          final route = data.route;
-          if (route != null) {
-            unawaited(context.push(route));
-          } else {
-            _showComingSoon(context, data.label);
-          }
-        },
+        onTap: () => unawaited(context.push(data.route)),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -384,15 +373,6 @@ class _FeatureTile extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  void _showComingSoon(BuildContext context, String label) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$label — coming soon'),
-        behavior: SnackBarBehavior.floating,
       ),
     );
   }
