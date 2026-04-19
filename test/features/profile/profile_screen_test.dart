@@ -26,6 +26,23 @@ Future<void> _openProfile(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+/// Scrolls profile content and opens the add-entry form (filled or outlined
+/// Add entry control).
+Future<void> _scrollProfileAndOpenAddEntry(WidgetTester tester) async {
+  final listFinder = find.byType(ListView);
+  expect(listFinder, findsOneWidget);
+  await tester.drag(listFinder, const Offset(0, -800));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Add entry').first);
+  await tester.pumpAndSettle();
+}
+
+/// Matches [SnackBar.duration] on structured entry save (2s).
+Future<void> _pumpPastEntrySavedSnackBar(WidgetTester tester) async {
+  await tester.pump(const Duration(milliseconds: 2100));
+  await tester.pumpAndSettle();
+}
+
 void main() {
   testWidgets('no Person yet → Profile explains roster is required',
       (tester) async {
@@ -69,12 +86,7 @@ void main() {
     await _addPerson(tester, 'Pat');
     await _openProfile(tester);
 
-    final listFinder = find.byType(ListView);
-    expect(listFinder, findsOneWidget);
-    await tester.drag(listFinder, const Offset(0, -800));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Add entry'));
-    await tester.pumpAndSettle();
+    await _scrollProfileAndOpenAddEntry(tester);
 
     await tester.tap(find.byType(DropdownButtonFormField<ProfileEntrySection>));
     await tester.pumpAndSettle();
@@ -107,18 +119,13 @@ void main() {
       await tester.pumpWidget(buildTestApp());
       await tester.pumpAndSettle();
 
-      await _addPerson(tester, 'Chris');
-      await _openProfile(tester);
+    await _addPerson(tester, 'Chris');
+    await _openProfile(tester);
 
-      final listFinder = find.byType(ListView);
-      expect(listFinder, findsOneWidget);
-      await tester.drag(listFinder, const Offset(0, -800));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Add entry'));
-      await tester.pumpAndSettle();
+    await _scrollProfileAndOpenAddEntry(tester);
 
-      await tester.tap(
-        find.byType(DropdownButtonFormField<ProfileEntrySection>),
+    await tester.tap(
+      find.byType(DropdownButtonFormField<ProfileEntrySection>),
       );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Early sign').last);
@@ -160,17 +167,12 @@ void main() {
       await tester.pumpWidget(buildTestApp());
       await tester.pumpAndSettle();
 
-      await _addPerson(tester, 'Dana');
-      await _openProfile(tester);
+    await _addPerson(tester, 'Dana');
+    await _openProfile(tester);
 
-      final listFinder = find.byType(ListView);
-      expect(listFinder, findsOneWidget);
-      await tester.drag(listFinder, const Offset(0, -800));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Add entry'));
-      await tester.pumpAndSettle();
+    await _scrollProfileAndOpenAddEntry(tester);
 
-      final fields = find.byType(TextFormField);
+    final fields = find.byType(TextFormField);
       expect(fields, findsNWidgets(2));
       await tester.enterText(fields.at(0), label);
       await tester.enterText(fields.at(1), details);
@@ -183,6 +185,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      expect(find.text('Saved'), findsOneWidget);
       expect(find.text('Add profile entry'), findsNothing);
 
       await tester.ensureVisible(find.text(details));
@@ -232,4 +235,101 @@ void main() {
       expect(find.text('No entries yet.'), findsOneWidget);
     },
   );
+
+  testWidgets('Structured entry edit saves new label', (tester) async {
+    const oldLabel = 'First label';
+    const newLabel = 'Renamed label';
+
+    await tester.pumpWidget(buildTestApp());
+    await tester.pumpAndSettle();
+
+    await _addPerson(tester, 'Noah');
+    await _openProfile(tester);
+    await _scrollProfileAndOpenAddEntry(tester);
+
+    await tester.enterText(find.byType(TextFormField).first, oldLabel);
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text('Save'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await _pumpPastEntrySavedSnackBar(tester);
+
+    await tester.ensureVisible(find.text(oldLabel));
+    await tester.tap(
+      find.ancestor(
+        of: find.text(oldLabel),
+        matching: find.byType(ListTile),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edit entry'), findsOneWidget);
+    await tester.enterText(find.byType(TextFormField).first, newLabel);
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text('Save'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text(newLabel));
+    await tester.pumpAndSettle();
+
+    expect(find.text(newLabel), findsOneWidget);
+    expect(find.text(oldLabel), findsNothing);
+  });
+
+  testWidgets('Structured entry archive removes from list', (tester) async {
+    const label = 'Line to archive';
+
+    await tester.pumpWidget(buildTestApp());
+    await tester.pumpAndSettle();
+
+    await _addPerson(tester, 'Opal');
+    await _openProfile(tester);
+    await _scrollProfileAndOpenAddEntry(tester);
+
+    await tester.enterText(find.byType(TextFormField).first, label);
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text('Save'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await _pumpPastEntrySavedSnackBar(tester);
+
+    await tester.ensureVisible(find.text(label));
+    await tester.tap(
+      find.ancestor(
+        of: find.text(label),
+        matching: find.byType(ListTile),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edit entry'), findsOneWidget);
+    await tester.ensureVisible(find.text('Archive entry'));
+    await tester.tap(find.text('Archive entry'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Archive this entry?'), findsOneWidget);
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.text('Archive'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Archived'), findsOneWidget);
+    expect(find.text('Edit entry'), findsNothing);
+    expect(find.text(label), findsNothing);
+  });
 }

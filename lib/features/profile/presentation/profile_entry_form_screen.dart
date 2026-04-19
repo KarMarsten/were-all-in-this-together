@@ -244,6 +244,12 @@ class _ProfileEntryFormScreenState
       }
       invalidateProfileEntriesState(ref);
       if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Saved'),
+          duration: Duration(seconds: 2),
+        ),
+      );
       context.pop();
     } on Object catch (e) {
       if (!mounted) return;
