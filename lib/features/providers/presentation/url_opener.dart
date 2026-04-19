@@ -15,6 +15,11 @@ abstract interface class UrlOpener {
   /// generous about format.
   Future<bool> openTel(String phone);
 
+  /// Open the platform SMS composer for [phone] with optional prefilled
+  /// [body]. Digits (and a leading `+`) are kept; other punctuation is
+  /// stripped for the `sms:` path.
+  Future<bool> openSms(String phone, {String? body});
+
   /// Open [url] in the default browser (or in-app webview, as the
   /// platform decides). Returns `false` when the URL isn't launchable
   /// so callers can surface an error.
@@ -30,6 +35,45 @@ class UrlLauncherUrlOpener implements UrlOpener {
   @override
   Future<bool> openTel(String phone) =>
       _tryLaunch(Uri(scheme: 'tel', path: phone));
+
+  @override
+  Future<bool> openSms(String phone, {String? body}) {
+    final normalized = _smsAddress(phone);
+    if (normalized.isEmpty) return Future.value(false);
+    final Uri uri;
+    final trimmed = body?.trim();
+    if (trimmed != null && trimmed.isNotEmpty) {
+      uri = Uri(
+        scheme: 'sms',
+        path: normalized,
+        queryParameters: <String, String>{'body': trimmed},
+      );
+    } else {
+      uri = Uri(scheme: 'sms', path: normalized);
+    }
+    return _tryLaunch(uri);
+  }
+
+  /// Keep digits and a single leading plus for E.164-style input.
+  static String _smsAddress(String phone) {
+    final t = phone.trim();
+    if (t.isEmpty) return '';
+    final buf = StringBuffer();
+    var i = 0;
+    if (t.startsWith('+')) {
+      buf.write('+');
+      i = 1;
+    }
+    for (; i < t.length; i++) {
+      final c = t.codeUnitAt(i);
+      if (c >= 0x30 && c <= 0x39) {
+        buf.writeCharCode(c);
+      }
+    }
+    final out = buf.toString();
+    if (out == '+' || out.isEmpty) return '';
+    return out;
+  }
 
   @override
   Future<bool> openWeb(String url) {

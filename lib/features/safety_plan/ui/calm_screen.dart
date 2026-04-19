@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:were_all_in_this_together/core/router/app_router.dart';
 import 'package:were_all_in_this_together/core/theme/app_theme.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
+import 'package:were_all_in_this_together/features/profile/domain/profile.dart';
 import 'package:were_all_in_this_together/features/profile/domain/profile_entry.dart';
 import 'package:were_all_in_this_together/features/profile/presentation/providers.dart';
+import 'package:were_all_in_this_together/features/providers/presentation/url_opener.dart';
 
 /// The Calm / safety-plan screen.
 ///
@@ -19,16 +21,17 @@ import 'package:were_all_in_this_together/features/profile/presentation/provider
 ///     a passcode. (App-lock bypass is intentional on this route.)
 ///   * Content is intentionally concrete and actionable, not aspirational.
 ///
-/// When someone is focused on Home, **What helps** and **Early sign**
-/// profile entries (active only) surface here under universal grounding
-/// steps. Everything else stays generic until the full safety-plan editor
-/// lands.
+/// When someone is focused on Home, **Profile baselines** (communication,
+/// sleep, appetite when filled) and **What helps** / **Early sign** profile
+/// entries (active only) surface here under universal grounding steps.
+/// Everything else stays generic until the full safety-plan editor lands.
 class CalmScreen extends ConsumerWidget {
   const CalmScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final personAsync = ref.watch(activePersonProvider);
+    final profileAsync = ref.watch(activePersonProfileProvider);
     final entriesAsync = ref.watch(activeProfileEntriesProvider);
 
     return Theme(
@@ -72,13 +75,20 @@ class CalmScreen extends ConsumerWidget {
                       if (person == null) {
                         return const SizedBox.shrink();
                       }
-                      return entriesAsync.when(
+                      return profileAsync.when(
                         loading: () => const SizedBox.shrink(),
                         error: (e, st) => const SizedBox.shrink(),
-                        data: (entries) {
-                          return _CalmProfileBlocks(
-                            personName: person.displayName,
-                            entries: entries,
+                        data: (profile) {
+                          return entriesAsync.when(
+                            loading: () => const SizedBox.shrink(),
+                            error: (e, st) => const SizedBox.shrink(),
+                            data: (entries) {
+                              return _CalmPersonProfileStack(
+                                personName: person.displayName,
+                                profile: profile,
+                                entries: entries,
+                              );
+                            },
                           );
                         },
                       );
@@ -88,16 +98,37 @@ class CalmScreen extends ConsumerWidget {
                   const _SectionCard(
                     heading: 'Coping strategies',
                     children: [
-                      _PlanItem(text: 'Step into another room.'),
-                      _PlanItem(text: 'Headphones on, one familiar song.'),
-                      _PlanItem(text: 'Text a safe person.'),
+                      _PlanItem(
+                        text:
+                            'Change the channel — water, air, light, or a '
+                            'different room.',
+                      ),
+                      _PlanItem(
+                        text:
+                            'One sensory anchor: cold water on wrists, a '
+                            'weighted blanket, or one familiar song.',
+                      ),
+                      _PlanItem(
+                        text:
+                            'Reach one safe person — a short check-in is '
+                            'enough.',
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
                   const _SectionCard(
                     heading: 'Reasons to stay',
                     children: [
-                      _PlanItem(text: 'Placeholder grounding anchor.'),
+                      _PlanItem(
+                        text:
+                            'This pain is real and it can change — you do not '
+                            'have to solve everything tonight.',
+                      ),
+                      _PlanItem(
+                        text:
+                            'Someone in your life benefits from you being '
+                            'here, even when it does not feel that way.',
+                      ),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -119,6 +150,91 @@ class CalmScreen extends ConsumerWidget {
           );
         },
       ),
+    );
+  }
+}
+
+/// Baselines card plus structured profile blocks for the active person.
+class _CalmPersonProfileStack extends StatelessWidget {
+  const _CalmPersonProfileStack({
+    required this.personName,
+    required this.profile,
+    required this.entries,
+  });
+
+  final String personName;
+  final Profile? profile;
+  final List<ProfileEntry> entries;
+
+  bool get _hasBaselines {
+    final p = profile;
+    if (p == null) return false;
+    return _nonBlank(p.communicationNotes) ||
+        _nonBlank(p.sleepBaseline) ||
+        _nonBlank(p.appetiteBaseline);
+  }
+
+  static bool _nonBlank(String? s) => s != null && s.trim().isNotEmpty;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (_hasBaselines && profile != null)
+          _CalmBaselinesCard(profile: profile!, personName: personName),
+        if (_hasBaselines) const SizedBox(height: 16),
+        _CalmProfileBlocks(personName: personName, entries: entries),
+      ],
+    );
+  }
+}
+
+/// Free-text baselines from [Profile], same labels as on Profile.
+class _CalmBaselinesCard extends StatelessWidget {
+  const _CalmBaselinesCard({
+    required this.profile,
+    required this.personName,
+  });
+
+  final Profile profile;
+  final String personName;
+
+  @override
+  Widget build(BuildContext context) {
+    final sections = <({String title, String body})>[];
+    void add(String title, String? raw) {
+      final body = raw?.trim();
+      if (body == null || body.isEmpty) return;
+      sections.add((title: title, body: body));
+    }
+
+    add('Communication', profile.communicationNotes);
+    add('Sleep baseline', profile.sleepBaseline);
+    add('Appetite / eating baseline', profile.appetiteBaseline);
+
+    return _SectionCard(
+      heading: 'Baselines',
+      subtitle: 'From $personName’s profile',
+      children: [
+        for (var i = 0; i < sections.length; i++) ...[
+          if (i > 0) const SizedBox(height: 16),
+          Text(
+            sections[i].title,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withValues(
+                alpha: 0.85,
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          SelectableText(
+            sections[i].body,
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
+        ],
+      ],
     );
   }
 }
@@ -329,28 +445,37 @@ class _PlanItem extends StatelessWidget {
   }
 }
 
-class _CrisisContactsPanel extends StatelessWidget {
+class _CrisisContactsPanel extends ConsumerWidget {
   const _CrisisContactsPanel();
 
   @override
-  Widget build(BuildContext context) {
-    // TODO(crisis): wire up real tel:/sms: intents once a URL launcher is
-    // added. Kept as taps with no handler on purpose — a half-built dialing
-    // UX on this screen is worse than none.
-    return const _SectionCard(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final opener = ref.watch(urlOpenerProvider);
+    return _SectionCard(
       heading: 'If you need more help',
       children: [
         _CrisisContactTile(
+          icon: Icons.phone_outlined,
           label: '988 — Suicide & Crisis Lifeline',
-          onTap: null,
+          onTap: () => calmTryLaunch(
+            context,
+            () => opener.openTel('988'),
+            failureMessage: "Couldn't start the call.",
+          ),
         ),
         _CrisisContactTile(
+          icon: Icons.sms_outlined,
           label: 'Text HOME to 741741 — Crisis Text Line',
-          onTap: null,
+          onTap: () => calmTryLaunch(
+            context,
+            () => opener.openSms('741741', body: 'HOME'),
+            failureMessage: "Couldn't open Messages.",
+          ),
         ),
         _CrisisContactTile(
-          label: 'Your therapist (configure in Settings)',
-          onTap: null,
+          icon: Icons.medical_services_outlined,
+          label: 'Care team — open Providers to add a phone',
+          onTap: () => context.push(Routes.careProviders),
         ),
       ],
     );
@@ -358,7 +483,13 @@ class _CrisisContactsPanel extends StatelessWidget {
 }
 
 class _CrisisContactTile extends StatelessWidget {
-  const _CrisisContactTile({required this.label, required this.onTap});
+  const _CrisisContactTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
   final String label;
   final VoidCallback? onTap;
 
@@ -372,7 +503,7 @@ class _CrisisContactTile extends StatelessWidget {
         child: Row(
           children: [
             Icon(
-              Icons.phone_outlined,
+              icon,
               color: Theme.of(context).colorScheme.primary,
             ),
             const SizedBox(width: 12),
@@ -381,6 +512,35 @@ class _CrisisContactTile extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Try a URL launcher action; show a floating snackbar on failure.
+Future<void> calmTryLaunch(
+  BuildContext context,
+  Future<bool> Function() action, {
+  required String failureMessage,
+}) async {
+  final messenger = ScaffoldMessenger.maybeOf(context);
+  if (messenger == null) return;
+  try {
+    final ok = await action();
+    if (!ok && context.mounted) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(failureMessage),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  } on Exception catch (e) {
+    if (!context.mounted) return;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('$failureMessage ($e)'),
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }

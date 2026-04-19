@@ -5,6 +5,8 @@ import 'package:were_all_in_this_together/features/providers/presentation/url_op
 /// right payload — without touching the real `url_launcher` plugin.
 class RecordingUrlOpener implements UrlOpener {
   final List<String> telCalls = <String>[];
+  final List<({String phone, String? body})> smsCalls =
+      <({String phone, String? body})>[];
   final List<String> webCalls = <String>[];
   final List<String> mapCalls = <String>[];
 
@@ -16,6 +18,12 @@ class RecordingUrlOpener implements UrlOpener {
   @override
   Future<bool> openTel(String phone) async {
     telCalls.add(phone);
+    return succeed;
+  }
+
+  @override
+  Future<bool> openSms(String phone, {String? body}) async {
+    smsCalls.add((phone: phone, body: body));
     return succeed;
   }
 
