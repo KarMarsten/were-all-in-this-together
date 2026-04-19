@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
+import 'package:were_all_in_this_together/features/profile/data/profile_entry_repository.dart';
 import 'package:were_all_in_this_together/features/profile/data/profile_repository.dart';
 import 'package:were_all_in_this_together/features/profile/domain/profile.dart';
+import 'package:were_all_in_this_together/features/profile/domain/profile_entry.dart';
 
 /// The [Profile] for the currently-active Person, creating an empty
 /// row on first open.
@@ -16,7 +18,28 @@ final activePersonProfileProvider = FutureProvider<Profile?>((ref) async {
   return repo.getOrCreateForPerson(personId);
 });
 
+/// Active structured [ProfileEntry] rows for the active Person's
+/// profile, newest first.
+final activeProfileEntriesProvider = FutureProvider<List<ProfileEntry>>((
+  ref,
+) async {
+  final personId = await ref.watch(activePersonIdProvider.future);
+  if (personId == null) return const [];
+  final profileRepo = ref.watch(profileRepositoryProvider);
+  final entriesRepo = ref.watch(profileEntryRepositoryProvider);
+  final profile = await profileRepo.getOrCreateForPerson(personId);
+  return entriesRepo.listActiveForProfile(
+    profileId: profile.id,
+    personId: personId,
+  );
+});
+
 /// Call after saving profile fields so the feed re-fetches.
 void invalidateProfileState(WidgetRef ref) {
   ref.invalidate(activePersonProfileProvider);
+}
+
+/// Call after saving or archiving profile entries.
+void invalidateProfileEntriesState(WidgetRef ref) {
+  ref.invalidate(activeProfileEntriesProvider);
 }

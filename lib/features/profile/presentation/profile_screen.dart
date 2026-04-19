@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:were_all_in_this_together/core/router/app_router.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 import 'package:were_all_in_this_together/features/profile/data/profile_repository.dart';
 import 'package:were_all_in_this_together/features/profile/domain/profile.dart';
+import 'package:were_all_in_this_together/features/profile/domain/profile_entry.dart';
 import 'package:were_all_in_this_together/features/profile/presentation/providers.dart';
 
-/// Living-document baselines for the active Person: communication,
-/// sleep, and appetite. Structured sections (stims, routines, etc.)
-/// land in follow-up work.
+/// Living-document baselines and structured entries for the active
+/// Person.
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
@@ -94,8 +96,9 @@ class _ProfileEditorState extends ConsumerState<_ProfileEditor> {
       text: widget.profile.communicationNotes ?? '',
     );
     _sleep = TextEditingController(text: widget.profile.sleepBaseline ?? '');
-    _appetite =
-        TextEditingController(text: widget.profile.appetiteBaseline ?? '');
+    _appetite = TextEditingController(
+      text: widget.profile.appetiteBaseline ?? '',
+    );
   }
 
   @override
@@ -150,6 +153,8 @@ class _ProfileEditorState extends ConsumerState<_ProfileEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final entriesAsync = ref.watch(activeProfileEntriesProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Profile · ${widget.personName}'),
@@ -163,12 +168,12 @@ class _ProfileEditorState extends ConsumerState<_ProfileEditor> {
           ),
           const SizedBox(height: 8),
           Text(
-            'These notes are encrypted on this device. More structured '
-            'sections (stims, routines, what helps) will join here in a '
-            'later release.',
+            'These notes are encrypted on this device. Use structured '
+            'entries below for stims, preferences, triggers, and similar '
+            'lines you want to scan quickly.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 24),
           TextField(
@@ -177,7 +182,8 @@ class _ProfileEditorState extends ConsumerState<_ProfileEditor> {
             maxLines: 8,
             decoration: const InputDecoration(
               labelText: 'Communication',
-              hintText: 'Preferred channels, AAC, scripts, '
+              hintText:
+                  'Preferred channels, AAC, scripts, '
                   'how to help when stressed…',
               border: OutlineInputBorder(),
             ),
@@ -214,6 +220,63 @@ class _ProfileEditorState extends ConsumerState<_ProfileEditor> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Text('Save'),
+          ),
+          const SizedBox(height: 32),
+          Text(
+            'Structured entries',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          entriesAsync.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+            error: (e, _) => Text('Could not load entries: $e'),
+            data: (entries) => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Tap an entry to edit. Labels and details are encrypted.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                if (entries.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      'No entries yet.',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ),
+                for (final e in entries)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(e.label),
+                    subtitle: Text(
+                      '${labelForProfileEntrySection(e.section)} · '
+                      '${labelForProfileEntryStatus(e.status)}',
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push(Routes.profileEntryEdit(e.id)),
+                  ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () => context.push(Routes.profileEntryNew),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add entry'),
+                ),
+              ],
+            ),
           ),
         ],
       ),

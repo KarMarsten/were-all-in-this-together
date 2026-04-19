@@ -5790,6 +5790,882 @@ class ProfilesCompanion extends UpdateCompanion<ProfileRow> {
   }
 }
 
+class $ProfileEntriesTable extends ProfileEntries
+    with TableInfo<$ProfileEntriesTable, ProfileEntryRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProfileEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _profileIdMeta = const VerificationMeta(
+    'profileId',
+  );
+  @override
+  late final GeneratedColumn<String> profileId = GeneratedColumn<String>(
+    'profile_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _personIdMeta = const VerificationMeta(
+    'personId',
+  );
+  @override
+  late final GeneratedColumn<String> personId = GeneratedColumn<String>(
+    'person_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sectionMeta = const VerificationMeta(
+    'section',
+  );
+  @override
+  late final GeneratedColumn<int> section = GeneratedColumn<int>(
+    'section',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<int> status = GeneratedColumn<int>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _parentEntryIdMeta = const VerificationMeta(
+    'parentEntryId',
+  );
+  @override
+  late final GeneratedColumn<String> parentEntryId = GeneratedColumn<String>(
+    'parent_entry_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _firstNotedMeta = const VerificationMeta(
+    'firstNoted',
+  );
+  @override
+  late final GeneratedColumn<int> firstNoted = GeneratedColumn<int>(
+    'first_noted',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastNotedMeta = const VerificationMeta(
+    'lastNoted',
+  );
+  @override
+  late final GeneratedColumn<int> lastNoted = GeneratedColumn<int>(
+    'last_noted',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _rowVersionMeta = const VerificationMeta(
+    'rowVersion',
+  );
+  @override
+  late final GeneratedColumn<int> rowVersion = GeneratedColumn<int>(
+    'row_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _lastWriterDeviceIdMeta =
+      const VerificationMeta('lastWriterDeviceId');
+  @override
+  late final GeneratedColumn<String> lastWriterDeviceId =
+      GeneratedColumn<String>(
+        'last_writer_device_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _keyVersionMeta = const VerificationMeta(
+    'keyVersion',
+  );
+  @override
+  late final GeneratedColumn<int> keyVersion = GeneratedColumn<int>(
+    'key_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _payloadMeta = const VerificationMeta(
+    'payload',
+  );
+  @override
+  late final GeneratedColumn<Uint8List> payload = GeneratedColumn<Uint8List>(
+    'payload',
+    aliasedName,
+    false,
+    type: DriftSqlType.blob,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    profileId,
+    personId,
+    section,
+    status,
+    parentEntryId,
+    firstNoted,
+    lastNoted,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    rowVersion,
+    lastWriterDeviceId,
+    keyVersion,
+    payload,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'profile_entries';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ProfileEntryRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('profile_id')) {
+      context.handle(
+        _profileIdMeta,
+        profileId.isAcceptableOrUnknown(data['profile_id']!, _profileIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_profileIdMeta);
+    }
+    if (data.containsKey('person_id')) {
+      context.handle(
+        _personIdMeta,
+        personId.isAcceptableOrUnknown(data['person_id']!, _personIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_personIdMeta);
+    }
+    if (data.containsKey('section')) {
+      context.handle(
+        _sectionMeta,
+        section.isAcceptableOrUnknown(data['section']!, _sectionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sectionMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('parent_entry_id')) {
+      context.handle(
+        _parentEntryIdMeta,
+        parentEntryId.isAcceptableOrUnknown(
+          data['parent_entry_id']!,
+          _parentEntryIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('first_noted')) {
+      context.handle(
+        _firstNotedMeta,
+        firstNoted.isAcceptableOrUnknown(data['first_noted']!, _firstNotedMeta),
+      );
+    }
+    if (data.containsKey('last_noted')) {
+      context.handle(
+        _lastNotedMeta,
+        lastNoted.isAcceptableOrUnknown(data['last_noted']!, _lastNotedMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('row_version')) {
+      context.handle(
+        _rowVersionMeta,
+        rowVersion.isAcceptableOrUnknown(data['row_version']!, _rowVersionMeta),
+      );
+    }
+    if (data.containsKey('last_writer_device_id')) {
+      context.handle(
+        _lastWriterDeviceIdMeta,
+        lastWriterDeviceId.isAcceptableOrUnknown(
+          data['last_writer_device_id']!,
+          _lastWriterDeviceIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('key_version')) {
+      context.handle(
+        _keyVersionMeta,
+        keyVersion.isAcceptableOrUnknown(data['key_version']!, _keyVersionMeta),
+      );
+    }
+    if (data.containsKey('payload')) {
+      context.handle(
+        _payloadMeta,
+        payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_payloadMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ProfileEntryRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ProfileEntryRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      profileId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}profile_id'],
+      )!,
+      personId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}person_id'],
+      )!,
+      section: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}section'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}status'],
+      )!,
+      parentEntryId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}parent_entry_id'],
+      ),
+      firstNoted: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}first_noted'],
+      ),
+      lastNoted: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_noted'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      rowVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}row_version'],
+      )!,
+      lastWriterDeviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_writer_device_id'],
+      ),
+      keyVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}key_version'],
+      )!,
+      payload: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}payload'],
+      )!,
+    );
+  }
+
+  @override
+  $ProfileEntriesTable createAlias(String alias) {
+    return $ProfileEntriesTable(attachedDatabase, alias);
+  }
+}
+
+class ProfileEntryRow extends DataClass implements Insertable<ProfileEntryRow> {
+  final String id;
+  final String profileId;
+
+  /// Owning Person (denormalised from the profile row's `person_id`).
+  final String personId;
+
+  /// `ProfileEntrySection.index`. Append-only enum policy.
+  final int section;
+
+  /// `ProfileEntryStatus.index`.
+  final int status;
+  final String? parentEntryId;
+  final int? firstNoted;
+  final int? lastNoted;
+  final int createdAt;
+  final int updatedAt;
+  final int? deletedAt;
+  final int rowVersion;
+  final String? lastWriterDeviceId;
+  final int keyVersion;
+  final Uint8List payload;
+  const ProfileEntryRow({
+    required this.id,
+    required this.profileId,
+    required this.personId,
+    required this.section,
+    required this.status,
+    this.parentEntryId,
+    this.firstNoted,
+    this.lastNoted,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+    required this.rowVersion,
+    this.lastWriterDeviceId,
+    required this.keyVersion,
+    required this.payload,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['profile_id'] = Variable<String>(profileId);
+    map['person_id'] = Variable<String>(personId);
+    map['section'] = Variable<int>(section);
+    map['status'] = Variable<int>(status);
+    if (!nullToAbsent || parentEntryId != null) {
+      map['parent_entry_id'] = Variable<String>(parentEntryId);
+    }
+    if (!nullToAbsent || firstNoted != null) {
+      map['first_noted'] = Variable<int>(firstNoted);
+    }
+    if (!nullToAbsent || lastNoted != null) {
+      map['last_noted'] = Variable<int>(lastNoted);
+    }
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<int>(deletedAt);
+    }
+    map['row_version'] = Variable<int>(rowVersion);
+    if (!nullToAbsent || lastWriterDeviceId != null) {
+      map['last_writer_device_id'] = Variable<String>(lastWriterDeviceId);
+    }
+    map['key_version'] = Variable<int>(keyVersion);
+    map['payload'] = Variable<Uint8List>(payload);
+    return map;
+  }
+
+  ProfileEntriesCompanion toCompanion(bool nullToAbsent) {
+    return ProfileEntriesCompanion(
+      id: Value(id),
+      profileId: Value(profileId),
+      personId: Value(personId),
+      section: Value(section),
+      status: Value(status),
+      parentEntryId: parentEntryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(parentEntryId),
+      firstNoted: firstNoted == null && nullToAbsent
+          ? const Value.absent()
+          : Value(firstNoted),
+      lastNoted: lastNoted == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastNoted),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      rowVersion: Value(rowVersion),
+      lastWriterDeviceId: lastWriterDeviceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastWriterDeviceId),
+      keyVersion: Value(keyVersion),
+      payload: Value(payload),
+    );
+  }
+
+  factory ProfileEntryRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ProfileEntryRow(
+      id: serializer.fromJson<String>(json['id']),
+      profileId: serializer.fromJson<String>(json['profileId']),
+      personId: serializer.fromJson<String>(json['personId']),
+      section: serializer.fromJson<int>(json['section']),
+      status: serializer.fromJson<int>(json['status']),
+      parentEntryId: serializer.fromJson<String?>(json['parentEntryId']),
+      firstNoted: serializer.fromJson<int?>(json['firstNoted']),
+      lastNoted: serializer.fromJson<int?>(json['lastNoted']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
+      rowVersion: serializer.fromJson<int>(json['rowVersion']),
+      lastWriterDeviceId: serializer.fromJson<String?>(
+        json['lastWriterDeviceId'],
+      ),
+      keyVersion: serializer.fromJson<int>(json['keyVersion']),
+      payload: serializer.fromJson<Uint8List>(json['payload']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'profileId': serializer.toJson<String>(profileId),
+      'personId': serializer.toJson<String>(personId),
+      'section': serializer.toJson<int>(section),
+      'status': serializer.toJson<int>(status),
+      'parentEntryId': serializer.toJson<String?>(parentEntryId),
+      'firstNoted': serializer.toJson<int?>(firstNoted),
+      'lastNoted': serializer.toJson<int?>(lastNoted),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
+      'rowVersion': serializer.toJson<int>(rowVersion),
+      'lastWriterDeviceId': serializer.toJson<String?>(lastWriterDeviceId),
+      'keyVersion': serializer.toJson<int>(keyVersion),
+      'payload': serializer.toJson<Uint8List>(payload),
+    };
+  }
+
+  ProfileEntryRow copyWith({
+    String? id,
+    String? profileId,
+    String? personId,
+    int? section,
+    int? status,
+    Value<String?> parentEntryId = const Value.absent(),
+    Value<int?> firstNoted = const Value.absent(),
+    Value<int?> lastNoted = const Value.absent(),
+    int? createdAt,
+    int? updatedAt,
+    Value<int?> deletedAt = const Value.absent(),
+    int? rowVersion,
+    Value<String?> lastWriterDeviceId = const Value.absent(),
+    int? keyVersion,
+    Uint8List? payload,
+  }) => ProfileEntryRow(
+    id: id ?? this.id,
+    profileId: profileId ?? this.profileId,
+    personId: personId ?? this.personId,
+    section: section ?? this.section,
+    status: status ?? this.status,
+    parentEntryId: parentEntryId.present
+        ? parentEntryId.value
+        : this.parentEntryId,
+    firstNoted: firstNoted.present ? firstNoted.value : this.firstNoted,
+    lastNoted: lastNoted.present ? lastNoted.value : this.lastNoted,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    rowVersion: rowVersion ?? this.rowVersion,
+    lastWriterDeviceId: lastWriterDeviceId.present
+        ? lastWriterDeviceId.value
+        : this.lastWriterDeviceId,
+    keyVersion: keyVersion ?? this.keyVersion,
+    payload: payload ?? this.payload,
+  );
+  ProfileEntryRow copyWithCompanion(ProfileEntriesCompanion data) {
+    return ProfileEntryRow(
+      id: data.id.present ? data.id.value : this.id,
+      profileId: data.profileId.present ? data.profileId.value : this.profileId,
+      personId: data.personId.present ? data.personId.value : this.personId,
+      section: data.section.present ? data.section.value : this.section,
+      status: data.status.present ? data.status.value : this.status,
+      parentEntryId: data.parentEntryId.present
+          ? data.parentEntryId.value
+          : this.parentEntryId,
+      firstNoted: data.firstNoted.present
+          ? data.firstNoted.value
+          : this.firstNoted,
+      lastNoted: data.lastNoted.present ? data.lastNoted.value : this.lastNoted,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      rowVersion: data.rowVersion.present
+          ? data.rowVersion.value
+          : this.rowVersion,
+      lastWriterDeviceId: data.lastWriterDeviceId.present
+          ? data.lastWriterDeviceId.value
+          : this.lastWriterDeviceId,
+      keyVersion: data.keyVersion.present
+          ? data.keyVersion.value
+          : this.keyVersion,
+      payload: data.payload.present ? data.payload.value : this.payload,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProfileEntryRow(')
+          ..write('id: $id, ')
+          ..write('profileId: $profileId, ')
+          ..write('personId: $personId, ')
+          ..write('section: $section, ')
+          ..write('status: $status, ')
+          ..write('parentEntryId: $parentEntryId, ')
+          ..write('firstNoted: $firstNoted, ')
+          ..write('lastNoted: $lastNoted, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('rowVersion: $rowVersion, ')
+          ..write('lastWriterDeviceId: $lastWriterDeviceId, ')
+          ..write('keyVersion: $keyVersion, ')
+          ..write('payload: $payload')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    profileId,
+    personId,
+    section,
+    status,
+    parentEntryId,
+    firstNoted,
+    lastNoted,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    rowVersion,
+    lastWriterDeviceId,
+    keyVersion,
+    $driftBlobEquality.hash(payload),
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProfileEntryRow &&
+          other.id == this.id &&
+          other.profileId == this.profileId &&
+          other.personId == this.personId &&
+          other.section == this.section &&
+          other.status == this.status &&
+          other.parentEntryId == this.parentEntryId &&
+          other.firstNoted == this.firstNoted &&
+          other.lastNoted == this.lastNoted &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.rowVersion == this.rowVersion &&
+          other.lastWriterDeviceId == this.lastWriterDeviceId &&
+          other.keyVersion == this.keyVersion &&
+          $driftBlobEquality.equals(other.payload, this.payload));
+}
+
+class ProfileEntriesCompanion extends UpdateCompanion<ProfileEntryRow> {
+  final Value<String> id;
+  final Value<String> profileId;
+  final Value<String> personId;
+  final Value<int> section;
+  final Value<int> status;
+  final Value<String?> parentEntryId;
+  final Value<int?> firstNoted;
+  final Value<int?> lastNoted;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int?> deletedAt;
+  final Value<int> rowVersion;
+  final Value<String?> lastWriterDeviceId;
+  final Value<int> keyVersion;
+  final Value<Uint8List> payload;
+  final Value<int> rowid;
+  const ProfileEntriesCompanion({
+    this.id = const Value.absent(),
+    this.profileId = const Value.absent(),
+    this.personId = const Value.absent(),
+    this.section = const Value.absent(),
+    this.status = const Value.absent(),
+    this.parentEntryId = const Value.absent(),
+    this.firstNoted = const Value.absent(),
+    this.lastNoted = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.rowVersion = const Value.absent(),
+    this.lastWriterDeviceId = const Value.absent(),
+    this.keyVersion = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ProfileEntriesCompanion.insert({
+    required String id,
+    required String profileId,
+    required String personId,
+    required int section,
+    required int status,
+    this.parentEntryId = const Value.absent(),
+    this.firstNoted = const Value.absent(),
+    this.lastNoted = const Value.absent(),
+    required int createdAt,
+    required int updatedAt,
+    this.deletedAt = const Value.absent(),
+    this.rowVersion = const Value.absent(),
+    this.lastWriterDeviceId = const Value.absent(),
+    this.keyVersion = const Value.absent(),
+    required Uint8List payload,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       profileId = Value(profileId),
+       personId = Value(personId),
+       section = Value(section),
+       status = Value(status),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt),
+       payload = Value(payload);
+  static Insertable<ProfileEntryRow> custom({
+    Expression<String>? id,
+    Expression<String>? profileId,
+    Expression<String>? personId,
+    Expression<int>? section,
+    Expression<int>? status,
+    Expression<String>? parentEntryId,
+    Expression<int>? firstNoted,
+    Expression<int>? lastNoted,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? deletedAt,
+    Expression<int>? rowVersion,
+    Expression<String>? lastWriterDeviceId,
+    Expression<int>? keyVersion,
+    Expression<Uint8List>? payload,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (profileId != null) 'profile_id': profileId,
+      if (personId != null) 'person_id': personId,
+      if (section != null) 'section': section,
+      if (status != null) 'status': status,
+      if (parentEntryId != null) 'parent_entry_id': parentEntryId,
+      if (firstNoted != null) 'first_noted': firstNoted,
+      if (lastNoted != null) 'last_noted': lastNoted,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (rowVersion != null) 'row_version': rowVersion,
+      if (lastWriterDeviceId != null)
+        'last_writer_device_id': lastWriterDeviceId,
+      if (keyVersion != null) 'key_version': keyVersion,
+      if (payload != null) 'payload': payload,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ProfileEntriesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? profileId,
+    Value<String>? personId,
+    Value<int>? section,
+    Value<int>? status,
+    Value<String?>? parentEntryId,
+    Value<int?>? firstNoted,
+    Value<int?>? lastNoted,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int?>? deletedAt,
+    Value<int>? rowVersion,
+    Value<String?>? lastWriterDeviceId,
+    Value<int>? keyVersion,
+    Value<Uint8List>? payload,
+    Value<int>? rowid,
+  }) {
+    return ProfileEntriesCompanion(
+      id: id ?? this.id,
+      profileId: profileId ?? this.profileId,
+      personId: personId ?? this.personId,
+      section: section ?? this.section,
+      status: status ?? this.status,
+      parentEntryId: parentEntryId ?? this.parentEntryId,
+      firstNoted: firstNoted ?? this.firstNoted,
+      lastNoted: lastNoted ?? this.lastNoted,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      rowVersion: rowVersion ?? this.rowVersion,
+      lastWriterDeviceId: lastWriterDeviceId ?? this.lastWriterDeviceId,
+      keyVersion: keyVersion ?? this.keyVersion,
+      payload: payload ?? this.payload,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (profileId.present) {
+      map['profile_id'] = Variable<String>(profileId.value);
+    }
+    if (personId.present) {
+      map['person_id'] = Variable<String>(personId.value);
+    }
+    if (section.present) {
+      map['section'] = Variable<int>(section.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<int>(status.value);
+    }
+    if (parentEntryId.present) {
+      map['parent_entry_id'] = Variable<String>(parentEntryId.value);
+    }
+    if (firstNoted.present) {
+      map['first_noted'] = Variable<int>(firstNoted.value);
+    }
+    if (lastNoted.present) {
+      map['last_noted'] = Variable<int>(lastNoted.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (rowVersion.present) {
+      map['row_version'] = Variable<int>(rowVersion.value);
+    }
+    if (lastWriterDeviceId.present) {
+      map['last_writer_device_id'] = Variable<String>(lastWriterDeviceId.value);
+    }
+    if (keyVersion.present) {
+      map['key_version'] = Variable<int>(keyVersion.value);
+    }
+    if (payload.present) {
+      map['payload'] = Variable<Uint8List>(payload.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProfileEntriesCompanion(')
+          ..write('id: $id, ')
+          ..write('profileId: $profileId, ')
+          ..write('personId: $personId, ')
+          ..write('section: $section, ')
+          ..write('status: $status, ')
+          ..write('parentEntryId: $parentEntryId, ')
+          ..write('firstNoted: $firstNoted, ')
+          ..write('lastNoted: $lastNoted, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('rowVersion: $rowVersion, ')
+          ..write('lastWriterDeviceId: $lastWriterDeviceId, ')
+          ..write('keyVersion: $keyVersion, ')
+          ..write('payload: $payload, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -5806,6 +6682,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $AppointmentsTable appointments = $AppointmentsTable(this);
   late final $MilestonesTable milestones = $MilestonesTable(this);
   late final $ProfilesTable profiles = $ProfilesTable(this);
+  late final $ProfileEntriesTable profileEntries = $ProfileEntriesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -5820,6 +6697,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     appointments,
     milestones,
     profiles,
+    profileEntries,
   ];
 }
 
@@ -8535,6 +9413,412 @@ typedef $$ProfilesTableProcessedTableManager =
       ProfileRow,
       PrefetchHooks Function()
     >;
+typedef $$ProfileEntriesTableCreateCompanionBuilder =
+    ProfileEntriesCompanion Function({
+      required String id,
+      required String profileId,
+      required String personId,
+      required int section,
+      required int status,
+      Value<String?> parentEntryId,
+      Value<int?> firstNoted,
+      Value<int?> lastNoted,
+      required int createdAt,
+      required int updatedAt,
+      Value<int?> deletedAt,
+      Value<int> rowVersion,
+      Value<String?> lastWriterDeviceId,
+      Value<int> keyVersion,
+      required Uint8List payload,
+      Value<int> rowid,
+    });
+typedef $$ProfileEntriesTableUpdateCompanionBuilder =
+    ProfileEntriesCompanion Function({
+      Value<String> id,
+      Value<String> profileId,
+      Value<String> personId,
+      Value<int> section,
+      Value<int> status,
+      Value<String?> parentEntryId,
+      Value<int?> firstNoted,
+      Value<int?> lastNoted,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> deletedAt,
+      Value<int> rowVersion,
+      Value<String?> lastWriterDeviceId,
+      Value<int> keyVersion,
+      Value<Uint8List> payload,
+      Value<int> rowid,
+    });
+
+class $$ProfileEntriesTableFilterComposer
+    extends Composer<_$AppDatabase, $ProfileEntriesTable> {
+  $$ProfileEntriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get profileId => $composableBuilder(
+    column: $table.profileId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get personId => $composableBuilder(
+    column: $table.personId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get section => $composableBuilder(
+    column: $table.section,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get parentEntryId => $composableBuilder(
+    column: $table.parentEntryId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get firstNoted => $composableBuilder(
+    column: $table.firstNoted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastNoted => $composableBuilder(
+    column: $table.lastNoted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get rowVersion => $composableBuilder(
+    column: $table.rowVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastWriterDeviceId => $composableBuilder(
+    column: $table.lastWriterDeviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get keyVersion => $composableBuilder(
+    column: $table.keyVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ProfileEntriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ProfileEntriesTable> {
+  $$ProfileEntriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get profileId => $composableBuilder(
+    column: $table.profileId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get personId => $composableBuilder(
+    column: $table.personId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get section => $composableBuilder(
+    column: $table.section,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get parentEntryId => $composableBuilder(
+    column: $table.parentEntryId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get firstNoted => $composableBuilder(
+    column: $table.firstNoted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lastNoted => $composableBuilder(
+    column: $table.lastNoted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get rowVersion => $composableBuilder(
+    column: $table.rowVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastWriterDeviceId => $composableBuilder(
+    column: $table.lastWriterDeviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get keyVersion => $composableBuilder(
+    column: $table.keyVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<Uint8List> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ProfileEntriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ProfileEntriesTable> {
+  $$ProfileEntriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get profileId =>
+      $composableBuilder(column: $table.profileId, builder: (column) => column);
+
+  GeneratedColumn<String> get personId =>
+      $composableBuilder(column: $table.personId, builder: (column) => column);
+
+  GeneratedColumn<int> get section =>
+      $composableBuilder(column: $table.section, builder: (column) => column);
+
+  GeneratedColumn<int> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get parentEntryId => $composableBuilder(
+    column: $table.parentEntryId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get firstNoted => $composableBuilder(
+    column: $table.firstNoted,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get lastNoted =>
+      $composableBuilder(column: $table.lastNoted, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get rowVersion => $composableBuilder(
+    column: $table.rowVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get lastWriterDeviceId => $composableBuilder(
+    column: $table.lastWriterDeviceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get keyVersion => $composableBuilder(
+    column: $table.keyVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<Uint8List> get payload =>
+      $composableBuilder(column: $table.payload, builder: (column) => column);
+}
+
+class $$ProfileEntriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ProfileEntriesTable,
+          ProfileEntryRow,
+          $$ProfileEntriesTableFilterComposer,
+          $$ProfileEntriesTableOrderingComposer,
+          $$ProfileEntriesTableAnnotationComposer,
+          $$ProfileEntriesTableCreateCompanionBuilder,
+          $$ProfileEntriesTableUpdateCompanionBuilder,
+          (
+            ProfileEntryRow,
+            BaseReferences<
+              _$AppDatabase,
+              $ProfileEntriesTable,
+              ProfileEntryRow
+            >,
+          ),
+          ProfileEntryRow,
+          PrefetchHooks Function()
+        > {
+  $$ProfileEntriesTableTableManager(
+    _$AppDatabase db,
+    $ProfileEntriesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ProfileEntriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ProfileEntriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ProfileEntriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> profileId = const Value.absent(),
+                Value<String> personId = const Value.absent(),
+                Value<int> section = const Value.absent(),
+                Value<int> status = const Value.absent(),
+                Value<String?> parentEntryId = const Value.absent(),
+                Value<int?> firstNoted = const Value.absent(),
+                Value<int?> lastNoted = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<int> rowVersion = const Value.absent(),
+                Value<String?> lastWriterDeviceId = const Value.absent(),
+                Value<int> keyVersion = const Value.absent(),
+                Value<Uint8List> payload = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ProfileEntriesCompanion(
+                id: id,
+                profileId: profileId,
+                personId: personId,
+                section: section,
+                status: status,
+                parentEntryId: parentEntryId,
+                firstNoted: firstNoted,
+                lastNoted: lastNoted,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                rowVersion: rowVersion,
+                lastWriterDeviceId: lastWriterDeviceId,
+                keyVersion: keyVersion,
+                payload: payload,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String profileId,
+                required String personId,
+                required int section,
+                required int status,
+                Value<String?> parentEntryId = const Value.absent(),
+                Value<int?> firstNoted = const Value.absent(),
+                Value<int?> lastNoted = const Value.absent(),
+                required int createdAt,
+                required int updatedAt,
+                Value<int?> deletedAt = const Value.absent(),
+                Value<int> rowVersion = const Value.absent(),
+                Value<String?> lastWriterDeviceId = const Value.absent(),
+                Value<int> keyVersion = const Value.absent(),
+                required Uint8List payload,
+                Value<int> rowid = const Value.absent(),
+              }) => ProfileEntriesCompanion.insert(
+                id: id,
+                profileId: profileId,
+                personId: personId,
+                section: section,
+                status: status,
+                parentEntryId: parentEntryId,
+                firstNoted: firstNoted,
+                lastNoted: lastNoted,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                rowVersion: rowVersion,
+                lastWriterDeviceId: lastWriterDeviceId,
+                keyVersion: keyVersion,
+                payload: payload,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ProfileEntriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ProfileEntriesTable,
+      ProfileEntryRow,
+      $$ProfileEntriesTableFilterComposer,
+      $$ProfileEntriesTableOrderingComposer,
+      $$ProfileEntriesTableAnnotationComposer,
+      $$ProfileEntriesTableCreateCompanionBuilder,
+      $$ProfileEntriesTableUpdateCompanionBuilder,
+      (
+        ProfileEntryRow,
+        BaseReferences<_$AppDatabase, $ProfileEntriesTable, ProfileEntryRow>,
+      ),
+      ProfileEntryRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -8557,4 +9841,6 @@ class $AppDatabaseManager {
       $$MilestonesTableTableManager(_db, _db.milestones);
   $$ProfilesTableTableManager get profiles =>
       $$ProfilesTableTableManager(_db, _db.profiles);
+  $$ProfileEntriesTableTableManager get profileEntries =>
+      $$ProfileEntriesTableTableManager(_db, _db.profileEntries);
 }
