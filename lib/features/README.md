@@ -5,19 +5,22 @@ One folder per feature domain. Each feature is self-contained with its own
 **never on a sibling feature directly** (cross-feature communication goes
 through Riverpod providers or shared `core/` services).
 
-| Feature            | Status      | Purpose                                                                                   |
-| ------------------ | ----------- | ----------------------------------------------------------------------------------------- |
-| `home/`            | implemented | Tabbed home screen + feature tile grid + persistent Calm button.                          |
-| `safety_plan/`     | implemented | Calm screen: low-stim coping strategies + crisis contacts. Placeholder content.           |
-| `settings/`        | implemented | Settings shell.                                                                           |
-| `people/`          | planned     | `Person` CRUD. Root entity — every other feature foreign-keys to a Person.                |
-| `profile/`         | planned     | Living profile per Person: stims, preferences (sensory/food/clothing/social), routines, triggers, what helps, early signs, communication, sleep & appetite baseline. Embeds the Notes timeline. |
-| `appointments/`    | planned     | Appointments with local-notification reminders, recurrence, attached provider.            |
-| `medications/`     | planned     | Current list + history of changes. Medication report PDF export for clinicians.           |
-| `providers/`       | planned     | Doctors, therapists, specialists. Phone, address, portal link.                            |
-| `programs/`        | planned     | Schools, camps, after-care. Calendars, holidays, contact tree.                            |
-| `apps_sites/`      | planned     | Portals, IEP tools, telehealth — URLs + notes (never passwords).                          |
-| `milestones/`      | planned     | Milestones & dates: flexible typed life-log, searchable ("when did X happen?").           |
+| Feature            | Status        | Purpose                                                                                   |
+| ------------------ | ------------- | ----------------------------------------------------------------------------------------- |
+| `home/`            | implemented   | Tabbed home screen + feature tile grid + persistent Calm button + search entry.          |
+| `safety_plan/`     | implemented   | Calm screen: low-stim theme, concrete coping copy, crisis tel/SMS, profile-backed blocks. |
+| `settings/`        | implemented   | Settings shell + care summary entry.                                                     |
+| `search/`          | partial       | Global search UI; **People** name filter today, more domains planned.                    |
+| `people/`          | implemented   | `Person` CRUD, roster, active-person switcher.                                            |
+| `profile/`         | implemented   | Baselines + structured `ProfileEntry` rows, Notes links, archive, Calm contract.          |
+| `observations/`    | implemented   | Notes timeline (`Observation`), links to profile entries.                                 |
+| `appointments/`    | implemented   | Appointments + local-notification reminders, provider link, Today integration.             |
+| `medications/`     | implemented   | Meds + groups + schedule + Today + dose logs + notifications + adherence PDF.             |
+| `reports/`         | implemented   | Adherence report PDF + **care summary** PDF (baselines + active structured + crisis).   |
+| `providers/`       | implemented   | Care providers, phone/address/portal, archive-safe references.                          |
+| `programs/`        | placeholder   | Schools / camps / after-care — screen + route; encrypted list UI next.                    |
+| `apps_sites/`      | placeholder   | Portals & tools — URLs + notes (no passwords); data layer next.                           |
+| `milestones/`      | implemented   | Milestones & dates: typed life-log, archive / restore.                                    |
 
 See [`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md) for the data model
 and naming conventions each feature follows.

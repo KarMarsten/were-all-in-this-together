@@ -6,9 +6,11 @@ number of neurodivergent people in it. Any number of trusted people with
 access.
 
 > **Status:** Phase 1 (local-only MVP) in progress. Crypto, encrypted
-> local database, People, Medications, and a **Profile** baseline (per
-> Person) are shipped; structured profile sections and Notes are still
-> in flight. Multi-device sync lands in Phase 2. See
+> local database, People, Medications, **Profile** (baselines + structured
+> lines + Calm surfacing), **Notes** (observations timeline), **Care summary
+> PDF**, **global search** (people only for now), and **Programs / Apps &
+> Sites** entry screens (placeholders ahead of encrypted lists) are in the
+> app. Multi-device sync is Phase 2. See
 > [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the plan.
 
 ---
@@ -77,30 +79,41 @@ access.
   "sometime in 2019" is a legitimate answer. Reverse-chronological
   list grouped by year, optional provider link (archived providers
   still resolve), free-text notes, archive / restore.
-- **Profile (baselines)** — one encrypted row per Person (created on
-  first open): **communication** preferences, **sleep** baseline, and
-  **appetite / eating** baseline as free text. Stims, routines, sensory
-  preferences, triggers, what helps, early signs, and the embedded
-  **Notes** timeline are planned as follow-up structure on top of this
-  foundation.
+- **Profile** — one encrypted baseline row per Person (**communication**,
+  **sleep**, **appetite / eating**) plus **structured entries** (stims,
+  sensory/food/clothing/social preferences, routine blocks & steps,
+  triggers, what helps, early signs, other) with status, optional dates,
+  archive/restore, and Calm surfacing for the in-the-moment screen. **Notes**
+  (observations) are a separate timeline with optional links to profile lines.
+- **Care summary (PDF)** — from **Settings**, export baselines + every
+  **active** structured line (grouped by section) + national crisis lines for
+  babysitters, grandparents, and respite (same `printing` path as the
+  adherence report).
+- **Search** — app-bar entry on Home; filters the **People** roster by
+  display name (more domains later).
+- **Programs** and **Apps & Sites** — routed from Home with per-person
+  placeholder copy; encrypted school/portal data models come next.
 - **Calm** — in-the-moment coping strategies and crisis contacts, reachable
   in one tap from anywhere, rendered in a dedicated low-stimulation theme.
 
 ## What's still to come
 
-- **Programs** — schools, camps, after-care: calendars, holidays, contact
-  trees, key phone numbers.
-- **Apps & Sites** — portals (IEP, telehealth, insurance): URLs + notes
-  (never passwords).
-- **Profile (structured + Notes)** — stims, preferences (sensory, food &
-  eating, clothing, social), routines, triggers, what helps, early signs,
-  plus an embedded **Notes** timeline — layered on the baseline Profile
-  row already in the app.
-- **Care summary** — a second PDF export built from Profile + routines + what
-  helps + early signs + crisis contacts. The "here's how to spend a weekend
-  with them" handoff doc for babysitters, grandparents, and respite.
-- **Multi-device, multi-caregiver sync** (Phase 2) — Supabase backend in
-  the EU, per-person key shares, QR pairing, first-ACK-wins attribution.
+Priorities **0–5** for Phase 1 (see recent commits and
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) § Phase plan):
+
+0. **Keep docs honest** — this README and `lib/features/README.md` track what
+   shipped vs placeholder.
+1. **Programs & Apps & Sites (data)** — real encrypted lists, URLs, and tap
+   actions on top of the current placeholder screens.
+2. **Care summary depth** — optional Calm-only sections, richer crisis block,
+   locale-specific hotlines where we can cite them safely.
+3. **Calm** — continue replacing any remaining generic copy with concrete,
+   profile-aware guidance where it helps.
+4. **Global search** — extend beyond People (medications, appointments,
+   notes, profile labels).
+5. **Phase 2 — Multi-device, multi-caregiver sync** — Supabase (EU), per-person
+   key shares, QR pairing, first-ACK-wins attribution. Not started; see
+   architecture doc for privacy and pairing design.
 
 ## Principles
 
@@ -138,12 +151,13 @@ lib/
     ├── settings/          settings + reminder-nag preferences
     ├── people/            Person CRUD + active-Person switcher
     ├── medications/       meds + groups + schedule + Today + dose logs + notifications
-    ├── reports/           adherence report (four-column + PDF/print)
+    ├── reports/           adherence report + care summary PDFs
     ├── providers/         care-provider CRUD + detail with tap actions
     ├── profile/           per-Person baselines (communication, sleep, appetite)
     ├── appointments/      visits + local reminders + Today integration
-    ├── programs/          planned
-    ├── apps_sites/        planned
+    ├── programs/          placeholder UI (data layer next)
+    ├── apps_sites/        placeholder UI (data layer next)
+    ├── search/            global search (People only in v1)
     └── milestones/        per-Person life-log of dated events
 docs/
 └── ARCHITECTURE.md        decision log + data model + phases + naming conventions

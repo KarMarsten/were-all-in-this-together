@@ -366,12 +366,16 @@ and holding a consistent vocabulary is a feature, not a polish task.
 - Providers.
 - Medications + history + **Medication report** PDF.
 - Milestones & dates.
-- Apps & Sites.
-- Programs (contact info; calendar integration deferred).
-- Profile (stims, preferences, routines, triggers, what helps, early signs,
-  communication, sleep/appetite baseline) + embedded Notes timeline.
-- Safety plan (authored content, not placeholder) + **Care summary** PDF.
-- Global search.
+- Apps & Sites (placeholder routes + copy; encrypted URL list next).
+- Programs (placeholder routes + copy; contact tree / calendar next).
+- Profile + Notes — **shipped** locally (structured entries, Calm surfacing,
+  observation timeline, profile-line links).
+- Safety plan (Calm: authored coping + crisis + profile blocks) — iterate on
+  copy as needed.
+- **Care summary** PDF — **shipped** (baselines + active structured + crisis
+  lines); deepen with locale-specific hotlines when vetted.
+- Global search — **partial** (People names); extend to meds / appointments /
+  notes / profile labels.
 
 ### Phase 2 — Multi-device + multi-user
 

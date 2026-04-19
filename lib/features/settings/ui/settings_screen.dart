@@ -26,6 +26,15 @@ class SettingsScreen extends StatelessWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push(Routes.notificationSettings),
           ),
+          ListTile(
+            leading: const Icon(Icons.picture_as_pdf_outlined),
+            title: const Text('Care summary (PDF)'),
+            subtitle: const Text(
+              'Handoff for babysitters, grandparents, and respite',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push(Routes.careSummary),
+          ),
           const ListTile(
             leading: Icon(Icons.lock_outline),
             title: Text('App lock'),

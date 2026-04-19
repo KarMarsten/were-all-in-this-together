@@ -28,6 +28,11 @@ class HomeScreen extends StatelessWidget {
         title: const Text("We're All In This Together"),
         actions: [
           IconButton(
+            tooltip: 'Search',
+            icon: const Icon(Icons.search),
+            onPressed: () => context.push(Routes.search),
+          ),
+          IconButton(
             tooltip: 'Settings',
             icon: const Icon(Icons.settings_outlined),
             onPressed: () => context.push(Routes.settings),
@@ -280,11 +285,13 @@ class _FeatureGrid extends StatelessWidget {
       label: 'Programs',
       icon: Icons.school_outlined,
       description: 'Schools, camps, after-care',
+      route: Routes.programs,
     ),
     _FeatureTileData(
       label: 'Apps & Sites',
       icon: Icons.link_outlined,
       description: 'Portals, telehealth, IEP tools',
+      route: Routes.appsSites,
     ),
     _FeatureTileData(
       label: 'Notes',

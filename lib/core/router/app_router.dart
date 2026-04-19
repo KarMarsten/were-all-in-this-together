@@ -6,6 +6,7 @@ import 'package:were_all_in_this_together/features/appointments/data/appointment
 import 'package:were_all_in_this_together/features/appointments/domain/appointment.dart';
 import 'package:were_all_in_this_together/features/appointments/presentation/appointment_form_screen.dart';
 import 'package:were_all_in_this_together/features/appointments/presentation/appointments_list_screen.dart';
+import 'package:were_all_in_this_together/features/apps_sites/ui/apps_sites_screen.dart';
 import 'package:were_all_in_this_together/features/home/ui/home_screen.dart';
 import 'package:were_all_in_this_together/features/medications/data/medication_group_repository.dart';
 import 'package:were_all_in_this_together/features/medications/data/medication_repository.dart';
@@ -33,13 +34,16 @@ import 'package:were_all_in_this_together/features/profile/data/profile_entry_re
 import 'package:were_all_in_this_together/features/profile/domain/profile_entry.dart';
 import 'package:were_all_in_this_together/features/profile/presentation/profile_entry_form_screen.dart';
 import 'package:were_all_in_this_together/features/profile/presentation/profile_screen.dart';
+import 'package:were_all_in_this_together/features/programs/ui/programs_screen.dart';
 import 'package:were_all_in_this_together/features/providers/data/care_provider_repository.dart';
 import 'package:were_all_in_this_together/features/providers/domain/care_provider.dart';
 import 'package:were_all_in_this_together/features/providers/presentation/care_provider_detail_screen.dart';
 import 'package:were_all_in_this_together/features/providers/presentation/care_provider_form_screen.dart';
 import 'package:were_all_in_this_together/features/providers/presentation/care_providers_list_screen.dart';
 import 'package:were_all_in_this_together/features/reports/presentation/adherence_report_screen.dart';
+import 'package:were_all_in_this_together/features/reports/presentation/care_summary_screen.dart';
 import 'package:were_all_in_this_together/features/safety_plan/ui/calm_screen.dart';
+import 'package:were_all_in_this_together/features/search/presentation/global_search_screen.dart';
 import 'package:were_all_in_this_together/features/settings/ui/notification_settings_screen.dart';
 import 'package:were_all_in_this_together/features/settings/ui/settings_screen.dart';
 import 'package:were_all_in_this_together/features/today/presentation/today_screen.dart';
@@ -48,6 +52,7 @@ import 'package:were_all_in_this_together/features/today/presentation/today_scre
 /// the same source of truth.
 abstract class Routes {
   static const home = '/';
+  static const search = '/search';
   static const calm = '/calm';
   static const settings = '/settings';
   static const notificationSettings = '/settings/notifications';
@@ -81,6 +86,12 @@ abstract class Routes {
   static const today = '/today';
 
   static const adherenceReport = '/medications/report';
+
+  static const careSummary = '/care-summary';
+
+  static const programs = '/programs';
+
+  static const appsSites = '/apps-sites';
 
   static const careProviders = '/providers';
   static const careProviderNew = '/providers/new';
@@ -132,6 +143,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: Routes.home,
         name: 'home',
         builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: Routes.search,
+        name: 'search',
+        builder: (context, state) => const GlobalSearchScreen(),
       ),
       GoRoute(
         path: Routes.calm,
@@ -231,6 +247,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: Routes.adherenceReport,
         name: 'adherence-report',
         builder: (context, state) => const AdherenceReportScreen(),
+      ),
+      GoRoute(
+        path: Routes.careSummary,
+        name: 'care-summary',
+        builder: (context, state) => const CareSummaryScreen(),
+      ),
+      GoRoute(
+        path: Routes.programs,
+        name: 'programs',
+        builder: (context, state) => const ProgramsScreen(),
+      ),
+      GoRoute(
+        path: Routes.appsSites,
+        name: 'apps-sites',
+        builder: (context, state) => const AppsSitesScreen(),
       ),
       GoRoute(
         path: Routes.careProviders,
