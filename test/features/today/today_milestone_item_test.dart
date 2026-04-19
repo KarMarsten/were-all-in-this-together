@@ -33,7 +33,6 @@ void main() {
       final m = _milestone(
         id: '1',
         occurredAt: DateTime.utc(2020, 4, 18),
-        precision: MilestonePrecision.day,
       );
       expect(
         milestoneAnniversaryMatchesToday(milestone: m, now: now),
@@ -59,7 +58,7 @@ void main() {
       final m = _milestone(
         id: '1',
         occurredAt: DateTime.utc(2020, 4, 18),
-        deletedAt: DateTime.utc(2026, 1, 1),
+        deletedAt: DateTime.utc(2026),
       );
       expect(
         milestoneAnniversaryMatchesToday(milestone: m, now: now),
@@ -72,7 +71,6 @@ void main() {
       final m = _milestone(
         id: '1',
         occurredAt: DateTime.utc(2027, 4, 18),
-        precision: MilestonePrecision.day,
       );
       expect(
         milestoneAnniversaryMatchesToday(milestone: m, now: now),
