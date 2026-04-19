@@ -25,6 +25,7 @@ import 'package:were_all_in_this_together/features/people/data/person_repository
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 import 'package:were_all_in_this_together/features/people/presentation/people_list_screen.dart';
 import 'package:were_all_in_this_together/features/people/presentation/person_form_screen.dart';
+import 'package:were_all_in_this_together/features/profile/presentation/profile_screen.dart';
 import 'package:were_all_in_this_together/features/providers/data/care_provider_repository.dart';
 import 'package:were_all_in_this_together/features/providers/domain/care_provider.dart';
 import 'package:were_all_in_this_together/features/providers/presentation/care_provider_detail_screen.dart';
@@ -93,6 +94,8 @@ abstract class Routes {
   static const milestoneEditPattern = '/milestones/:id/edit';
 
   static String milestoneEdit(String id) => '/milestones/$id/edit';
+
+  static const profile = '/profile';
 }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -264,6 +267,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final id = state.pathParameters['id']!;
           return _MilestoneEditLoader(milestoneId: id);
         },
+      ),
+      GoRoute(
+        path: Routes.profile,
+        name: 'profile',
+        builder: (context, state) => const ProfileScreen(),
       ),
     ],
   );
