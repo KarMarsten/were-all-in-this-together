@@ -6,8 +6,9 @@ number of neurodivergent people in it. Any number of trusted people with
 access.
 
 > **Status:** Phase 1 (local-only MVP) in progress. Crypto, encrypted
-> local database, People, and the full Medications vertical are shipped.
-> Multi-device sync lands in Phase 2. See
+> local database, People, Medications, and a **Profile** baseline (per
+> Person) are shipped; structured profile sections and Notes are still
+> in flight. Multi-device sync lands in Phase 2. See
 > [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the plan.
 
 ---
@@ -76,6 +77,12 @@ access.
   "sometime in 2019" is a legitimate answer. Reverse-chronological
   list grouped by year, optional provider link (archived providers
   still resolve), free-text notes, archive / restore.
+- **Profile (baselines)** — one encrypted row per Person (created on
+  first open): **communication** preferences, **sleep** baseline, and
+  **appetite / eating** baseline as free text. Stims, routines, sensory
+  preferences, triggers, what helps, early signs, and the embedded
+  **Notes** timeline are planned as follow-up structure on top of this
+  foundation.
 - **Calm** — in-the-moment coping strategies and crisis contacts, reachable
   in one tap from anywhere, rendered in a dedicated low-stimulation theme.
 
@@ -85,10 +92,10 @@ access.
   trees, key phone numbers.
 - **Apps & Sites** — portals (IEP, telehealth, insurance): URLs + notes
   (never passwords).
-- **Profile** — a living document per person: stims, preferences (sensory,
-  food & eating, clothing, social), routines, triggers, what helps, early
-  signs, communication, sleep & appetite baseline. Includes an embedded
-  **Notes** timeline for quickly jotting what changed and when.
+- **Profile (structured + Notes)** — stims, preferences (sensory, food &
+  eating, clothing, social), routines, triggers, what helps, early signs,
+  plus an embedded **Notes** timeline — layered on the baseline Profile
+  row already in the app.
 - **Care summary** — a second PDF export built from Profile + routines + what
   helps + early signs + crisis contacts. The "here's how to spend a weekend
   with them" handoff doc for babysitters, grandparents, and respite.
@@ -121,7 +128,7 @@ lib/
 ├── app.dart               MaterialApp.router wiring + pending-ACK drainer
 ├── core/
 │   ├── crypto/            XChaCha20-Poly1305 envelope + Keychain key storage
-│   ├── database/          Drift schema + migrations (v1-v5)
+│   ├── database/          Drift schema + migrations (v1–v9)
 │   ├── notifications/     local notifications + background ACK queue
 │   ├── router/            go_router config
 │   └── theme/             Material 3 + Calm low-stim theme
@@ -133,8 +140,8 @@ lib/
     ├── medications/       meds + groups + schedule + Today + dose logs + notifications
     ├── reports/           adherence report (four-column + PDF/print)
     ├── providers/         care-provider CRUD + detail with tap actions
-    ├── profile/           planned: stims, routines, preferences + Notes timeline
-    ├── appointments/      planned
+    ├── profile/           per-Person baselines (communication, sleep, appetite)
+    ├── appointments/      visits + local reminders + Today integration
     ├── programs/          planned
     ├── apps_sites/        planned
     └── milestones/        per-Person life-log of dated events

@@ -262,6 +262,7 @@ class _FeatureGrid extends StatelessWidget {
       label: 'Profile',
       icon: Icons.psychology_outlined,
       description: 'Stims, routines, what helps',
+      route: Routes.profile,
     ),
     _FeatureTileData(
       label: 'Milestones & dates',

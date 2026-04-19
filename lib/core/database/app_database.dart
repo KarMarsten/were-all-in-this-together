@@ -10,6 +10,7 @@ import 'package:were_all_in_this_together/core/database/tables/medication_groups
 import 'package:were_all_in_this_together/core/database/tables/medications.dart';
 import 'package:were_all_in_this_together/core/database/tables/milestones.dart';
 import 'package:were_all_in_this_together/core/database/tables/persons.dart';
+import 'package:were_all_in_this_together/core/database/tables/profiles.dart';
 
 part 'app_database.g.dart';
 
@@ -35,6 +36,8 @@ part 'app_database.g.dart';
 /// * **v7** — adds Appointments.
 /// * **v8** — adds Milestones (retrospective life-log of dated
 ///   events: diagnoses, vaccines, developmental firsts, moves).
+/// * **v9** — adds Profiles (1:1 encrypted living-document baselines
+///   per Person: communication, sleep, appetite).
 @DriftDatabase(
   tables: [
     Persons,
@@ -45,6 +48,7 @@ part 'app_database.g.dart';
     MedicationEvents,
     Appointments,
     Milestones,
+    Profiles,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -59,7 +63,7 @@ class AppDatabase extends _$AppDatabase {
       AppDatabase(driftDatabase(name: 'were_all_in_this_together'));
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -91,6 +95,9 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 8) {
             await m.createTable(milestones);
+          }
+          if (from < 9) {
+            await m.createTable(profiles);
           }
         },
       );
