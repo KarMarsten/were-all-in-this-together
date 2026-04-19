@@ -6,7 +6,7 @@ import 'package:were_all_in_this_together/features/today/domain/today_milestone_
 Milestone _milestone({
   required String id,
   required DateTime occurredAt,
-  MilestonePrecision precision = MilestonePrecision.day,
+  required MilestonePrecision precision,
   DateTime? deletedAt,
 }) {
   final created = DateTime.utc(2030);
@@ -33,6 +33,7 @@ void main() {
       final m = _milestone(
         id: '1',
         occurredAt: DateTime.utc(2020, 4, 18),
+        precision: MilestonePrecision.day,
       );
       expect(
         milestoneAnniversaryMatchesToday(milestone: m, now: now),
@@ -58,6 +59,7 @@ void main() {
       final m = _milestone(
         id: '1',
         occurredAt: DateTime.utc(2020, 4, 18),
+        precision: MilestonePrecision.day,
         deletedAt: DateTime.utc(2026),
       );
       expect(
@@ -71,6 +73,7 @@ void main() {
       final m = _milestone(
         id: '1',
         occurredAt: DateTime.utc(2027, 4, 18),
+        precision: MilestonePrecision.day,
       );
       expect(
         milestoneAnniversaryMatchesToday(milestone: m, now: now),
@@ -84,6 +87,7 @@ void main() {
       final m = _milestone(
         id: '1',
         occurredAt: DateTime.utc(2020, 4, 18),
+        precision: MilestonePrecision.day,
       );
       expect(
         milestoneAnniversarySubtitle(
@@ -98,6 +102,7 @@ void main() {
       final m = _milestone(
         id: '1',
         occurredAt: DateTime.utc(2025, 4, 18),
+        precision: MilestonePrecision.day,
       );
       expect(
         milestoneAnniversarySubtitle(
@@ -115,14 +120,17 @@ void main() {
       final older = _milestone(
         id: 'older',
         occurredAt: DateTime.utc(2015, 4, 18),
+        precision: MilestonePrecision.day,
       );
       final newer = _milestone(
         id: 'newer',
         occurredAt: DateTime.utc(2020, 4, 18),
+        precision: MilestonePrecision.day,
       );
       final wrongDay = _milestone(
         id: 'wrong',
         occurredAt: DateTime.utc(2020, 5, 3),
+        precision: MilestonePrecision.day,
       );
 
       final out = expandTodayMilestoneItems(
