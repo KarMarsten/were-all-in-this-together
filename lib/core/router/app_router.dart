@@ -108,6 +108,14 @@ abstract class Routes {
 
   static String noteEdit(String id) => '/notes/$id/edit';
 
+  /// Notes timeline filtered to rows linked to this profile entry id.
+  static String notesForProfileEntry(String entryId) =>
+      '$notes?profileEntry=${Uri.encodeQueryComponent(entryId)}';
+
+  /// New note with the profile-line link prefilled (query param).
+  static String noteNewLinkedToProfileEntry(String entryId) =>
+      '$noteNew?profileEntry=${Uri.encodeQueryComponent(entryId)}';
+
   static const profile = '/profile';
 
   static const profileEntryNew = '/profile/entries/new';
@@ -289,12 +297,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.notes,
         name: 'notes',
-        builder: (context, state) => const ObservationsListScreen(),
+        builder: (context, state) => ObservationsListScreen(
+          profileEntryFilterId: state.uri.queryParameters['profileEntry'],
+        ),
       ),
       GoRoute(
         path: Routes.noteNew,
         name: 'note-new',
-        builder: (context, state) => const ObservationFormScreen(),
+        builder: (context, state) => ObservationFormScreen(
+          initialProfileEntryId: state.uri.queryParameters['profileEntry'],
+        ),
       ),
       GoRoute(
         path: Routes.noteEditPattern,

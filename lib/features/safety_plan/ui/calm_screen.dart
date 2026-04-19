@@ -7,6 +7,7 @@ import 'package:were_all_in_this_together/core/theme/app_theme.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 import 'package:were_all_in_this_together/features/profile/domain/profile.dart';
 import 'package:were_all_in_this_together/features/profile/domain/profile_entry.dart';
+import 'package:were_all_in_this_together/features/profile/domain/profile_entry_contract.dart';
 import 'package:were_all_in_this_together/features/profile/presentation/providers.dart';
 import 'package:were_all_in_this_together/features/providers/presentation/url_opener.dart';
 
@@ -22,9 +23,9 @@ import 'package:were_all_in_this_together/features/providers/presentation/url_op
 ///   * Content is intentionally concrete and actionable, not aspirational.
 ///
 /// When someone is focused on Home, **Profile baselines** (communication,
-/// sleep, appetite when filled) and **What helps** / **Early sign** profile
-/// entries (active only) surface here under universal grounding steps.
-/// Everything else stays generic until the full safety-plan editor lands.
+/// sleep, appetite when filled) and **active** structured profile lines
+/// surface here — see [calmHasStructuredProfileContent] and
+/// [sectionSurfacesOnCalm] for which sections lift out of Profile.
 class CalmScreen extends ConsumerWidget {
   const CalmScreen({super.key});
 
@@ -32,7 +33,7 @@ class CalmScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final personAsync = ref.watch(activePersonProvider);
     final profileAsync = ref.watch(activePersonProfileProvider);
-    final entriesAsync = ref.watch(activeProfileEntriesProvider);
+    final entriesAsync = ref.watch(activeProfileLinesProvider);
 
     return Theme(
       data: AppTheme.calm(),
@@ -240,6 +241,9 @@ class _CalmBaselinesCard extends StatelessWidget {
 }
 
 /// Profile-backed bullets placed after "Right now".
+///
+/// [entries] must already be **active-status** rows (e.g. from
+/// [activeProfileLinesProvider]).
 class _CalmProfileBlocks extends StatelessWidget {
   const _CalmProfileBlocks({
     required this.personName,
@@ -249,41 +253,28 @@ class _CalmProfileBlocks extends StatelessWidget {
   final String personName;
   final List<ProfileEntry> entries;
 
+  static int _labelSort(ProfileEntry a, ProfileEntry b) =>
+      a.label.toLowerCase().compareTo(b.label.toLowerCase());
+
+  List<ProfileEntry> _sortedInSection(ProfileEntrySection section) {
+    return entries.where((e) => e.section == section).toList()
+      ..sort(_labelSort);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final helps =
-        entries
-            .where(
-              (e) =>
-                  e.section == ProfileEntrySection.whatHelps &&
-                  e.status == ProfileEntryStatus.active,
-            )
-            .toList()
-          ..sort(
-            (a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()),
-          );
+    final subtitle = 'From $personName’s profile';
 
-    final signs =
-        entries
-            .where(
-              (e) =>
-                  e.section == ProfileEntrySection.earlySign &&
-                  e.status == ProfileEntryStatus.active,
-            )
-            .toList()
-          ..sort(
-            (a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()),
-          );
-
-    if (helps.isEmpty && signs.isEmpty) {
+    if (!calmHasStructuredProfileContent(entries)) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _SectionCard(
-            heading: 'What helps',
+            heading: 'From profile',
             subtitle:
-                'Nothing saved for $personName yet. Profile lines show up '
-                'here when you add them.',
+                'Nothing active for $personName yet in sections that show on '
+                'Calm — add lines in Profile (or set paused entries back to '
+                'active).',
             children: [
               TextButton(
                 onPressed: () => context.push(Routes.profile),
@@ -295,27 +286,116 @@ class _CalmProfileBlocks extends StatelessWidget {
       );
     }
 
+    final helps = _sortedInSection(ProfileEntrySection.whatHelps);
+    final signs = _sortedInSection(ProfileEntrySection.earlySign);
+    final triggers = _sortedInSection(ProfileEntrySection.trigger);
+    final stims = _sortedInSection(ProfileEntrySection.stim);
+    final prefs =
+        entries.where((e) => calmPreferenceSection(e.section)).toList()
+          ..sort((a, b) {
+            final ai = calmPreferenceSections.indexOf(a.section);
+            final bi = calmPreferenceSections.indexOf(b.section);
+            final bySection = ai.compareTo(bi);
+            return bySection != 0 ? bySection : _labelSort(a, b);
+          });
+
+    final blocks = _sortedInSection(ProfileEntrySection.routineBlock);
+    final steps = entries
+        .where((e) => e.section == ProfileEntrySection.routineStep)
+        .toList()
+      ..sort(_labelSort);
+
+    final routineChildren = <Widget>[];
+    for (final b in blocks) {
+      routineChildren.add(_ProfileEntryPlanItem(entry: b));
+      final under = steps
+          .where((s) => s.parentEntryId == b.id)
+          .toList()
+        ..sort(_labelSort);
+      for (final s in under) {
+        routineChildren.add(
+          Padding(
+            padding: const EdgeInsets.only(left: 22),
+            child: _ProfileEntryPlanItem(entry: s),
+          ),
+        );
+      }
+    }
+    final blockIds = blocks.map((b) => b.id).toSet();
+    final orphaned = steps
+        .where(
+          (s) =>
+              s.parentEntryId == null || !blockIds.contains(s.parentEntryId),
+        )
+        .toList()
+      ..sort(_labelSort);
+    if (orphaned.isNotEmpty) {
+      if (routineChildren.isNotEmpty) {
+        routineChildren.add(const SizedBox(height: 8));
+      }
+      routineChildren.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            'Routine steps (no block on file)',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.85),
+            ),
+          ),
+        ),
+      );
+      for (final s in orphaned) {
+        routineChildren.add(_ProfileEntryPlanItem(entry: s));
+      }
+    }
+
+    final out = <Widget>[];
+    void spacer() {
+      if (out.isNotEmpty) out.add(const SizedBox(height: 16));
+    }
+
+    void addCard(String heading, List<ProfileEntry> rows) {
+      if (rows.isEmpty) return;
+      spacer();
+      out.add(
+        _SectionCard(
+          heading: heading,
+          subtitle: subtitle,
+          children: [for (final e in rows) _ProfileEntryPlanItem(entry: e)],
+        ),
+      );
+    }
+
+    addCard('What helps', helps);
+    addCard('Early signs', signs);
+    addCard('Triggers', triggers);
+    addCard('Stims', stims);
+    if (prefs.isNotEmpty) {
+      spacer();
+      out.add(
+        _SectionCard(
+          heading: 'Preferences & environment',
+          subtitle: subtitle,
+          children: [for (final e in prefs) _ProfileEntryPlanItem(entry: e)],
+        ),
+      );
+    }
+    if (routineChildren.isNotEmpty) {
+      spacer();
+      out.add(
+        _SectionCard(
+          heading: 'Routines',
+          subtitle: subtitle,
+          children: routineChildren,
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (helps.isNotEmpty)
-          _SectionCard(
-            heading: 'What helps',
-            subtitle: 'From $personName’s profile',
-            children: [
-              for (final e in helps) _ProfileEntryPlanItem(entry: e),
-            ],
-          ),
-        if (helps.isNotEmpty && signs.isNotEmpty) const SizedBox(height: 16),
-        if (signs.isNotEmpty)
-          _SectionCard(
-            heading: 'Early signs',
-            subtitle: 'From $personName’s profile',
-            children: [
-              for (final e in signs) _ProfileEntryPlanItem(entry: e),
-            ],
-          ),
-      ],
+      children: out,
     );
   }
 }

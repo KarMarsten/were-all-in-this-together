@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,20 +9,30 @@ import 'package:were_all_in_this_together/core/router/app_router.dart';
 import 'package:were_all_in_this_together/features/observations/domain/observation.dart';
 import 'package:were_all_in_this_together/features/observations/presentation/providers.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
+import 'package:were_all_in_this_together/features/profile/domain/profile_entry.dart';
+import 'package:were_all_in_this_together/features/profile/presentation/providers.dart';
 
 /// Dated "Notes" timeline for the active Person (architecture: Observation).
 class ObservationsListScreen extends ConsumerWidget {
-  const ObservationsListScreen({super.key});
+  const ObservationsListScreen({this.profileEntryFilterId, super.key});
+
+  /// When set, only notes whose [Observation.profileEntryId] matches.
+  final String? profileEntryFilterId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activePersonAsync = ref.watch(activePersonProvider);
     final listAsync = ref.watch(activeObservationsProvider);
     final archivedAsync = ref.watch(archivedObservationsProvider);
+    final profileEntriesAsync = profileEntryFilterId == null
+        ? null
+        : ref.watch(profileEntriesForActivePersonProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Notes'),
+        title: Text(
+          profileEntryFilterId == null ? 'Notes' : 'Notes · one profile line',
+        ),
         bottom: activePersonAsync.maybeWhen(
           data: (person) => person == null
               ? null
@@ -44,7 +56,13 @@ class ObservationsListScreen extends ConsumerWidget {
         data: (person) => person == null
             ? null
             : FloatingActionButton.extended(
-                onPressed: () => context.push(Routes.noteNew),
+                onPressed: () {
+                  final id = profileEntryFilterId;
+                  final route = id == null
+                      ? Routes.noteNew
+                      : Routes.noteNewLinkedToProfileEntry(id);
+                  unawaited(context.push(route));
+                },
                 icon: const Icon(Icons.add),
                 label: const Text('Add note'),
               ),
@@ -60,15 +78,31 @@ class ObservationsListScreen extends ConsumerWidget {
             error: (err, _) => _ErrorState(message: err.toString()),
             data: (active) {
               final archived = archivedAsync.value ?? const <Observation>[];
+              final filterId = profileEntryFilterId;
               if (active.isEmpty && archived.isEmpty) {
                 return const _EmptyState();
               }
+              final filtered = filterId == null
+                  ? active
+                  : active
+                      .where((o) => o.profileEntryId == filterId)
+                      .toList();
+              final filteredArchived = filterId == null
+                  ? archived
+                  : archived
+                      .where((o) => o.profileEntryId == filterId)
+                      .toList();
               final fmt = DateFormat('yMMMd · jm');
               return ListView(
                 padding: const EdgeInsets.fromLTRB(8, 8, 8, 96),
                 children: [
-                  if (active.isNotEmpty)
-                    for (final o in active)
+                  if (filterId != null)
+                    _ProfileEntryFilterBanner(
+                      filterId: filterId,
+                      entriesAsync: profileEntriesAsync!,
+                    ),
+                  if (filtered.isNotEmpty)
+                    for (final o in filtered)
                       ListTile(
                         leading: CircleAvatar(
                           backgroundColor: _toneForCategory(
@@ -91,13 +125,73 @@ class ObservationsListScreen extends ConsumerWidget {
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () => context.push(Routes.noteEdit(o.id)),
                       )
+                  else if (filterId == null)
+                    const _HistoryPlaceholder()
                   else
-                    const _HistoryPlaceholder(),
-                  if (archived.isNotEmpty)
-                    _ArchivedSection(observations: archived, dateFmt: fmt),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+                      child: Text(
+                        'No notes link to this profile line yet. Tap Add note '
+                        'to create one with the link filled in.',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                  if (filteredArchived.isNotEmpty)
+                    _ArchivedSection(
+                      observations: filteredArchived,
+                      dateFmt: fmt,
+                    ),
                 ],
               );
             },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ProfileEntryFilterBanner extends StatelessWidget {
+  const _ProfileEntryFilterBanner({
+    required this.filterId,
+    required this.entriesAsync,
+  });
+
+  final String filterId;
+  final AsyncValue<List<ProfileEntry>> entriesAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+      child: entriesAsync.when(
+        loading: () => const LinearProgressIndicator(minHeight: 2),
+        error: (e, _) => Text('$e'),
+        data: (entries) {
+          ProfileEntry? found;
+          for (final e in entries) {
+            if (e.id == filterId) {
+              found = e;
+              break;
+            }
+          }
+          final label = found?.label ?? 'this profile line';
+          return Card(
+            margin: EdgeInsets.zero,
+            child: ListTile(
+              leading: const Icon(Icons.filter_alt_outlined),
+              title: Text('Notes linked to: $label'),
+              subtitle: found == null
+                  ? const Text(
+                      'That line is not on this profile anymore — links may '
+                      'be stale.',
+                    )
+                  : null,
+              trailing: TextButton(
+                onPressed: () => context.go(Routes.notes),
+                child: const Text('Clear'),
+              ),
+            ),
           );
         },
       ),

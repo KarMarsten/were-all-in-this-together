@@ -170,9 +170,10 @@ class ProfileEntryRepository {
     );
   }
 
-  /// Active rows for [profileId], newest first. Skips rows whose key
-  /// is missing (sync race). Asserts each row's [personId] matches.
-  Future<List<ProfileEntry>> listActiveForProfile({
+  /// Non-archived rows for [profileId] (every [ProfileEntryStatus]),
+  /// newest first. Skips rows whose key is missing (sync race). Asserts
+  /// each row's [personId] matches.
+  Future<List<ProfileEntry>> listForProfile({
     required String profileId,
     required String personId,
   }) async {

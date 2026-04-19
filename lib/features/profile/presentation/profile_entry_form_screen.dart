@@ -5,10 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import 'package:were_all_in_this_together/core/router/app_router.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 import 'package:were_all_in_this_together/features/profile/data/profile_entry_repository.dart';
 import 'package:were_all_in_this_together/features/profile/data/profile_repository.dart';
 import 'package:were_all_in_this_together/features/profile/domain/profile_entry.dart';
+import 'package:were_all_in_this_together/features/profile/domain/profile_entry_contract.dart';
 import 'package:were_all_in_this_together/features/profile/presentation/providers.dart';
 
 /// Create or edit a profile entry for the active Person.
@@ -149,7 +151,7 @@ class _ProfileEntryFormScreenState
       final details = _nullIfBlank(_details.text);
 
       if (_section == ProfileEntrySection.routineStep) {
-        final blocks = await entryRepo.listActiveForProfile(
+        final blocks = await entryRepo.listForProfile(
           profileId: profile.id,
           personId: personId,
         );
@@ -268,11 +270,22 @@ class _ProfileEntryFormScreenState
                     });
                   },
                 ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+                  child: Text(
+                    guidanceForProfileEntrySection(_section),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
                 if (_section == ProfileEntrySection.routineStep) ...[
                   const SizedBox(height: 16),
                   Consumer(
                     builder: (context, ref, _) {
-                      final async = ref.watch(activeProfileEntriesProvider);
+                      final async = ref.watch(
+                        profileEntriesForActivePersonProvider,
+                      );
                       return async.when(
                         loading: () => const LinearProgressIndicator(
                           minHeight: 2,
@@ -360,9 +373,10 @@ class _ProfileEntryFormScreenState
                   minLines: 3,
                   maxLines: 10,
                   textCapitalization: TextCapitalization.sentences,
-                  decoration: const InputDecoration(
-                    labelText: 'Details (optional)',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: detailsFieldLabelForSection(_section),
+                    helperText: detailsFieldHelperForSection(_section),
+                    border: const OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -402,6 +416,14 @@ class _ProfileEntryFormScreenState
                   },
                 ),
                 if (seed != null) ...[
+                  const SizedBox(height: 24),
+                  OutlinedButton.icon(
+                    onPressed: () => context.push(
+                      Routes.notesForProfileEntry(seed.id),
+                    ),
+                    icon: const Icon(Icons.notes_outlined),
+                    label: const Text('Notes that link to this line'),
+                  ),
                   const SizedBox(height: 32),
                   _ArchiveOrRestoreButton(entry: seed),
                 ],

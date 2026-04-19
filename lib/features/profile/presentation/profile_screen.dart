@@ -90,6 +90,9 @@ class _ProfileEditorState extends ConsumerState<_ProfileEditor> {
   late final TextEditingController _appetite;
   bool _busy = false;
 
+  /// When false, the structured list only shows [ProfileEntryStatus.active].
+  bool _showAllStatuses = false;
+
   @override
   void initState() {
     super.initState();
@@ -181,13 +184,14 @@ class _ProfileEditorState extends ConsumerState<_ProfileEditor> {
 
   List<Widget> _structuredEntrySections(
     BuildContext context,
-    List<ProfileEntry> entries,
+    List<ProfileEntry> visible,
+    List<ProfileEntry> allEntries,
   ) {
     final scheme = Theme.of(context).colorScheme;
     final titleSmall = Theme.of(context).textTheme.titleSmall;
     final out = <Widget>[];
     for (final section in ProfileEntrySection.values) {
-      final inSection = entries.where((e) => e.section == section).toList();
+      final inSection = visible.where((e) => e.section == section).toList();
       if (inSection.isEmpty) continue;
       inSection.sort(
         (a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()),
@@ -206,7 +210,7 @@ class _ProfileEditorState extends ConsumerState<_ProfileEditor> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(e.label),
-            subtitle: Text(_profileEntryGroupedSubtitle(e, entries)),
+            subtitle: Text(_profileEntryGroupedSubtitle(e, allEntries)),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push(Routes.profileEntryEdit(e.id)),
           ),
@@ -218,7 +222,7 @@ class _ProfileEditorState extends ConsumerState<_ProfileEditor> {
 
   @override
   Widget build(BuildContext context) {
-    final entriesAsync = ref.watch(activeProfileEntriesProvider);
+    final entriesAsync = ref.watch(profileEntriesForActivePersonProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -318,34 +322,70 @@ class _ProfileEditorState extends ConsumerState<_ProfileEditor> {
               ),
             ),
             error: (e, _) => Text('Could not load entries: $e'),
-            data: (entries) => Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Tap an entry to edit. Labels and details are encrypted.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+            data: (entries) {
+              final visible = _showAllStatuses
+                  ? entries
+                  : entries
+                      .where((e) => e.status == ProfileEntryStatus.active)
+                      .toList();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SegmentedButton<bool>(
+                    segments: const [
+                      ButtonSegment<bool>(
+                        value: false,
+                        label: Text('Active'),
+                        icon: Icon(Icons.play_circle_outline),
+                      ),
+                      ButtonSegment<bool>(
+                        value: true,
+                        label: Text('All statuses'),
+                        icon: Icon(Icons.list_alt),
+                      ),
+                    ],
+                    selected: {_showAllStatuses},
+                    onSelectionChanged: (next) {
+                      if (next.isEmpty) return;
+                      setState(() => _showAllStatuses = next.single);
+                    },
                   ),
-                ),
-                const SizedBox(height: 12),
-                if (entries.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Text(
-                      'No entries yet.',
-                      style: Theme.of(context).textTheme.bodyMedium,
+                  const SizedBox(height: 12),
+                  Text(
+                    'Tap an entry to edit. Labels and details are encrypted.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
-                  )
-                else ..._structuredEntrySections(context, entries),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: () => context.push(Routes.profileEntryNew),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add entry'),
-                ),
-              ],
-            ),
+                  ),
+                  const SizedBox(height: 12),
+                  if (entries.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        'No entries yet.',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    )
+                  else if (visible.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        'No active entries — switch to “All statuses” to see '
+                        'paused or resolved lines.',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    )
+                  else ..._structuredEntrySections(context, visible, entries),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: () => context.push(Routes.profileEntryNew),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add entry'),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),

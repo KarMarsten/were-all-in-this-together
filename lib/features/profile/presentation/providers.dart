@@ -18,20 +18,31 @@ final activePersonProfileProvider = FutureProvider<Profile?>((ref) async {
   return repo.getOrCreateForPerson(personId);
 });
 
-/// Active structured [ProfileEntry] rows for the active Person's
-/// profile, newest first.
-final activeProfileEntriesProvider = FutureProvider<List<ProfileEntry>>((
+/// Non-archived structured [ProfileEntry] rows for the active Person
+/// (every [ProfileEntryStatus]), newest first. Use for Profile editing,
+/// routine parent pickers, and status filters.
+final profileEntriesForActivePersonProvider =
+    FutureProvider<List<ProfileEntry>>((ref) async {
+      final personId = await ref.watch(activePersonIdProvider.future);
+      if (personId == null) return const [];
+      final profileRepo = ref.watch(profileRepositoryProvider);
+      final entriesRepo = ref.watch(profileEntryRepositoryProvider);
+      final profile = await profileRepo.getOrCreateForPerson(personId);
+      return entriesRepo.listForProfile(
+        profileId: profile.id,
+        personId: personId,
+      );
+    });
+
+/// Active-status subset of [profileEntriesForActivePersonProvider]. Calm and
+/// the default Profile list filter use this; Notes pickers use the full list.
+final activeProfileLinesProvider = FutureProvider<List<ProfileEntry>>((
   ref,
 ) async {
-  final personId = await ref.watch(activePersonIdProvider.future);
-  if (personId == null) return const [];
-  final profileRepo = ref.watch(profileRepositoryProvider);
-  final entriesRepo = ref.watch(profileEntryRepositoryProvider);
-  final profile = await profileRepo.getOrCreateForPerson(personId);
-  return entriesRepo.listActiveForProfile(
-    profileId: profile.id,
-    personId: personId,
-  );
+  final all = await ref.watch(profileEntriesForActivePersonProvider.future);
+  return all
+      .where((e) => e.status == ProfileEntryStatus.active)
+      .toList();
 });
 
 /// Call after saving profile fields so the feed re-fetches.
@@ -41,5 +52,7 @@ void invalidateProfileState(WidgetRef ref) {
 
 /// Call after saving or archiving profile entries.
 void invalidateProfileEntriesState(WidgetRef ref) {
-  ref.invalidate(activeProfileEntriesProvider);
+  ref
+    ..invalidate(profileEntriesForActivePersonProvider)
+    ..invalidate(activeProfileLinesProvider);
 }
