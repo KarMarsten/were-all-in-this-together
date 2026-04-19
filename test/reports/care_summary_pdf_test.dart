@@ -6,13 +6,11 @@ import 'package:were_all_in_this_together/features/reports/data/care_summary_pdf
 
 void main() {
   test('buildCareSummaryPdf returns non-empty PDF bytes', () async {
-    final t = DateTime.utc(2026, 1, 1);
+    final t = DateTime.utc(2026);
     final profile = Profile(
       id: 'p1',
       personId: 'per1',
       communicationNotes: 'AAC preferred',
-      sleepBaseline: null,
-      appetiteBaseline: null,
       createdAt: t,
       updatedAt: t,
     );
