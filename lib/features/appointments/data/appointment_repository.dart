@@ -224,6 +224,35 @@ class AppointmentRepository {
     return _decodeMany(rows);
   }
 
+  /// Non-archived appointments for [personId] whose
+  /// [Appointment.scheduledAt] falls in `[fromInclusive, toExclusive)`,
+  /// in chronological order.
+  ///
+  /// Exists so the Today screen can pull both past-today and
+  /// upcoming-today entries in a single query without reaching for
+  /// [listUpcomingForPerson] + [listPastForPerson] and re-merging in
+  /// Dart. Both endpoints are UTC — callers converting from a local
+  /// calendar day should call `.toUtc()` themselves.
+  Future<List<Appointment>> listForPersonInRange({
+    required String personId,
+    required DateTime fromInclusive,
+    required DateTime toExclusive,
+  }) async {
+    final fromMs = fromInclusive.toUtc().millisecondsSinceEpoch;
+    final toMs = toExclusive.toUtc().millisecondsSinceEpoch;
+    final rows = await (_db.select(_db.appointments)
+          ..where(
+            (a) =>
+                a.personId.equals(personId) &
+                a.deletedAt.isNull() &
+                a.scheduledAt.isBiggerOrEqualValue(fromMs) &
+                a.scheduledAt.isSmallerThanValue(toMs),
+          )
+          ..orderBy([(a) => OrderingTerm(expression: a.scheduledAt)]))
+        .get();
+    return _decodeMany(rows);
+  }
+
   /// All archived appointments for [personId], newest-archived
   /// first.
   Future<List<Appointment>> listArchivedForPerson(String personId) async {

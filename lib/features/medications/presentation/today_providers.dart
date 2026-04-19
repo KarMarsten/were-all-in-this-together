@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:were_all_in_this_together/features/appointments/domain/today_appointment_item.dart';
+import 'package:were_all_in_this_together/features/appointments/presentation/providers.dart';
 import 'package:were_all_in_this_together/features/medications/data/dose_log_repository.dart';
 import 'package:were_all_in_this_together/features/medications/data/medication_group_repository.dart';
 import 'package:were_all_in_this_together/features/medications/domain/dose_log.dart';
@@ -91,6 +93,7 @@ final todayItemsProvider = FutureProvider<List<TodayItem>>((ref) async {
   final now = ref.watch(todayClockProvider)();
   final owned = await ref.watch(allActiveMedicationsProvider.future);
   final ownedGroups = await ref.watch(allActiveMedicationGroupsProvider.future);
+  final todayAppts = await ref.watch(allTodayAppointmentsProvider.future);
 
   final medContexts = [
     for (final o in owned)
@@ -109,12 +112,25 @@ final todayItemsProvider = FutureProvider<List<TodayItem>>((ref) async {
 
   final startOfDay = DateTime(now.year, now.month, now.day);
   final startOfTomorrow = startOfDay.add(const Duration(days: 1));
-  return expandTodayItems(
+  final medItems = expandTodayItems(
     medications: medContexts,
     groups: groupContexts,
     fromInclusive: startOfDay,
     toExclusive: startOfTomorrow,
   );
+  final apptItems = expandTodayAppointmentItems(
+    appointments: todayAppts,
+    fromInclusive: startOfDay,
+    toExclusive: startOfTomorrow,
+  );
+
+  // Single merged list, sorted by scheduledAt so a 09:00 visit slots
+  // between the 08:00 and 10:00 doses. Stability on ties isn't
+  // important here — if a dose and an appointment share a second,
+  // either order is defensible and the user sees both rows adjacent.
+  final combined = <TodayItem>[...medItems, ...apptItems]
+    ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+  return combined;
 });
 
 /// Logs indexed by `(medicationId, scheduledAtUtcMs)` for today's

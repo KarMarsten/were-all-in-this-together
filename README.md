@@ -62,16 +62,16 @@ access.
   duration, notes, and reminder lead. Picking a lead schedules a
   one-shot local notification (e.g. "In 30 min · Clinic A") that
   self-heals on edits — move the visit or change the lead and the
-  OS registration is replaced on the next reconcile pass. Archive /
+  OS registration is replaced on the next reconcile pass. Today's
+  appointments also interleave chronologically with doses on the
+  Today screen, so a 09:00 specialist visit renders between the
+  08:00 and 10:00 pills without any context-switch. Archive /
   restore mirrors the other domain forms.
 - **Calm** — in-the-moment coping strategies and crisis contacts, reachable
   in one tap from anywhere, rendered in a dedicated low-stimulation theme.
 
 ## What's still to come
 
-- **Today integration** — surface the next few appointments alongside
-  the dose list on the Today screen so caregivers see everything
-  coming up in one glance (next PR).
 - **Programs** — schools, camps, after-care: calendars, holidays, contact
   trees, key phone numbers.
 - **Apps & Sites** — portals (IEP, telehealth, insurance): URLs + notes

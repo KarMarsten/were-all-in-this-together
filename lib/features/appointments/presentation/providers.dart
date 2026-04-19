@@ -2,8 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:were_all_in_this_together/features/appointments/data/appointment_repository.dart';
 import 'package:were_all_in_this_together/features/appointments/domain/appointment.dart';
+import 'package:were_all_in_this_together/features/appointments/domain/today_appointment_item.dart';
 import 'package:were_all_in_this_together/features/appointments/notifications/appointment_reminder_sync.dart';
+import 'package:were_all_in_this_together/features/medications/presentation/today_providers.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
+import 'package:were_all_in_this_together/features/people/presentation/providers.dart';
 
 /// Upcoming (scheduled >= now), non-archived appointments for the
 /// currently-active Person, soonest first.
@@ -49,6 +52,48 @@ final archivedAppointmentsProvider =
   return repo.listArchivedForPerson(personId);
 });
 
+/// Every non-archived appointment scheduled in the device's current
+/// *local* calendar day, across every Person the user manages,
+/// paired with the owning Person's display name.
+///
+/// Sourced directly from the repo's `listForPersonInRange` rather
+/// than joining the existing upcoming/past providers because:
+///
+/// * Those two are per-active-Person; Today needs the whole roster
+///   (a parent managing a child's 09:00 specialist visit sees it on
+///   Today regardless of which Person is "active" in the UI).
+/// * Using a single range query keeps the provider a one-shot I/O
+///   call and avoids the off-by-one that "concat upcoming + past
+///   and filter to today" would invite at the day boundary.
+///
+/// Reads `todayClockProvider` so widget tests can inject a pinned
+/// "now" — one clock source for the whole Today pipeline.
+final allTodayAppointmentsProvider =
+    FutureProvider<List<OwnedTodayAppointment>>((ref) async {
+  final now = ref.watch(todayClockProvider)();
+  final people = await ref.watch(peopleListProvider.future);
+  final repo = ref.watch(appointmentRepositoryProvider);
+  final startOfDay = DateTime(now.year, now.month, now.day);
+  final startOfTomorrow = startOfDay.add(const Duration(days: 1));
+  final result = <OwnedTodayAppointment>[];
+  for (final person in people) {
+    final appts = await repo.listForPersonInRange(
+      personId: person.id,
+      fromInclusive: startOfDay,
+      toExclusive: startOfTomorrow,
+    );
+    for (final appt in appts) {
+      result.add(
+        OwnedTodayAppointment(
+          appointment: appt,
+          personDisplayName: person.displayName,
+        ),
+      );
+    }
+  }
+  return result;
+});
+
 /// Refresh every provider that derives from "which appointments
 /// exist".
 ///
@@ -59,10 +104,12 @@ void invalidateAppointmentsState(WidgetRef ref) {
     ..invalidate(upcomingAppointmentsProvider)
     ..invalidate(pastAppointmentsProvider)
     ..invalidate(archivedAppointmentsProvider)
-    // Invalidating the roster-wide list re-triggers reminder
+    // Invalidating the roster-wide lists re-triggers reminder
     // reconciliation via `appointmentReminderSyncProvider`'s
-    // listener — the OS notification queue is treated as derived
-    // state and must stay in lockstep with whatever the user just
-    // did (new appointment, time change, archive, restore).
-    ..invalidate(allUpcomingAppointmentsProvider);
+    // listener *and* refreshes the Today screen feed — both are
+    // derived state and must stay in lockstep with whatever the
+    // user just did (new appointment, time change, archive,
+    // restore).
+    ..invalidate(allUpcomingAppointmentsProvider)
+    ..invalidate(allTodayAppointmentsProvider);
 }

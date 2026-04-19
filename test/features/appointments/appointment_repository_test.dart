@@ -228,6 +228,95 @@ void main() {
     });
   });
 
+  group('listForPersonInRange', () {
+    test('returns non-archived appointments with scheduledAt in [from, to)',
+        () async {
+      final beforeWindow = await appointments.create(
+        personId: alexId,
+        title: 'before',
+        scheduledAt: DateTime.utc(2030, 6, 1, 23, 59),
+      );
+      final startOfDay = await appointments.create(
+        personId: alexId,
+        title: 'start',
+        scheduledAt: DateTime.utc(2030, 6, 2),
+      );
+      final mid = await appointments.create(
+        personId: alexId,
+        title: 'mid',
+        scheduledAt: DateTime.utc(2030, 6, 2, 15, 30),
+      );
+      final startOfTomorrow = await appointments.create(
+        personId: alexId,
+        title: 'tomorrow',
+        scheduledAt: DateTime.utc(2030, 6, 3),
+      );
+
+      final inRange = await appointments.listForPersonInRange(
+        personId: alexId,
+        fromInclusive: DateTime.utc(2030, 6, 2),
+        toExclusive: DateTime.utc(2030, 6, 3),
+      );
+
+      expect(inRange.map((a) => a.id), [startOfDay.id, mid.id]);
+      expect(
+        inRange.map((a) => a.id),
+        isNot(contains(beforeWindow.id)),
+        reason: 'from is inclusive, to is exclusive',
+      );
+      expect(
+        inRange.map((a) => a.id),
+        isNot(contains(startOfTomorrow.id)),
+        reason: 'exclusive upper bound drops next-day start',
+      );
+    });
+
+    test('excludes archived rows even if their scheduledAt is in range',
+        () async {
+      final kept = await appointments.create(
+        personId: alexId,
+        title: 'kept',
+        scheduledAt: DateTime.utc(2030, 6, 2, 10),
+      );
+      final archived = await appointments.create(
+        personId: alexId,
+        title: 'archived',
+        scheduledAt: DateTime.utc(2030, 6, 2, 11),
+      );
+      await appointments.archive(archived.id);
+
+      final inRange = await appointments.listForPersonInRange(
+        personId: alexId,
+        fromInclusive: DateTime.utc(2030, 6, 2),
+        toExclusive: DateTime.utc(2030, 6, 3),
+      );
+
+      expect(inRange.map((a) => a.id), [kept.id]);
+    });
+
+    test('scopes to the requested person', () async {
+      final sibling = await people.create(displayName: 'Sibling');
+      await appointments.create(
+        personId: sibling.id,
+        title: 'sibling',
+        scheduledAt: DateTime.utc(2030, 6, 2, 9),
+      );
+      final mine = await appointments.create(
+        personId: alexId,
+        title: 'mine',
+        scheduledAt: DateTime.utc(2030, 6, 2, 10),
+      );
+
+      final inRange = await appointments.listForPersonInRange(
+        personId: alexId,
+        fromInclusive: DateTime.utc(2030, 6, 2),
+        toExclusive: DateTime.utc(2030, 6, 3),
+      );
+
+      expect(inRange.map((a) => a.id), [mine.id]);
+    });
+  });
+
   group('update', () {
     test('persists new fields, bumps rowVersion, stamps updatedAt', () async {
       final created = await appointments.create(
