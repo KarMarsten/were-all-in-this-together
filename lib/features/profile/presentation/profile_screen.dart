@@ -358,7 +358,26 @@ class _ProfileEditorState extends ConsumerState<_ProfileEditor> {
                 ),
               ),
             ),
-            error: (e, _) => Text('Could not load entries: $e'),
+            error: (e, _) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Could not load entries: $e',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: () => ref.invalidate(
+                      profileEntriesForActivePersonProvider,
+                    ),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Try again'),
+                  ),
+                ],
+              ),
+            ),
             data: (entries) {
               final visible = _showAllStatuses
                   ? entries
@@ -369,39 +388,67 @@ class _ProfileEditorState extends ConsumerState<_ProfileEditor> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  SegmentedButton<bool>(
-                    segments: const [
-                      ButtonSegment<bool>(
-                        value: false,
-                        label: Text('Active'),
-                        icon: Icon(Icons.play_circle_outline),
-                      ),
-                      ButtonSegment<bool>(
-                        value: true,
-                        label: Text('All statuses'),
-                        icon: Icon(Icons.list_alt),
-                      ),
-                    ],
-                    selected: {_showAllStatuses},
-                    onSelectionChanged: (next) {
-                      if (next.isEmpty) return;
-                      setState(() => _showAllStatuses = next.single);
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Tap an entry to edit. Labels and details are encrypted.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  if (entries.isNotEmpty) ...[
+                    SegmentedButton<bool>(
+                      segments: const [
+                        ButtonSegment<bool>(
+                          value: false,
+                          label: Text('Active'),
+                          icon: Icon(Icons.play_circle_outline),
+                        ),
+                        ButtonSegment<bool>(
+                          value: true,
+                          label: Text('All statuses'),
+                          icon: Icon(Icons.list_alt),
+                        ),
+                      ],
+                      selected: {_showAllStatuses},
+                      onSelectionChanged: (next) {
+                        if (next.isEmpty) return;
+                        setState(() => _showAllStatuses = next.single);
+                      },
                     ),
-                  ),
-                  const SizedBox(height: 12),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Tap an entry to edit. Labels and details are '
+                      'encrypted.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ] else ...[
+                    Text(
+                      'Stims, triggers, preferences, routines, and similar '
+                      'lines show up here once you add them.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   if (entries.isEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Text(
-                        'No entries yet.',
-                        style: Theme.of(context).textTheme.bodyMedium,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            'No entries yet.',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                          const SizedBox(height: 16),
+                          FilledButton.icon(
+                            onPressed: () =>
+                                context.push(Routes.profileEntryNew),
+                            icon: const Icon(Icons.add),
+                            label: const Text('Add entry'),
+                          ),
+                        ],
                       ),
                     )
                   else if (visible.isEmpty)
@@ -414,12 +461,14 @@ class _ProfileEditorState extends ConsumerState<_ProfileEditor> {
                       ),
                     )
                   else ..._structuredEntrySections(context, visible, entries),
-                  const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    onPressed: () => context.push(Routes.profileEntryNew),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add entry'),
-                  ),
+                  if (entries.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: () => context.push(Routes.profileEntryNew),
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add entry'),
+                    ),
+                  ],
                 ],
               );
             },

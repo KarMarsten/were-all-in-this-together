@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 import 'package:were_all_in_this_together/features/profile/domain/profile_entry.dart';
+import 'package:were_all_in_this_together/features/profile/presentation/providers.dart';
 
 import '../../helpers/test_app_scope.dart';
 
@@ -187,6 +189,47 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(details), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Structured entries load error shows Try again; retry recovers',
+    (tester) async {
+      var loadsAfterPerson = 0;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          extraOverrides: [
+            profileEntriesForActivePersonProvider.overrideWith((ref) async {
+              final personId = await ref.watch(activePersonIdProvider.future);
+              if (personId == null) return const <ProfileEntry>[];
+              loadsAfterPerson++;
+              if (loadsAfterPerson == 1) {
+                throw StateError('temporary load failure');
+              }
+              return const <ProfileEntry>[];
+            }),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await _addPerson(tester, 'Ryu');
+      await _openProfile(tester);
+
+      final listFinder = find.byType(ListView);
+      await tester.drag(listFinder, const Offset(0, -900));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Could not load entries'), findsOneWidget);
+      expect(find.text('Try again'), findsOneWidget);
+
+      await tester.ensureVisible(find.text('Try again'));
+      await tester.tap(find.text('Try again'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Could not load entries'), findsNothing);
+      expect(find.text('No entries yet.'), findsOneWidget);
     },
   );
 }
