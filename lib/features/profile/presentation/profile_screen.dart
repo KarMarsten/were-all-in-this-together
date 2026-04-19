@@ -182,6 +182,36 @@ class _ProfileEditorState extends ConsumerState<_ProfileEditor> {
     return parts.join(' · ');
   }
 
+  /// Status, dates, routine parent — plus optional details (Calm shows the
+  /// same pattern so Profile stays scannable without opening each row).
+  static Widget _profileEntryListTileSubtitle(
+    BuildContext context,
+    ProfileEntry e,
+    List<ProfileEntry> allEntries,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
+    final small = Theme.of(context).textTheme.bodySmall?.copyWith(
+      color: scheme.onSurfaceVariant,
+    );
+    final meta = _profileEntryGroupedSubtitle(e, allEntries);
+    final details = e.details?.trim();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(meta, style: small),
+        if (details != null && details.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            details,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: small,
+          ),
+        ],
+      ],
+    );
+  }
+
   List<Widget> _structuredEntrySections(
     BuildContext context,
     List<ProfileEntry> visible,
@@ -206,11 +236,18 @@ class _ProfileEditorState extends ConsumerState<_ProfileEditor> {
         )
         ..add(const SizedBox(height: 4));
       for (final e in inSection) {
+        final details = e.details?.trim();
         out.add(
           ListTile(
             contentPadding: EdgeInsets.zero,
+            isThreeLine:
+                details != null && details.isNotEmpty,
             title: Text(e.label),
-            subtitle: Text(_profileEntryGroupedSubtitle(e, allEntries)),
+            subtitle: _profileEntryListTileSubtitle(
+              context,
+              e,
+              allEntries,
+            ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push(Routes.profileEntryEdit(e.id)),
           ),

@@ -148,4 +148,45 @@ void main() {
       expect(find.text(savedLabel), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'Structured entry details show on profile list after save',
+    (tester) async {
+      const label = 'Hand flapping';
+      const details = 'Often when excited at the playground.';
+
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      await _addPerson(tester, 'Dana');
+      await _openProfile(tester);
+
+      final listFinder = find.byType(ListView);
+      expect(listFinder, findsOneWidget);
+      await tester.drag(listFinder, const Offset(0, -800));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Add entry'));
+      await tester.pumpAndSettle();
+
+      final fields = find.byType(TextFormField);
+      expect(fields, findsNWidgets(2));
+      await tester.enterText(fields.at(0), label);
+      await tester.enterText(fields.at(1), details);
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text('Save'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add profile entry'), findsNothing);
+
+      await tester.ensureVisible(find.text(details));
+      await tester.pumpAndSettle();
+
+      expect(find.text(details), findsOneWidget);
+    },
+  );
 }
