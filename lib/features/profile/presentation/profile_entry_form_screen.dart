@@ -103,6 +103,34 @@ class _ProfileEntryFormScreenState
     return !a.isAfter(b);
   }
 
+  /// When [detailsStronglyRecommended] and details are empty, ask once
+  /// before persisting.
+  Future<bool> _confirmSaveWithoutRecommendedDetails() async {
+    final sectionName = labelForProfileEntrySection(_section);
+    final choice = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Save without details?'),
+        content: Text(
+          'For $sectionName, details are recommended so another caregiver '
+          'can use this line without guessing. You can still save with only '
+          'a label.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Back to edit'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Save anyway'),
+          ),
+        ],
+      ),
+    );
+    return choice == true;
+  }
+
   Future<void> _pickDate({required bool firstNoted}) async {
     final initial = firstNoted
         ? (_firstNoted ?? _lastNoted ?? DateTime.now())
@@ -133,6 +161,12 @@ class _ProfileEntryFormScreenState
         ),
       );
       return;
+    }
+
+    if (detailsStronglyRecommended(_section) &&
+        _nullIfBlank(_details.text) == null) {
+      final proceed = await _confirmSaveWithoutRecommendedDetails();
+      if (!proceed || !mounted) return;
     }
 
     setState(() => _saving = true);
