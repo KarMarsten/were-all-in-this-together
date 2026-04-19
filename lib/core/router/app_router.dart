@@ -17,7 +17,6 @@ import 'package:were_all_in_this_together/features/medications/presentation/medi
 import 'package:were_all_in_this_together/features/medications/presentation/medication_groups_list_screen.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/medication_history_screen.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/medications_list_screen.dart';
-import 'package:were_all_in_this_together/features/medications/presentation/today_screen.dart';
 import 'package:were_all_in_this_together/features/people/data/person_repository.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 import 'package:were_all_in_this_together/features/people/presentation/people_list_screen.dart';
@@ -31,6 +30,7 @@ import 'package:were_all_in_this_together/features/reports/presentation/adherenc
 import 'package:were_all_in_this_together/features/safety_plan/ui/calm_screen.dart';
 import 'package:were_all_in_this_together/features/settings/ui/notification_settings_screen.dart';
 import 'package:were_all_in_this_together/features/settings/ui/settings_screen.dart';
+import 'package:were_all_in_this_together/features/today/presentation/today_screen.dart';
 
 /// App-wide routes, centralised so deep links and navigation both go through
 /// the same source of truth.

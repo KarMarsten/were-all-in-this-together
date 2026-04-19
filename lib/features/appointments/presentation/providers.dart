@@ -2,11 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:were_all_in_this_together/features/appointments/data/appointment_repository.dart';
 import 'package:were_all_in_this_together/features/appointments/domain/appointment.dart';
-import 'package:were_all_in_this_together/features/appointments/domain/today_appointment_item.dart';
 import 'package:were_all_in_this_together/features/appointments/notifications/appointment_reminder_sync.dart';
-import 'package:were_all_in_this_together/features/medications/presentation/today_providers.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 import 'package:were_all_in_this_together/features/people/presentation/providers.dart';
+import 'package:were_all_in_this_together/features/today/domain/today_appointment_item.dart';
+import 'package:were_all_in_this_together/features/today/presentation/today_providers.dart';
 
 /// Upcoming (scheduled >= now), non-archived appointments for the
 /// currently-active Person, soonest first.

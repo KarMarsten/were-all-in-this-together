@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:were_all_in_this_together/features/appointments/domain/appointment.dart';
-import 'package:were_all_in_this_together/features/appointments/domain/today_appointment_item.dart';
+import 'package:were_all_in_this_together/features/today/domain/today_appointment_item.dart';
 
 Appointment _appt({
   required String id,

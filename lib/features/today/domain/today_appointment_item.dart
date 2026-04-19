@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import 'package:were_all_in_this_together/features/appointments/domain/appointment.dart';
-import 'package:were_all_in_this_together/features/medications/domain/today_item.dart';
+import 'package:were_all_in_this_together/features/today/domain/today_item.dart';
 
 /// One Today-screen row representing a scheduled appointment.
 ///

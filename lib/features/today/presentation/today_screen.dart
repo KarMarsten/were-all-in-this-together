@@ -5,13 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:were_all_in_this_together/core/router/app_router.dart';
-import 'package:were_all_in_this_together/features/appointments/domain/today_appointment_item.dart';
 import 'package:were_all_in_this_together/features/medications/data/dose_log_repository.dart';
 import 'package:were_all_in_this_together/features/medications/domain/dose_log.dart';
 import 'package:were_all_in_this_together/features/medications/domain/scheduled_dose.dart';
-import 'package:were_all_in_this_together/features/medications/domain/today_item.dart';
-import 'package:were_all_in_this_together/features/medications/presentation/today_providers.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/widgets/medication_icon.dart';
+import 'package:were_all_in_this_together/features/today/domain/today_appointment_item.dart';
+import 'package:were_all_in_this_together/features/today/domain/today_item.dart';
+import 'package:were_all_in_this_together/features/today/presentation/today_providers.dart';
 
 /// "Today's doses" — every scheduled dose for today across every
 /// Person the user manages.
