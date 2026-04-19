@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 import 'package:were_all_in_this_together/features/profile/data/profile_entry_repository.dart';
@@ -8,7 +11,7 @@ import 'package:were_all_in_this_together/features/profile/data/profile_reposito
 import 'package:were_all_in_this_together/features/profile/domain/profile_entry.dart';
 import 'package:were_all_in_this_together/features/profile/presentation/providers.dart';
 
-/// Create or edit a [ProfileEntry] for the active Person.
+/// Create or edit a profile entry for the active Person.
 class ProfileEntryFormScreen extends ConsumerStatefulWidget {
   const ProfileEntryFormScreen({this.initialEntry, super.key});
 
@@ -28,6 +31,9 @@ class _ProfileEntryFormScreenState
   late final TextEditingController _details;
   late ProfileEntrySection _section;
   late ProfileEntryStatus _status;
+  String? _parentEntryId;
+  DateTime? _firstNoted;
+  DateTime? _lastNoted;
   bool _saving = false;
 
   @override
@@ -38,6 +44,36 @@ class _ProfileEntryFormScreenState
     _details = TextEditingController(text: seed?.details ?? '');
     _section = seed?.section ?? ProfileEntrySection.stim;
     _status = seed?.status ?? ProfileEntryStatus.active;
+    _parentEntryId = seed?.parentEntryId;
+    _firstNoted = seed?.firstNoted;
+    _lastNoted = seed?.lastNoted;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_validateSeededParentLink());
+    });
+  }
+
+  Future<void> _validateSeededParentLink() async {
+    final seed = widget.initialEntry;
+    if (seed == null) return;
+    if (seed.section != ProfileEntrySection.routineStep) return;
+    final pid = seed.parentEntryId;
+    if (pid == null) return;
+    final parent =
+        await ref.read(profileEntryRepositoryProvider).findById(pid);
+    if (!mounted) return;
+    if (parent == null ||
+        parent.deletedAt != null ||
+        parent.section != ProfileEntrySection.routineBlock) {
+      setState(() => _parentEntryId = null);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Pick a routine block — the previous link is no longer '
+            'available.',
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -52,8 +88,51 @@ class _ProfileEntryFormScreenState
     return t.isEmpty ? null : t;
   }
 
+  /// Calendar day in local time, stored as UTC instant of local midnight.
+  static DateTime? _storageDate(DateTime? picked) {
+    if (picked == null) return null;
+    return DateTime(picked.year, picked.month, picked.day).toUtc();
+  }
+
+  static bool _datesOrdered(DateTime? first, DateTime? last) {
+    if (first == null || last == null) return true;
+    final a = DateTime(first.year, first.month, first.day);
+    final b = DateTime(last.year, last.month, last.day);
+    return !a.isAfter(b);
+  }
+
+  Future<void> _pickDate({required bool firstNoted}) async {
+    final initial = firstNoted
+        ? (_firstNoted ?? _lastNoted ?? DateTime.now())
+        : (_lastNoted ?? _firstNoted ?? DateTime.now());
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(initial.year, initial.month, initial.day),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      if (firstNoted) {
+        _firstNoted = _storageDate(picked);
+      } else {
+        _lastNoted = _storageDate(picked);
+      }
+    });
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate() || _saving) return;
+
+    if (!_datesOrdered(_firstNoted, _lastNoted)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('First noted should be on or before last noted.'),
+        ),
+      );
+      return;
+    }
+
     setState(() => _saving = true);
     try {
       final personId = await ref.read(activePersonIdProvider.future);
@@ -69,6 +148,38 @@ class _ProfileEntryFormScreenState
       final entryRepo = ref.read(profileEntryRepositoryProvider);
       final details = _nullIfBlank(_details.text);
 
+      if (_section == ProfileEntrySection.routineStep) {
+        final blocks = await entryRepo.listActiveForProfile(
+          profileId: profile.id,
+          personId: personId,
+        );
+        final blockRows = blocks
+            .where((e) => e.section == ProfileEntrySection.routineBlock)
+            .where((e) => e.id != widget.initialEntry?.id)
+            .toList();
+        if (blockRows.isEmpty) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Add at least one routine block before adding steps.',
+              ),
+            ),
+          );
+          return;
+        }
+        if (_parentEntryId == null ||
+            !blockRows.any((b) => b.id == _parentEntryId)) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Choose which routine block this step belongs to.'),
+            ),
+          );
+          return;
+        }
+      }
+
       if (widget.initialEntry == null) {
         await entryRepo.create(
           profileId: profile.id,
@@ -77,6 +188,9 @@ class _ProfileEntryFormScreenState
           label: _label.text.trim(),
           details: details,
           status: _status,
+          parentEntryId: _parentEntryId,
+          firstNoted: _firstNoted,
+          lastNoted: _lastNoted,
         );
       } else {
         final cur = widget.initialEntry!;
@@ -86,6 +200,9 @@ class _ProfileEntryFormScreenState
             label: _label.text.trim(),
             details: details,
             status: _status,
+            parentEntryId: _parentEntryId,
+            firstNoted: _firstNoted,
+            lastNoted: _lastNoted,
           ),
         );
       }
@@ -106,6 +223,7 @@ class _ProfileEntryFormScreenState
   Widget build(BuildContext context) {
     final seed = widget.initialEntry;
     final title = widget.isEditing ? 'Edit entry' : 'Add profile entry';
+    final dateFmt = DateFormat.yMMMd();
 
     return Scaffold(
       appBar: AppBar(
@@ -141,9 +259,85 @@ class _ProfileEntryFormScreenState
                       ),
                   ],
                   onChanged: (v) {
-                    if (v != null) setState(() => _section = v);
+                    if (v == null) return;
+                    setState(() {
+                      _section = v;
+                      if (v != ProfileEntrySection.routineStep) {
+                        _parentEntryId = null;
+                      }
+                    });
                   },
                 ),
+                if (_section == ProfileEntrySection.routineStep) ...[
+                  const SizedBox(height: 16),
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final async = ref.watch(activeProfileEntriesProvider);
+                      return async.when(
+                        loading: () => const LinearProgressIndicator(
+                          minHeight: 2,
+                        ),
+                        error: (e, _) => Text('$e'),
+                        data: (all) {
+                          final blocks = all
+                              .where(
+                                (e) =>
+                                    e.section ==
+                                    ProfileEntrySection.routineBlock,
+                              )
+                              .where((e) => e.id != widget.initialEntry?.id)
+                              .toList();
+                          if (blocks.isEmpty) {
+                            return const InputDecorator(
+                              decoration: InputDecoration(
+                                labelText: 'Routine block',
+                                border: OutlineInputBorder(),
+                                errorText:
+                                    'Add a routine block first, then add steps '
+                                    'under it.',
+                              ),
+                              child: SizedBox.shrink(),
+                            );
+                          }
+                          final validValue = _parentEntryId != null &&
+                              blocks.any((b) => b.id == _parentEntryId);
+                          return DropdownButtonFormField<String?>(
+                            key: ValueKey(
+                              '${_parentEntryId ?? 'nil'}-${blocks.length}',
+                            ),
+                            initialValue: validValue ? _parentEntryId : null,
+                            isExpanded: true,
+                            decoration: const InputDecoration(
+                              labelText: 'Routine block',
+                              border: OutlineInputBorder(),
+                            ),
+                            items: [
+                              const DropdownMenuItem<String?>(
+                                child: Text('Select a routine block'),
+                              ),
+                              for (final b in blocks)
+                                DropdownMenuItem(
+                                  value: b.id,
+                                  child: Text(
+                                    b.label,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                            ],
+                            onChanged: (id) =>
+                                setState(() => _parentEntryId = id),
+                            validator: (v) {
+                              if (v == null || v.isEmpty) {
+                                return 'Choose a routine block';
+                              }
+                              return null;
+                            },
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ],
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _label,
@@ -172,6 +366,22 @@ class _ProfileEntryFormScreenState
                   ),
                 ),
                 const SizedBox(height: 16),
+                _OptionalDateTile(
+                  label: 'First noted (optional)',
+                  value: _firstNoted,
+                  dateFmt: dateFmt,
+                  onPick: () => _pickDate(firstNoted: true),
+                  onClear: () => setState(() => _firstNoted = null),
+                ),
+                const SizedBox(height: 8),
+                _OptionalDateTile(
+                  label: 'Last noted (optional)',
+                  value: _lastNoted,
+                  dateFmt: dateFmt,
+                  onPick: () => _pickDate(firstNoted: false),
+                  onClear: () => setState(() => _lastNoted = null),
+                ),
+                const SizedBox(height: 16),
                 DropdownButtonFormField<ProfileEntryStatus>(
                   key: ValueKey(_status),
                   initialValue: _status,
@@ -198,6 +408,55 @@ class _ProfileEntryFormScreenState
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OptionalDateTile extends StatelessWidget {
+  const _OptionalDateTile({
+    required this.label,
+    required this.value,
+    required this.dateFmt,
+    required this.onPick,
+    required this.onClear,
+  });
+
+  final String label;
+  final DateTime? value;
+  final DateFormat dateFmt;
+  final VoidCallback onPick;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final subtitle = value == null
+        ? 'Not set'
+        : dateFmt.format(value!.toLocal());
+
+    return Material(
+      color: scheme.surfaceContainerHighest.withValues(alpha: 0.35),
+      borderRadius: BorderRadius.circular(12),
+      child: ListTile(
+        title: Text(label),
+        subtitle: Text(subtitle),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (value != null)
+              IconButton(
+                tooltip: 'Clear',
+                onPressed: onClear,
+                icon: const Icon(Icons.clear),
+              ),
+            IconButton(
+              tooltip: 'Pick date',
+              onPressed: onPick,
+              icon: const Icon(Icons.calendar_today_outlined),
+            ),
+          ],
         ),
       ),
     );
