@@ -67,6 +67,15 @@ access.
   Today screen, so a 09:00 specialist visit renders between the
   08:00 and 10:00 pills without any context-switch. Archive /
   restore mirrors the other domain forms.
+- **Milestones & dates** — per-Person life-log of dated events that
+  don't fit the medication / appointment schema: diagnoses,
+  vaccines, developmental firsts, health events, life moves.
+  Category (diagnosis, vaccine, development, health, life, other)
+  drives icon and colour; per-entry **precision** (year / month /
+  day / day-and-time) lets users log what they actually remember —
+  "sometime in 2019" is a legitimate answer. Reverse-chronological
+  list grouped by year, optional provider link (archived providers
+  still resolve), free-text notes, archive / restore.
 - **Calm** — in-the-moment coping strategies and crisis contacts, reachable
   in one tap from anywhere, rendered in a dedicated low-stimulation theme.
 
@@ -76,8 +85,6 @@ access.
   trees, key phone numbers.
 - **Apps & Sites** — portals (IEP, telehealth, insurance): URLs + notes
   (never passwords).
-- **Milestones & dates** — diagnoses, shots, milestones. Flexible life-log,
-  globally searchable ("when did X get their last flu shot?").
 - **Profile** — a living document per person: stims, preferences (sensory,
   food & eating, clothing, social), routines, triggers, what helps, early
   signs, communication, sleep & appetite baseline. Includes an embedded
@@ -130,7 +137,7 @@ lib/
     ├── appointments/      planned
     ├── programs/          planned
     ├── apps_sites/        planned
-    └── milestones/        planned (Milestones & dates)
+    └── milestones/        per-Person life-log of dated events
 docs/
 └── ARCHITECTURE.md        decision log + data model + phases + naming conventions
 ```

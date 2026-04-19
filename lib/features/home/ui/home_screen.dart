@@ -267,6 +267,7 @@ class _FeatureGrid extends StatelessWidget {
       label: 'Milestones & dates',
       icon: Icons.history_edu_outlined,
       description: 'Diagnoses, shots, milestones',
+      route: Routes.milestones,
     ),
     _FeatureTileData(
       label: 'Providers',

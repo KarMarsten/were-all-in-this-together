@@ -8,6 +8,7 @@ import 'package:were_all_in_this_together/core/database/tables/dose_logs.dart';
 import 'package:were_all_in_this_together/core/database/tables/medication_events.dart';
 import 'package:were_all_in_this_together/core/database/tables/medication_groups.dart';
 import 'package:were_all_in_this_together/core/database/tables/medications.dart';
+import 'package:were_all_in_this_together/core/database/tables/milestones.dart';
 import 'package:were_all_in_this_together/core/database/tables/persons.dart';
 
 part 'app_database.g.dart';
@@ -32,6 +33,8 @@ part 'app_database.g.dart';
 /// * **v6** — adds MedicationEvents (append-only history of regimen
 ///   changes per medication: dose, prescriber, schedule, etc.).
 /// * **v7** — adds Appointments.
+/// * **v8** — adds Milestones (retrospective life-log of dated
+///   events: diagnoses, vaccines, developmental firsts, moves).
 @DriftDatabase(
   tables: [
     Persons,
@@ -41,6 +44,7 @@ part 'app_database.g.dart';
     CareProviders,
     MedicationEvents,
     Appointments,
+    Milestones,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -55,7 +59,7 @@ class AppDatabase extends _$AppDatabase {
       AppDatabase(driftDatabase(name: 'were_all_in_this_together'));
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -84,6 +88,9 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 7) {
             await m.createTable(appointments);
+          }
+          if (from < 8) {
+            await m.createTable(milestones);
           }
         },
       );
