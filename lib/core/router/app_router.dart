@@ -17,6 +17,10 @@ import 'package:were_all_in_this_together/features/medications/presentation/medi
 import 'package:were_all_in_this_together/features/medications/presentation/medication_groups_list_screen.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/medication_history_screen.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/medications_list_screen.dart';
+import 'package:were_all_in_this_together/features/milestones/data/milestone_repository.dart';
+import 'package:were_all_in_this_together/features/milestones/domain/milestone.dart';
+import 'package:were_all_in_this_together/features/milestones/presentation/milestone_form_screen.dart';
+import 'package:were_all_in_this_together/features/milestones/presentation/milestones_list_screen.dart';
 import 'package:were_all_in_this_together/features/people/data/person_repository.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 import 'package:were_all_in_this_together/features/people/presentation/people_list_screen.dart';
@@ -83,6 +87,12 @@ abstract class Routes {
   static const appointmentEditPattern = '/appointments/:id/edit';
 
   static String appointmentEdit(String id) => '/appointments/$id/edit';
+
+  static const milestones = '/milestones';
+  static const milestoneNew = '/milestones/new';
+  static const milestoneEditPattern = '/milestones/:id/edit';
+
+  static String milestoneEdit(String id) => '/milestones/$id/edit';
 }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -235,6 +245,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final id = state.pathParameters['id']!;
           return _AppointmentEditLoader(appointmentId: id);
+        },
+      ),
+      GoRoute(
+        path: Routes.milestones,
+        name: 'milestones',
+        builder: (context, state) => const MilestonesListScreen(),
+      ),
+      GoRoute(
+        path: Routes.milestoneNew,
+        name: 'milestone-new',
+        builder: (context, state) => const MilestoneFormScreen(),
+      ),
+      GoRoute(
+        path: Routes.milestoneEditPattern,
+        name: 'milestone-edit',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return _MilestoneEditLoader(milestoneId: id);
         },
       ),
     ],
@@ -625,6 +653,56 @@ class _CareProviderNotFound extends StatelessWidget {
         child: Center(
           child: Text(
             "That provider isn't in this app anymore.",
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Same pattern as [_AppointmentEditLoader] — resolve the milestone
+/// by id so deep links and app restarts land on the editor with real
+/// data. `findById` looks at active and archived rows so Archive →
+/// Edit → Restore round-trips cleanly.
+class _MilestoneEditLoader extends ConsumerWidget {
+  const _MilestoneEditLoader({required this.milestoneId});
+
+  final String milestoneId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repo = ref.watch(milestoneRepositoryProvider);
+    return FutureBuilder<Milestone?>(
+      future: repo.findById(milestoneId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const _EditLoading();
+        }
+        if (snapshot.hasError) {
+          return _EditError(message: snapshot.error.toString());
+        }
+        final milestone = snapshot.data;
+        if (milestone == null) {
+          return const _MilestoneNotFound();
+        }
+        return MilestoneFormScreen(initialMilestone: milestone);
+      },
+    );
+  }
+}
+
+class _MilestoneNotFound extends StatelessWidget {
+  const _MilestoneNotFound();
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(),
+      body: const Padding(
+        padding: EdgeInsets.all(24),
+        child: Center(
+          child: Text(
+            "That milestone isn't in this app anymore.",
             textAlign: TextAlign.center,
           ),
         ),
