@@ -21,6 +21,10 @@ import 'package:were_all_in_this_together/features/milestones/data/milestone_rep
 import 'package:were_all_in_this_together/features/milestones/domain/milestone.dart';
 import 'package:were_all_in_this_together/features/milestones/presentation/milestone_form_screen.dart';
 import 'package:were_all_in_this_together/features/milestones/presentation/milestones_list_screen.dart';
+import 'package:were_all_in_this_together/features/observations/data/observation_repository.dart';
+import 'package:were_all_in_this_together/features/observations/domain/observation.dart';
+import 'package:were_all_in_this_together/features/observations/presentation/observation_form_screen.dart';
+import 'package:were_all_in_this_together/features/observations/presentation/observations_list_screen.dart';
 import 'package:were_all_in_this_together/features/people/data/person_repository.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 import 'package:were_all_in_this_together/features/people/presentation/people_list_screen.dart';
@@ -97,6 +101,12 @@ abstract class Routes {
   static const milestoneEditPattern = '/milestones/:id/edit';
 
   static String milestoneEdit(String id) => '/milestones/$id/edit';
+
+  static const notes = '/notes';
+  static const noteNew = '/notes/new';
+  static const noteEditPattern = '/notes/:id/edit';
+
+  static String noteEdit(String id) => '/notes/$id/edit';
 
   static const profile = '/profile';
 
@@ -274,6 +284,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final id = state.pathParameters['id']!;
           return _MilestoneEditLoader(milestoneId: id);
+        },
+      ),
+      GoRoute(
+        path: Routes.notes,
+        name: 'notes',
+        builder: (context, state) => const ObservationsListScreen(),
+      ),
+      GoRoute(
+        path: Routes.noteNew,
+        name: 'note-new',
+        builder: (context, state) => const ObservationFormScreen(),
+      ),
+      GoRoute(
+        path: Routes.noteEditPattern,
+        name: 'note-edit',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return _NoteEditLoader(noteId: id);
         },
       ),
       GoRoute(
@@ -729,6 +757,53 @@ class _MilestoneNotFound extends StatelessWidget {
         child: Center(
           child: Text(
             "That milestone isn't in this app anymore.",
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Resolve a note by id for `/notes/:id/edit`. Includes archived rows.
+class _NoteEditLoader extends ConsumerWidget {
+  const _NoteEditLoader({required this.noteId});
+
+  final String noteId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repo = ref.watch(observationRepositoryProvider);
+    return FutureBuilder<Observation?>(
+      future: repo.findById(noteId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const _EditLoading();
+        }
+        if (snapshot.hasError) {
+          return _EditError(message: snapshot.error.toString());
+        }
+        final note = snapshot.data;
+        if (note == null) {
+          return const _NoteNotFound();
+        }
+        return ObservationFormScreen(initialObservation: note);
+      },
+    );
+  }
+}
+
+class _NoteNotFound extends StatelessWidget {
+  const _NoteNotFound();
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(),
+      body: const Padding(
+        padding: EdgeInsets.all(24),
+        child: Center(
+          child: Text(
+            "That note isn't in this app anymore.",
             textAlign: TextAlign.center,
           ),
         ),
