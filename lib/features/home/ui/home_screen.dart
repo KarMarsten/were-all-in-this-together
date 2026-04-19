@@ -286,6 +286,12 @@ class _FeatureGrid extends StatelessWidget {
       icon: Icons.link_outlined,
       description: 'Portals, telehealth, IEP tools',
     ),
+    _FeatureTileData(
+      label: 'Notes',
+      icon: Icons.sticky_note_2_outlined,
+      description: 'Day-to-day observations',
+      route: Routes.notes,
+    ),
   ];
 
   @override

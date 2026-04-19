@@ -6666,6 +6666,734 @@ class ProfileEntriesCompanion extends UpdateCompanion<ProfileEntryRow> {
   }
 }
 
+class $ObservationsTable extends Observations
+    with TableInfo<$ObservationsTable, ObservationRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ObservationsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _personIdMeta = const VerificationMeta(
+    'personId',
+  );
+  @override
+  late final GeneratedColumn<String> personId = GeneratedColumn<String>(
+    'person_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _observedAtMeta = const VerificationMeta(
+    'observedAt',
+  );
+  @override
+  late final GeneratedColumn<int> observedAt = GeneratedColumn<int>(
+    'observed_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _categoryMeta = const VerificationMeta(
+    'category',
+  );
+  @override
+  late final GeneratedColumn<int> category = GeneratedColumn<int>(
+    'category',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _profileEntryIdMeta = const VerificationMeta(
+    'profileEntryId',
+  );
+  @override
+  late final GeneratedColumn<String> profileEntryId = GeneratedColumn<String>(
+    'profile_entry_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _rowVersionMeta = const VerificationMeta(
+    'rowVersion',
+  );
+  @override
+  late final GeneratedColumn<int> rowVersion = GeneratedColumn<int>(
+    'row_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _lastWriterDeviceIdMeta =
+      const VerificationMeta('lastWriterDeviceId');
+  @override
+  late final GeneratedColumn<String> lastWriterDeviceId =
+      GeneratedColumn<String>(
+        'last_writer_device_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _keyVersionMeta = const VerificationMeta(
+    'keyVersion',
+  );
+  @override
+  late final GeneratedColumn<int> keyVersion = GeneratedColumn<int>(
+    'key_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _payloadMeta = const VerificationMeta(
+    'payload',
+  );
+  @override
+  late final GeneratedColumn<Uint8List> payload = GeneratedColumn<Uint8List>(
+    'payload',
+    aliasedName,
+    false,
+    type: DriftSqlType.blob,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    personId,
+    observedAt,
+    category,
+    profileEntryId,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    rowVersion,
+    lastWriterDeviceId,
+    keyVersion,
+    payload,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'observations';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ObservationRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('person_id')) {
+      context.handle(
+        _personIdMeta,
+        personId.isAcceptableOrUnknown(data['person_id']!, _personIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_personIdMeta);
+    }
+    if (data.containsKey('observed_at')) {
+      context.handle(
+        _observedAtMeta,
+        observedAt.isAcceptableOrUnknown(data['observed_at']!, _observedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_observedAtMeta);
+    }
+    if (data.containsKey('category')) {
+      context.handle(
+        _categoryMeta,
+        category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_categoryMeta);
+    }
+    if (data.containsKey('profile_entry_id')) {
+      context.handle(
+        _profileEntryIdMeta,
+        profileEntryId.isAcceptableOrUnknown(
+          data['profile_entry_id']!,
+          _profileEntryIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('row_version')) {
+      context.handle(
+        _rowVersionMeta,
+        rowVersion.isAcceptableOrUnknown(data['row_version']!, _rowVersionMeta),
+      );
+    }
+    if (data.containsKey('last_writer_device_id')) {
+      context.handle(
+        _lastWriterDeviceIdMeta,
+        lastWriterDeviceId.isAcceptableOrUnknown(
+          data['last_writer_device_id']!,
+          _lastWriterDeviceIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('key_version')) {
+      context.handle(
+        _keyVersionMeta,
+        keyVersion.isAcceptableOrUnknown(data['key_version']!, _keyVersionMeta),
+      );
+    }
+    if (data.containsKey('payload')) {
+      context.handle(
+        _payloadMeta,
+        payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_payloadMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ObservationRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ObservationRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      personId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}person_id'],
+      )!,
+      observedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}observed_at'],
+      )!,
+      category: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}category'],
+      )!,
+      profileEntryId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}profile_entry_id'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      rowVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}row_version'],
+      )!,
+      lastWriterDeviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_writer_device_id'],
+      ),
+      keyVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}key_version'],
+      )!,
+      payload: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}payload'],
+      )!,
+    );
+  }
+
+  @override
+  $ObservationsTable createAlias(String alias) {
+    return $ObservationsTable(attachedDatabase, alias);
+  }
+}
+
+class ObservationRow extends DataClass implements Insertable<ObservationRow> {
+  final String id;
+  final String personId;
+  final int observedAt;
+
+  /// `ObservationCategory.index` — append-only enum policy.
+  final int category;
+  final String? profileEntryId;
+  final int createdAt;
+  final int updatedAt;
+  final int? deletedAt;
+  final int rowVersion;
+  final String? lastWriterDeviceId;
+  final int keyVersion;
+  final Uint8List payload;
+  const ObservationRow({
+    required this.id,
+    required this.personId,
+    required this.observedAt,
+    required this.category,
+    this.profileEntryId,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+    required this.rowVersion,
+    this.lastWriterDeviceId,
+    required this.keyVersion,
+    required this.payload,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['person_id'] = Variable<String>(personId);
+    map['observed_at'] = Variable<int>(observedAt);
+    map['category'] = Variable<int>(category);
+    if (!nullToAbsent || profileEntryId != null) {
+      map['profile_entry_id'] = Variable<String>(profileEntryId);
+    }
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<int>(deletedAt);
+    }
+    map['row_version'] = Variable<int>(rowVersion);
+    if (!nullToAbsent || lastWriterDeviceId != null) {
+      map['last_writer_device_id'] = Variable<String>(lastWriterDeviceId);
+    }
+    map['key_version'] = Variable<int>(keyVersion);
+    map['payload'] = Variable<Uint8List>(payload);
+    return map;
+  }
+
+  ObservationsCompanion toCompanion(bool nullToAbsent) {
+    return ObservationsCompanion(
+      id: Value(id),
+      personId: Value(personId),
+      observedAt: Value(observedAt),
+      category: Value(category),
+      profileEntryId: profileEntryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(profileEntryId),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      rowVersion: Value(rowVersion),
+      lastWriterDeviceId: lastWriterDeviceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastWriterDeviceId),
+      keyVersion: Value(keyVersion),
+      payload: Value(payload),
+    );
+  }
+
+  factory ObservationRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ObservationRow(
+      id: serializer.fromJson<String>(json['id']),
+      personId: serializer.fromJson<String>(json['personId']),
+      observedAt: serializer.fromJson<int>(json['observedAt']),
+      category: serializer.fromJson<int>(json['category']),
+      profileEntryId: serializer.fromJson<String?>(json['profileEntryId']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
+      rowVersion: serializer.fromJson<int>(json['rowVersion']),
+      lastWriterDeviceId: serializer.fromJson<String?>(
+        json['lastWriterDeviceId'],
+      ),
+      keyVersion: serializer.fromJson<int>(json['keyVersion']),
+      payload: serializer.fromJson<Uint8List>(json['payload']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'personId': serializer.toJson<String>(personId),
+      'observedAt': serializer.toJson<int>(observedAt),
+      'category': serializer.toJson<int>(category),
+      'profileEntryId': serializer.toJson<String?>(profileEntryId),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
+      'rowVersion': serializer.toJson<int>(rowVersion),
+      'lastWriterDeviceId': serializer.toJson<String?>(lastWriterDeviceId),
+      'keyVersion': serializer.toJson<int>(keyVersion),
+      'payload': serializer.toJson<Uint8List>(payload),
+    };
+  }
+
+  ObservationRow copyWith({
+    String? id,
+    String? personId,
+    int? observedAt,
+    int? category,
+    Value<String?> profileEntryId = const Value.absent(),
+    int? createdAt,
+    int? updatedAt,
+    Value<int?> deletedAt = const Value.absent(),
+    int? rowVersion,
+    Value<String?> lastWriterDeviceId = const Value.absent(),
+    int? keyVersion,
+    Uint8List? payload,
+  }) => ObservationRow(
+    id: id ?? this.id,
+    personId: personId ?? this.personId,
+    observedAt: observedAt ?? this.observedAt,
+    category: category ?? this.category,
+    profileEntryId: profileEntryId.present
+        ? profileEntryId.value
+        : this.profileEntryId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    rowVersion: rowVersion ?? this.rowVersion,
+    lastWriterDeviceId: lastWriterDeviceId.present
+        ? lastWriterDeviceId.value
+        : this.lastWriterDeviceId,
+    keyVersion: keyVersion ?? this.keyVersion,
+    payload: payload ?? this.payload,
+  );
+  ObservationRow copyWithCompanion(ObservationsCompanion data) {
+    return ObservationRow(
+      id: data.id.present ? data.id.value : this.id,
+      personId: data.personId.present ? data.personId.value : this.personId,
+      observedAt: data.observedAt.present
+          ? data.observedAt.value
+          : this.observedAt,
+      category: data.category.present ? data.category.value : this.category,
+      profileEntryId: data.profileEntryId.present
+          ? data.profileEntryId.value
+          : this.profileEntryId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      rowVersion: data.rowVersion.present
+          ? data.rowVersion.value
+          : this.rowVersion,
+      lastWriterDeviceId: data.lastWriterDeviceId.present
+          ? data.lastWriterDeviceId.value
+          : this.lastWriterDeviceId,
+      keyVersion: data.keyVersion.present
+          ? data.keyVersion.value
+          : this.keyVersion,
+      payload: data.payload.present ? data.payload.value : this.payload,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ObservationRow(')
+          ..write('id: $id, ')
+          ..write('personId: $personId, ')
+          ..write('observedAt: $observedAt, ')
+          ..write('category: $category, ')
+          ..write('profileEntryId: $profileEntryId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('rowVersion: $rowVersion, ')
+          ..write('lastWriterDeviceId: $lastWriterDeviceId, ')
+          ..write('keyVersion: $keyVersion, ')
+          ..write('payload: $payload')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    personId,
+    observedAt,
+    category,
+    profileEntryId,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    rowVersion,
+    lastWriterDeviceId,
+    keyVersion,
+    $driftBlobEquality.hash(payload),
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ObservationRow &&
+          other.id == this.id &&
+          other.personId == this.personId &&
+          other.observedAt == this.observedAt &&
+          other.category == this.category &&
+          other.profileEntryId == this.profileEntryId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.rowVersion == this.rowVersion &&
+          other.lastWriterDeviceId == this.lastWriterDeviceId &&
+          other.keyVersion == this.keyVersion &&
+          $driftBlobEquality.equals(other.payload, this.payload));
+}
+
+class ObservationsCompanion extends UpdateCompanion<ObservationRow> {
+  final Value<String> id;
+  final Value<String> personId;
+  final Value<int> observedAt;
+  final Value<int> category;
+  final Value<String?> profileEntryId;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int?> deletedAt;
+  final Value<int> rowVersion;
+  final Value<String?> lastWriterDeviceId;
+  final Value<int> keyVersion;
+  final Value<Uint8List> payload;
+  final Value<int> rowid;
+  const ObservationsCompanion({
+    this.id = const Value.absent(),
+    this.personId = const Value.absent(),
+    this.observedAt = const Value.absent(),
+    this.category = const Value.absent(),
+    this.profileEntryId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.rowVersion = const Value.absent(),
+    this.lastWriterDeviceId = const Value.absent(),
+    this.keyVersion = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ObservationsCompanion.insert({
+    required String id,
+    required String personId,
+    required int observedAt,
+    required int category,
+    this.profileEntryId = const Value.absent(),
+    required int createdAt,
+    required int updatedAt,
+    this.deletedAt = const Value.absent(),
+    this.rowVersion = const Value.absent(),
+    this.lastWriterDeviceId = const Value.absent(),
+    this.keyVersion = const Value.absent(),
+    required Uint8List payload,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       personId = Value(personId),
+       observedAt = Value(observedAt),
+       category = Value(category),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt),
+       payload = Value(payload);
+  static Insertable<ObservationRow> custom({
+    Expression<String>? id,
+    Expression<String>? personId,
+    Expression<int>? observedAt,
+    Expression<int>? category,
+    Expression<String>? profileEntryId,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? deletedAt,
+    Expression<int>? rowVersion,
+    Expression<String>? lastWriterDeviceId,
+    Expression<int>? keyVersion,
+    Expression<Uint8List>? payload,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (personId != null) 'person_id': personId,
+      if (observedAt != null) 'observed_at': observedAt,
+      if (category != null) 'category': category,
+      if (profileEntryId != null) 'profile_entry_id': profileEntryId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (rowVersion != null) 'row_version': rowVersion,
+      if (lastWriterDeviceId != null)
+        'last_writer_device_id': lastWriterDeviceId,
+      if (keyVersion != null) 'key_version': keyVersion,
+      if (payload != null) 'payload': payload,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ObservationsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? personId,
+    Value<int>? observedAt,
+    Value<int>? category,
+    Value<String?>? profileEntryId,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int?>? deletedAt,
+    Value<int>? rowVersion,
+    Value<String?>? lastWriterDeviceId,
+    Value<int>? keyVersion,
+    Value<Uint8List>? payload,
+    Value<int>? rowid,
+  }) {
+    return ObservationsCompanion(
+      id: id ?? this.id,
+      personId: personId ?? this.personId,
+      observedAt: observedAt ?? this.observedAt,
+      category: category ?? this.category,
+      profileEntryId: profileEntryId ?? this.profileEntryId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      rowVersion: rowVersion ?? this.rowVersion,
+      lastWriterDeviceId: lastWriterDeviceId ?? this.lastWriterDeviceId,
+      keyVersion: keyVersion ?? this.keyVersion,
+      payload: payload ?? this.payload,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (personId.present) {
+      map['person_id'] = Variable<String>(personId.value);
+    }
+    if (observedAt.present) {
+      map['observed_at'] = Variable<int>(observedAt.value);
+    }
+    if (category.present) {
+      map['category'] = Variable<int>(category.value);
+    }
+    if (profileEntryId.present) {
+      map['profile_entry_id'] = Variable<String>(profileEntryId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (rowVersion.present) {
+      map['row_version'] = Variable<int>(rowVersion.value);
+    }
+    if (lastWriterDeviceId.present) {
+      map['last_writer_device_id'] = Variable<String>(lastWriterDeviceId.value);
+    }
+    if (keyVersion.present) {
+      map['key_version'] = Variable<int>(keyVersion.value);
+    }
+    if (payload.present) {
+      map['payload'] = Variable<Uint8List>(payload.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ObservationsCompanion(')
+          ..write('id: $id, ')
+          ..write('personId: $personId, ')
+          ..write('observedAt: $observedAt, ')
+          ..write('category: $category, ')
+          ..write('profileEntryId: $profileEntryId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('rowVersion: $rowVersion, ')
+          ..write('lastWriterDeviceId: $lastWriterDeviceId, ')
+          ..write('keyVersion: $keyVersion, ')
+          ..write('payload: $payload, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -6683,6 +7411,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $MilestonesTable milestones = $MilestonesTable(this);
   late final $ProfilesTable profiles = $ProfilesTable(this);
   late final $ProfileEntriesTable profileEntries = $ProfileEntriesTable(this);
+  late final $ObservationsTable observations = $ObservationsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -6698,6 +7427,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     milestones,
     profiles,
     profileEntries,
+    observations,
   ];
 }
 
@@ -9819,6 +10549,349 @@ typedef $$ProfileEntriesTableProcessedTableManager =
       ProfileEntryRow,
       PrefetchHooks Function()
     >;
+typedef $$ObservationsTableCreateCompanionBuilder =
+    ObservationsCompanion Function({
+      required String id,
+      required String personId,
+      required int observedAt,
+      required int category,
+      Value<String?> profileEntryId,
+      required int createdAt,
+      required int updatedAt,
+      Value<int?> deletedAt,
+      Value<int> rowVersion,
+      Value<String?> lastWriterDeviceId,
+      Value<int> keyVersion,
+      required Uint8List payload,
+      Value<int> rowid,
+    });
+typedef $$ObservationsTableUpdateCompanionBuilder =
+    ObservationsCompanion Function({
+      Value<String> id,
+      Value<String> personId,
+      Value<int> observedAt,
+      Value<int> category,
+      Value<String?> profileEntryId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> deletedAt,
+      Value<int> rowVersion,
+      Value<String?> lastWriterDeviceId,
+      Value<int> keyVersion,
+      Value<Uint8List> payload,
+      Value<int> rowid,
+    });
+
+class $$ObservationsTableFilterComposer
+    extends Composer<_$AppDatabase, $ObservationsTable> {
+  $$ObservationsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get personId => $composableBuilder(
+    column: $table.personId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get observedAt => $composableBuilder(
+    column: $table.observedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get profileEntryId => $composableBuilder(
+    column: $table.profileEntryId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get rowVersion => $composableBuilder(
+    column: $table.rowVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastWriterDeviceId => $composableBuilder(
+    column: $table.lastWriterDeviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get keyVersion => $composableBuilder(
+    column: $table.keyVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ObservationsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ObservationsTable> {
+  $$ObservationsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get personId => $composableBuilder(
+    column: $table.personId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get observedAt => $composableBuilder(
+    column: $table.observedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get profileEntryId => $composableBuilder(
+    column: $table.profileEntryId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get rowVersion => $composableBuilder(
+    column: $table.rowVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastWriterDeviceId => $composableBuilder(
+    column: $table.lastWriterDeviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get keyVersion => $composableBuilder(
+    column: $table.keyVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<Uint8List> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ObservationsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ObservationsTable> {
+  $$ObservationsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get personId =>
+      $composableBuilder(column: $table.personId, builder: (column) => column);
+
+  GeneratedColumn<int> get observedAt => $composableBuilder(
+    column: $table.observedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
+
+  GeneratedColumn<String> get profileEntryId => $composableBuilder(
+    column: $table.profileEntryId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get rowVersion => $composableBuilder(
+    column: $table.rowVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get lastWriterDeviceId => $composableBuilder(
+    column: $table.lastWriterDeviceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get keyVersion => $composableBuilder(
+    column: $table.keyVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<Uint8List> get payload =>
+      $composableBuilder(column: $table.payload, builder: (column) => column);
+}
+
+class $$ObservationsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ObservationsTable,
+          ObservationRow,
+          $$ObservationsTableFilterComposer,
+          $$ObservationsTableOrderingComposer,
+          $$ObservationsTableAnnotationComposer,
+          $$ObservationsTableCreateCompanionBuilder,
+          $$ObservationsTableUpdateCompanionBuilder,
+          (
+            ObservationRow,
+            BaseReferences<_$AppDatabase, $ObservationsTable, ObservationRow>,
+          ),
+          ObservationRow,
+          PrefetchHooks Function()
+        > {
+  $$ObservationsTableTableManager(_$AppDatabase db, $ObservationsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ObservationsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ObservationsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ObservationsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> personId = const Value.absent(),
+                Value<int> observedAt = const Value.absent(),
+                Value<int> category = const Value.absent(),
+                Value<String?> profileEntryId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<int> rowVersion = const Value.absent(),
+                Value<String?> lastWriterDeviceId = const Value.absent(),
+                Value<int> keyVersion = const Value.absent(),
+                Value<Uint8List> payload = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ObservationsCompanion(
+                id: id,
+                personId: personId,
+                observedAt: observedAt,
+                category: category,
+                profileEntryId: profileEntryId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                rowVersion: rowVersion,
+                lastWriterDeviceId: lastWriterDeviceId,
+                keyVersion: keyVersion,
+                payload: payload,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String personId,
+                required int observedAt,
+                required int category,
+                Value<String?> profileEntryId = const Value.absent(),
+                required int createdAt,
+                required int updatedAt,
+                Value<int?> deletedAt = const Value.absent(),
+                Value<int> rowVersion = const Value.absent(),
+                Value<String?> lastWriterDeviceId = const Value.absent(),
+                Value<int> keyVersion = const Value.absent(),
+                required Uint8List payload,
+                Value<int> rowid = const Value.absent(),
+              }) => ObservationsCompanion.insert(
+                id: id,
+                personId: personId,
+                observedAt: observedAt,
+                category: category,
+                profileEntryId: profileEntryId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                rowVersion: rowVersion,
+                lastWriterDeviceId: lastWriterDeviceId,
+                keyVersion: keyVersion,
+                payload: payload,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ObservationsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ObservationsTable,
+      ObservationRow,
+      $$ObservationsTableFilterComposer,
+      $$ObservationsTableOrderingComposer,
+      $$ObservationsTableAnnotationComposer,
+      $$ObservationsTableCreateCompanionBuilder,
+      $$ObservationsTableUpdateCompanionBuilder,
+      (
+        ObservationRow,
+        BaseReferences<_$AppDatabase, $ObservationsTable, ObservationRow>,
+      ),
+      ObservationRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -9843,4 +10916,6 @@ class $AppDatabaseManager {
       $$ProfilesTableTableManager(_db, _db.profiles);
   $$ProfileEntriesTableTableManager get profileEntries =>
       $$ProfileEntriesTableTableManager(_db, _db.profileEntries);
+  $$ObservationsTableTableManager get observations =>
+      $$ObservationsTableTableManager(_db, _db.observations);
 }
