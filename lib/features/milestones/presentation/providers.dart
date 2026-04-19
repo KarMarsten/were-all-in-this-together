@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:were_all_in_this_together/features/milestones/data/milestone_repository.dart';
 import 'package:were_all_in_this_together/features/milestones/domain/milestone.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
+import 'package:were_all_in_this_together/features/today/presentation/today_providers.dart';
 
 /// Active (non-archived) milestones for the currently-active
 /// Person, most recent first.
@@ -39,5 +40,7 @@ final archivedMilestonesProvider =
 void invalidateMilestonesState(WidgetRef ref) {
   ref
     ..invalidate(activeMilestonesProvider)
-    ..invalidate(archivedMilestonesProvider);
+    ..invalidate(archivedMilestonesProvider)
+    ..invalidate(allTodayMilestonesProvider)
+    ..invalidate(todayItemsProvider);
 }

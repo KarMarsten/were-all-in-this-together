@@ -8,9 +8,11 @@ import 'package:were_all_in_this_together/features/medications/domain/dose_log.d
 import 'package:were_all_in_this_together/features/medications/domain/medication_group.dart';
 import 'package:were_all_in_this_together/features/medications/domain/scheduled_dose.dart';
 import 'package:were_all_in_this_together/features/medications/notifications/reminder_sync.dart';
+import 'package:were_all_in_this_together/features/milestones/data/milestone_repository.dart';
 import 'package:were_all_in_this_together/features/people/presentation/providers.dart';
 import 'package:were_all_in_this_together/features/today/domain/today_appointment_item.dart';
 import 'package:were_all_in_this_together/features/today/domain/today_item.dart';
+import 'package:were_all_in_this_together/features/today/domain/today_milestone_item.dart';
 
 /// Convenience: the [DoseIdentity] of a [ScheduledDose]. The log
 /// side lives in `dose_log.dart` (as `identityOfLog`) so the
@@ -94,6 +96,8 @@ final todayItemsProvider = FutureProvider<List<TodayItem>>((ref) async {
   final owned = await ref.watch(allActiveMedicationsProvider.future);
   final ownedGroups = await ref.watch(allActiveMedicationGroupsProvider.future);
   final todayAppts = await ref.watch(allTodayAppointmentsProvider.future);
+  final todayMilestoneSeeds =
+      await ref.watch(allTodayMilestonesProvider.future);
 
   final medContexts = [
     for (final o in owned)
@@ -123,14 +127,53 @@ final todayItemsProvider = FutureProvider<List<TodayItem>>((ref) async {
     fromInclusive: startOfDay,
     toExclusive: startOfTomorrow,
   );
+  final milestoneItems = expandTodayMilestoneItems(
+    milestones: todayMilestoneSeeds,
+    now: now,
+  );
 
   // Single merged list, sorted by scheduledAt so a 09:00 visit slots
-  // between the 08:00 and 10:00 doses. Stability on ties isn't
-  // important here — if a dose and an appointment share a second,
-  // either order is defensible and the user sees both rows adjacent.
-  final combined = <TodayItem>[...medItems, ...apptItems]
-    ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+  // between the 08:00 and 10:00 doses. Milestone anniversaries share
+  // the same local-midnight anchor so they sort ahead of morning
+  // doses; ties fall back to `occurredAt` inside
+  // `expandTodayMilestoneItems`.
+  final combined = <TodayItem>[
+    ...medItems,
+    ...apptItems,
+    ...milestoneItems,
+  ]..sort((a, b) {
+      final byTime = a.scheduledAt.compareTo(b.scheduledAt);
+      if (byTime != 0) return byTime;
+      return _todayStableSortKey(a).compareTo(_todayStableSortKey(b));
+    });
   return combined;
+});
+
+/// Every active milestone across all managed people, paired with
+/// each Person's display name — raw input for
+/// [expandTodayMilestoneItems], which filters to "on this day"
+/// anniversaries.
+///
+/// Scoped roster-wide (not active-Person-only) so Today matches how
+/// [allTodayAppointmentsProvider] works: a parent sees a child's
+/// anniversary row even when another Person is selected elsewhere.
+final allTodayMilestonesProvider =
+    FutureProvider<List<OwnedTodayMilestone>>((ref) async {
+  final people = await ref.watch(peopleListProvider.future);
+  final repo = ref.watch(milestoneRepositoryProvider);
+  final result = <OwnedTodayMilestone>[];
+  for (final person in people) {
+    final milestones = await repo.listActiveForPerson(person.id);
+    for (final m in milestones) {
+      result.add(
+        OwnedTodayMilestone(
+          milestone: m,
+          personDisplayName: person.displayName,
+        ),
+      );
+    }
+  }
+  return result;
 });
 
 /// Logs indexed by `(medicationId, scheduledAtUtcMs)` for today's
@@ -188,4 +231,24 @@ class OwnedMedicationGroup {
 
   final MedicationGroup group;
   final String personDisplayName;
+}
+
+/// Stable ordering when two [TodayItem]s share the same
+/// [TodayItem.scheduledAt] (e.g. several milestone anniversaries at
+/// local midnight).
+String _todayStableSortKey(TodayItem item) {
+  if (item is TodaySoloItem) {
+    final d = item.dose;
+    return 'a:${d.medicationId}:${d.scheduledAt.millisecondsSinceEpoch}';
+  }
+  if (item is TodayGroupItem) {
+    return 'b:${item.groupId}:${item.scheduledAt.millisecondsSinceEpoch}';
+  }
+  if (item is TodayAppointmentItem) {
+    return 'c:${item.appointment.id}';
+  }
+  if (item is TodayMilestoneItem) {
+    return 'd:${item.milestone.id}';
+  }
+  return 'z:${item.runtimeType}';
 }

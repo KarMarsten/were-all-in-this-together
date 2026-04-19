@@ -6,8 +6,9 @@ import 'package:were_all_in_this_together/features/medications/domain/scheduled_
 
 /// One row on the Today screen.
 ///
-/// Either a single dose ([TodaySoloItem]) or a bundle of doses taken
-/// together ([TodayGroupItem]). Common shape is exposed via abstract
+/// Either a solo dose, a group bundle, an appointment row, or a
+/// milestone anniversary row (see `today_appointment_item.dart` and
+/// `today_milestone_item.dart`). Common shape is exposed via abstract
 /// getters rather than a shared constructor so each subclass can
 /// derive them from its own backing data without a sentinel parent
 /// state.

@@ -9,8 +9,12 @@ import 'package:were_all_in_this_together/features/medications/data/dose_log_rep
 import 'package:were_all_in_this_together/features/medications/domain/dose_log.dart';
 import 'package:were_all_in_this_together/features/medications/domain/scheduled_dose.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/widgets/medication_icon.dart';
+import 'package:were_all_in_this_together/features/milestones/domain/milestone.dart';
+import 'package:were_all_in_this_together/features/milestones/presentation/milestones_list_screen.dart'
+    show labelForKind;
 import 'package:were_all_in_this_together/features/today/domain/today_appointment_item.dart';
 import 'package:were_all_in_this_together/features/today/domain/today_item.dart';
+import 'package:were_all_in_this_together/features/today/domain/today_milestone_item.dart';
 import 'package:were_all_in_this_together/features/today/presentation/today_providers.dart';
 
 /// "Today's doses" — every scheduled dose for today across every
@@ -83,6 +87,9 @@ class TodayScreen extends ConsumerWidget {
                   }
                   if (item is TodayAppointmentItem) {
                     return _AppointmentTile(item: item, now: now);
+                  }
+                  if (item is TodayMilestoneItem) {
+                    return _MilestoneTile(item: item, now: now);
                   }
                   return const SizedBox.shrink();
                 },
@@ -489,6 +496,123 @@ class _GroupTileState extends ConsumerState<_GroupTile> {
 /// Tap opens the appointment edit screen — no inline actions, since
 /// an appointment has nothing to ACK the way a dose does, and the
 /// most likely next intent is "adjust the time" or "add notes".
+/// Today row for an "on this day" milestone anniversary. Tapping
+/// opens the edit form — same affordance as appointments, since the
+/// next intent is usually "adjust the date" or "add detail".
+class _MilestoneTile extends StatelessWidget {
+  const _MilestoneTile({required this.item, required this.now});
+
+  final TodayMilestoneItem item;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    final m = item.milestone;
+    final visuals = _milestoneKindVisuals(m.kind, scheme);
+    final today = DateTime(now.year, now.month, now.day);
+    final subtitleParts = <String>[
+      item.personDisplayName,
+      milestoneAnniversarySubtitle(milestone: m, today: today),
+      labelForKind(m.kind),
+    ];
+
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      color: scheme.tertiaryContainer.withValues(alpha: 0.22),
+      child: InkWell(
+        onTap: () => context.push(Routes.milestoneEdit(m.id)),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 64,
+                child: Icon(
+                  Icons.celebration_outlined,
+                  size: 26,
+                  color: scheme.tertiary,
+                ),
+              ),
+              CircleAvatar(
+                radius: 14,
+                backgroundColor: visuals.background,
+                child: Icon(visuals.icon, size: 16, color: visuals.foreground),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(m.title, style: text.titleSmall),
+                    Text(
+                      subtitleParts.join(' · '),
+                      style: text.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: scheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+({IconData icon, Color background, Color foreground}) _milestoneKindVisuals(
+  MilestoneKind k,
+  ColorScheme scheme,
+) {
+  switch (k) {
+    case MilestoneKind.diagnosis:
+      return (
+        icon: Icons.assignment_outlined,
+        background: scheme.tertiaryContainer,
+        foreground: scheme.onTertiaryContainer,
+      );
+    case MilestoneKind.vaccine:
+      return (
+        icon: Icons.vaccines_outlined,
+        background: scheme.primaryContainer,
+        foreground: scheme.onPrimaryContainer,
+      );
+    case MilestoneKind.development:
+      return (
+        icon: Icons.child_care_outlined,
+        background: scheme.secondaryContainer,
+        foreground: scheme.onSecondaryContainer,
+      );
+    case MilestoneKind.health:
+      return (
+        icon: Icons.healing_outlined,
+        background: scheme.errorContainer,
+        foreground: scheme.onErrorContainer,
+      );
+    case MilestoneKind.life:
+      return (
+        icon: Icons.flag_outlined,
+        background: scheme.primaryContainer,
+        foreground: scheme.onPrimaryContainer,
+      );
+    case MilestoneKind.other:
+      return (
+        icon: Icons.label_outline,
+        background: scheme.surfaceContainerHighest,
+        foreground: scheme.onSurfaceVariant,
+      );
+  }
+}
+
 class _AppointmentTile extends StatelessWidget {
   const _AppointmentTile({required this.item, required this.now});
 
@@ -748,8 +872,9 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Doses with a daily or weekly schedule and appointments '
-              'booked for today will show up here automatically.',
+              'Doses with a daily or weekly schedule, appointments '
+              'booked for today, and milestone anniversaries for this '
+              'calendar day will show up here automatically.',
               style: text.bodyMedium?.copyWith(
                 color: scheme.onSurfaceVariant,
               ),
