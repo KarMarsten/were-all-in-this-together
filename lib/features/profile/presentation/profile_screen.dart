@@ -152,16 +152,14 @@ class _ProfileEditorState extends ConsumerState<_ProfileEditor> {
     return t.isEmpty ? null : t;
   }
 
-  /// Section, status, optional routine parent, optional noted dates.
-  static String _profileEntryListSubtitle(
+  /// Status, optional routine parent, optional noted dates (no section
+  /// label — used when entries are grouped under a section heading).
+  static String _profileEntryGroupedSubtitle(
     ProfileEntry e,
     List<ProfileEntry> entries,
   ) {
     final fmt = DateFormat.yMMMd();
-    final parts = <String>[
-      labelForProfileEntrySection(e.section),
-      labelForProfileEntryStatus(e.status),
-    ];
+    final parts = <String>[labelForProfileEntryStatus(e.status)];
     if (e.section == ProfileEntrySection.routineStep &&
         e.parentEntryId != null) {
       for (final p in entries) {
@@ -179,6 +177,43 @@ class _ProfileEditorState extends ConsumerState<_ProfileEditor> {
       parts.add('to ${fmt.format(e.lastNoted!.toLocal())}');
     }
     return parts.join(' · ');
+  }
+
+  List<Widget> _structuredEntrySections(
+    BuildContext context,
+    List<ProfileEntry> entries,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
+    final titleSmall = Theme.of(context).textTheme.titleSmall;
+    final out = <Widget>[];
+    for (final section in ProfileEntrySection.values) {
+      final inSection = entries.where((e) => e.section == section).toList();
+      if (inSection.isEmpty) continue;
+      inSection.sort(
+        (a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()),
+      );
+      out
+        ..add(const SizedBox(height: 8))
+        ..add(
+          Text(
+            labelForProfileEntrySection(section),
+            style: titleSmall?.copyWith(color: scheme.primary),
+          ),
+        )
+        ..add(const SizedBox(height: 4));
+      for (final e in inSection) {
+        out.add(
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(e.label),
+            subtitle: Text(_profileEntryGroupedSubtitle(e, entries)),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push(Routes.profileEntryEdit(e.id)),
+          ),
+        );
+      }
+    }
+    return out;
   }
 
   @override
@@ -257,6 +292,20 @@ class _ProfileEditorState extends ConsumerState<_ProfileEditor> {
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () => context.push(Routes.noteNew),
+            icon: const Icon(Icons.note_add_outlined),
+            label: const Text('Add a note for the timeline'),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Quick log when something just happened — separate from the '
+            'lines below.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 16),
           entriesAsync.when(
             loading: () => const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
@@ -287,17 +336,8 @@ class _ProfileEditorState extends ConsumerState<_ProfileEditor> {
                       'No entries yet.',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
-                  ),
-                for (final e in entries)
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(e.label),
-                    subtitle: Text(
-                      _profileEntryListSubtitle(e, entries),
-                    ),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => context.push(Routes.profileEntryEdit(e.id)),
-                  ),
+                  )
+                else ..._structuredEntrySections(context, entries),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: () => context.push(Routes.profileEntryNew),
