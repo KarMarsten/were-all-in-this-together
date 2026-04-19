@@ -2,7 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:were_all_in_this_together/core/router/app_router.dart';
+import 'package:were_all_in_this_together/features/appointments/domain/today_appointment_item.dart';
 import 'package:were_all_in_this_together/features/medications/data/dose_log_repository.dart';
 import 'package:were_all_in_this_together/features/medications/domain/dose_log.dart';
 import 'package:were_all_in_this_together/features/medications/domain/scheduled_dose.dart';
@@ -77,6 +80,9 @@ class TodayScreen extends ConsumerWidget {
                   }
                   if (item is TodayGroupItem) {
                     return _GroupTile(item: item, logs: logs, now: now);
+                  }
+                  if (item is TodayAppointmentItem) {
+                    return _AppointmentTile(item: item, now: now);
                   }
                   return const SizedBox.shrink();
                 },
@@ -474,6 +480,73 @@ class _GroupTileState extends ConsumerState<_GroupTile> {
   }
 }
 
+/// Today row for an appointment. Renders with the same left-edge
+/// time column as doses so the single merged list aligns
+/// vertically, but visually distinct (calendar icon + subtle
+/// container tint) so the caregiver can tell at a glance which is
+/// a dose and which is a visit.
+///
+/// Tap opens the appointment edit screen — no inline actions, since
+/// an appointment has nothing to ACK the way a dose does, and the
+/// most likely next intent is "adjust the time" or "add notes".
+class _AppointmentTile extends StatelessWidget {
+  const _AppointmentTile({required this.item, required this.now});
+
+  final TodayAppointmentItem item;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    final appt = item.appointment;
+    final localTime = appt.scheduledAt.toLocal();
+    final isPast = appt.scheduledAt.isBefore(now);
+
+    final subtitleParts = <String>[item.personDisplayName];
+    final location = appt.location?.trim();
+    if (location != null && location.isNotEmpty) subtitleParts.add(location);
+
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      color: scheme.secondaryContainer.withValues(alpha: 0.22),
+      child: InkWell(
+        onTap: () => context.push(Routes.appointmentEdit(appt.id)),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+          child: Row(
+            children: [
+              _LeadingTime(localTime: localTime, showEarlier: isPast),
+              Icon(Icons.event_outlined, size: 28, color: scheme.secondary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(appt.title, style: text.titleSmall),
+                    Text(
+                      subtitleParts.join(' · '),
+                      style: text.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: scheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _MemberRow extends StatelessWidget {
   const _MemberRow({required this.dose, required this.log});
 
@@ -675,8 +748,8 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Doses with a daily or weekly schedule will show up here '
-              'automatically.',
+              'Doses with a daily or weekly schedule and appointments '
+              'booked for today will show up here automatically.',
               style: text.bodyMedium?.copyWith(
                 color: scheme.onSurfaceVariant,
               ),
@@ -706,7 +779,7 @@ class _ErrorState extends StatelessWidget {
             Icon(Icons.error_outline, size: 48, color: scheme.error),
             const SizedBox(height: 16),
             Text(
-              "Couldn't load today's doses",
+              "Couldn't load today's schedule",
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
