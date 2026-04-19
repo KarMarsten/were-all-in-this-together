@@ -10,6 +10,7 @@ import 'package:were_all_in_this_together/core/database/tables/medication_groups
 import 'package:were_all_in_this_together/core/database/tables/medications.dart';
 import 'package:were_all_in_this_together/core/database/tables/milestones.dart';
 import 'package:were_all_in_this_together/core/database/tables/persons.dart';
+import 'package:were_all_in_this_together/core/database/tables/profile_entries.dart';
 import 'package:were_all_in_this_together/core/database/tables/profiles.dart';
 
 part 'app_database.g.dart';
@@ -38,6 +39,8 @@ part 'app_database.g.dart';
 ///   events: diagnoses, vaccines, developmental firsts, moves).
 /// * **v9** — adds Profiles (1:1 encrypted living-document baselines
 ///   per Person: communication, sleep, appetite).
+/// * **v10** — adds ProfileEntries (structured encrypted lines under
+///   each profile: stims, preferences, triggers, etc.).
 @DriftDatabase(
   tables: [
     Persons,
@@ -49,6 +52,7 @@ part 'app_database.g.dart';
     Appointments,
     Milestones,
     Profiles,
+    ProfileEntries,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -63,7 +67,7 @@ class AppDatabase extends _$AppDatabase {
       AppDatabase(driftDatabase(name: 'were_all_in_this_together'));
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -98,6 +102,9 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 9) {
             await m.createTable(profiles);
+          }
+          if (from < 10) {
+            await m.createTable(profileEntries);
           }
         },
       );

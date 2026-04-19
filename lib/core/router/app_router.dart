@@ -25,6 +25,9 @@ import 'package:were_all_in_this_together/features/people/data/person_repository
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 import 'package:were_all_in_this_together/features/people/presentation/people_list_screen.dart';
 import 'package:were_all_in_this_together/features/people/presentation/person_form_screen.dart';
+import 'package:were_all_in_this_together/features/profile/data/profile_entry_repository.dart';
+import 'package:were_all_in_this_together/features/profile/domain/profile_entry.dart';
+import 'package:were_all_in_this_together/features/profile/presentation/profile_entry_form_screen.dart';
 import 'package:were_all_in_this_together/features/profile/presentation/profile_screen.dart';
 import 'package:were_all_in_this_together/features/providers/data/care_provider_repository.dart';
 import 'package:were_all_in_this_together/features/providers/domain/care_provider.dart';
@@ -96,6 +99,11 @@ abstract class Routes {
   static String milestoneEdit(String id) => '/milestones/$id/edit';
 
   static const profile = '/profile';
+
+  static const profileEntryNew = '/profile/entries/new';
+  static const profileEntryEditPattern = '/profile/entries/:id/edit';
+
+  static String profileEntryEdit(String id) => '/profile/entries/$id/edit';
 }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -273,6 +281,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'profile',
         builder: (context, state) => const ProfileScreen(),
       ),
+      GoRoute(
+        path: Routes.profileEntryNew,
+        name: 'profile-entry-new',
+        builder: (context, state) => const ProfileEntryFormScreen(),
+      ),
+      GoRoute(
+        path: Routes.profileEntryEditPattern,
+        name: 'profile-entry-edit',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return _ProfileEntryEditLoader(entryId: id);
+        },
+      ),
     ],
   );
 });
@@ -392,8 +413,7 @@ class _EditMedicationLoader extends ConsumerWidget {
   ) async {
     final active = await repo.findById(medicationId);
     if (active != null) return active;
-    final activePersonId =
-        await ref.read(activePersonIdProvider.future);
+    final activePersonId = await ref.read(activePersonIdProvider.future);
     if (activePersonId == null) return null;
     final archived = await repo.listArchivedForPerson(activePersonId);
     for (final m in archived) {
@@ -447,8 +467,7 @@ class _MedicationEventFormLoader extends ConsumerWidget {
   ) async {
     final active = await repo.findById(medicationId);
     if (active != null) return active;
-    final activePersonId =
-        await ref.read(activePersonIdProvider.future);
+    final activePersonId = await ref.read(activePersonIdProvider.future);
     if (activePersonId == null) return null;
     final archived = await repo.listArchivedForPerson(activePersonId);
     for (final m in archived) {
@@ -512,8 +531,7 @@ class _EditMedicationGroupLoader extends ConsumerWidget {
   ) async {
     final active = await repo.findById(groupId);
     if (active != null) return active;
-    final activePersonId =
-        await ref.read(activePersonIdProvider.future);
+    final activePersonId = await ref.read(activePersonIdProvider.future);
     if (activePersonId == null) return null;
     final archived = await repo.listArchivedForPerson(activePersonId);
     for (final g in archived) {
@@ -711,6 +729,54 @@ class _MilestoneNotFound extends StatelessWidget {
         child: Center(
           child: Text(
             "That milestone isn't in this app anymore.",
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Resolve a profile entry by id for `/profile/entries/:id/edit`.
+/// Includes archived rows so restore flows work.
+class _ProfileEntryEditLoader extends ConsumerWidget {
+  const _ProfileEntryEditLoader({required this.entryId});
+
+  final String entryId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repo = ref.watch(profileEntryRepositoryProvider);
+    return FutureBuilder<ProfileEntry?>(
+      future: repo.findById(entryId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const _EditLoading();
+        }
+        if (snapshot.hasError) {
+          return _EditError(message: snapshot.error.toString());
+        }
+        final entry = snapshot.data;
+        if (entry == null) {
+          return const _ProfileEntryNotFound();
+        }
+        return ProfileEntryFormScreen(initialEntry: entry);
+      },
+    );
+  }
+}
+
+class _ProfileEntryNotFound extends StatelessWidget {
+  const _ProfileEntryNotFound();
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(),
+      body: const Padding(
+        padding: EdgeInsets.all(24),
+        child: Center(
+          child: Text(
+            "That profile entry isn't in this app anymore.",
             textAlign: TextAlign.center,
           ),
         ),
