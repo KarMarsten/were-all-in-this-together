@@ -166,14 +166,21 @@ class _CareProviderTile extends StatelessWidget {
     );
   }
 
-  /// Specialty · phone (trimmed), whichever the user actually filled
-  /// in. Specialty leads because that's what identifies the role the
-  /// person plays for the Person; phone is trailing context.
+  /// Specialty / role / contact / phone, whichever the user filled in.
+  /// The identifying relationship leads; contact details trail.
   String? _subtitleFor(CareProvider p) {
     final parts = <String>[];
     final specialty = p.specialty?.trim();
     if (specialty != null && specialty.isNotEmpty) {
       parts.add(specialty);
+    }
+    final role = p.role?.trim();
+    if (role != null && role.isNotEmpty) {
+      parts.add(role);
+    }
+    final contact = p.contactName?.trim();
+    if (contact != null && contact.isNotEmpty) {
+      parts.add(contact);
     }
     final phone = p.phone?.trim();
     if (phone != null && phone.isNotEmpty) {

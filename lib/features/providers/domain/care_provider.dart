@@ -82,17 +82,39 @@ abstract class CareProvider with _$CareProvider {
     /// so clinical precision can grow without schema changes.
     String? specialty,
 
+    /// Practical role / relationship label for handoffs, e.g.
+    /// "medication prescriber", "IEP contact", or "care coordinator".
+    String? role,
+
+    /// Named contact when the organization is the provider record.
+    String? contactName,
+
     /// Dialable phone number (free-form — we don't parse or format).
     String? phone,
+
+    /// Email address for the provider / office / portal support.
+    String? email,
+
+    /// Fax number for forms, releases, and school / clinic handoffs.
+    String? fax,
 
     /// Single-line address for lookup / navigation. We deliberately do
     /// not structure this — users paste from Contacts and Maps handles
     /// the rest.
     String? address,
 
+    /// Human label for [portalUrl], e.g. "MyChart" or "Therapy portal".
+    String? portalLabel,
+
     /// Patient portal URL. Expected to be `http(s)://…`; validated at
     /// the form layer, not here.
     String? portalUrl,
+
+    /// After-hours dialable number when it differs from [phone].
+    String? afterHoursPhone,
+
+    /// Free-text instructions for urgent / after-hours routing.
+    String? afterHoursInstructions,
 
     /// Free-form notes — office hours, receptionist's name, in-network
     /// dates, whatever the user finds worth remembering.

@@ -56,16 +56,24 @@ class CalmScreen extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
                 children: [
                   Text(
-                    'One thing at a time.',
+                    'Lower the demand. One thing at a time.',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 24),
                   const _SectionCard(
                     heading: 'Right now',
                     children: [
-                      _PlanItem(text: 'Slow exhale — longer than your inhale.'),
-                      _PlanItem(text: 'Name 5 things you can see.'),
-                      _PlanItem(text: 'Cold water on your wrists.'),
+                      _PlanItem(
+                        text: 'Make the next demand smaller or pause it.',
+                      ),
+                      _PlanItem(
+                        text: 'Long exhale first; then one slow inhale.',
+                      ),
+                      _PlanItem(
+                        text:
+                            'Use one body anchor: cold water, deep pressure, '
+                            'or feet flat on the floor.',
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -101,17 +109,16 @@ class CalmScreen extends ConsumerWidget {
                     children: [
                       _PlanItem(
                         text:
-                            'Change the channel — water, air, light, or a '
+                            'Change one input: water, air, light, sound, or a '
                             'different room.',
                       ),
                       _PlanItem(
                         text:
-                            'One sensory anchor: cold water on wrists, a '
-                            'weighted blanket, or one familiar song.',
+                            'Offer one known support from the profile before '
+                            'trying something new.',
                       ),
                       _PlanItem(
-                        text:
-                            'Reach one safe person — a short check-in is '
+                        text: 'Reach one safe person. A short check-in is '
                             'enough.',
                       ),
                     ],
@@ -121,14 +128,12 @@ class CalmScreen extends ConsumerWidget {
                     heading: 'Reasons to stay',
                     children: [
                       _PlanItem(
-                        text:
-                            'This pain is real and it can change — you do not '
-                            'have to solve everything tonight.',
+                        text: 'This is a hard moment, not a verdict. The body '
+                            'can come down before the problem is solved.',
                       ),
                       _PlanItem(
-                        text:
-                            'Someone in your life benefits from you being '
-                            'here, even when it does not feel that way.',
+                        text: 'You only need the next safe minute. Then the '
+                            'next.',
                       ),
                     ],
                   ),
@@ -272,9 +277,9 @@ class _CalmProfileBlocks extends StatelessWidget {
           _SectionCard(
             heading: 'From profile',
             subtitle:
-                'Nothing active for $personName yet in sections that show on '
-                'Calm — add lines in Profile (or set paused entries back to '
-                'active).',
+                'No active Calm lines for $personName yet. Add what helps, '
+                'early signs, triggers, sensory preferences, or routines in '
+                'Profile.',
             children: [
               TextButton(
                 onPressed: () => context.push(Routes.profile),
@@ -554,7 +559,7 @@ class _CrisisContactsPanel extends ConsumerWidget {
         ),
         _CrisisContactTile(
           icon: Icons.medical_services_outlined,
-          label: 'Care team — open Providers to add a phone',
+          label: 'Care team — open Providers for phone and after-hours info',
           onTap: () => context.push(Routes.careProviders),
         ),
       ],

@@ -6,12 +6,14 @@ import 'package:were_all_in_this_together/features/apps_sites/domain/app_site.da
 import 'package:were_all_in_this_together/features/profile/domain/profile.dart';
 import 'package:were_all_in_this_together/features/profile/domain/profile_entry.dart';
 import 'package:were_all_in_this_together/features/programs/domain/program.dart';
+import 'package:were_all_in_this_together/features/providers/domain/care_provider.dart';
 
 /// Babysitter / respite style handoff: baselines, active structured lines
 /// (grouped by section), and national crisis resources.
 Future<List<int>> buildCareSummaryPdf({
   required String personName,
   required List<ProfileEntry> activeEntries,
+  List<CareProvider> providers = const <CareProvider>[],
   List<Program> programs = const <Program>[],
   List<AppSite> appSites = const <AppSite>[],
   Profile? profile,
@@ -28,6 +30,9 @@ Future<List<int>> buildCareSummaryPdf({
       : <pw.Widget>[];
   final structuredWidgets = options.includeStructuredProfile
       ? _buildStructuredSections(activeEntries)
+      : <pw.Widget>[];
+  final providerWidgets = options.includeProviders
+      ? _providersBlock(providers)
       : <pw.Widget>[];
   final programWidgets = options.includePrograms
       ? _programsBlock(programs)
@@ -69,6 +74,8 @@ Future<List<int>> buildCareSummaryPdf({
           if (baselineWidgets.isNotEmpty) pw.SizedBox(height: 16),
           ...structuredWidgets,
           if (structuredWidgets.isNotEmpty) pw.SizedBox(height: 16),
+          ...providerWidgets,
+          if (providerWidgets.isNotEmpty) pw.SizedBox(height: 16),
           ...programWidgets,
           if (programWidgets.isNotEmpty) pw.SizedBox(height: 16),
           ...appSiteWidgets,
@@ -87,6 +94,7 @@ class CareSummaryOptions {
     this.includeCalm = true,
     this.includeBaselines = true,
     this.includeStructuredProfile = true,
+    this.includeProviders = true,
     this.includePrograms = true,
     this.includeAppSites = true,
     this.includeCrisisResources = true,
@@ -95,6 +103,7 @@ class CareSummaryOptions {
   final bool includeCalm;
   final bool includeBaselines;
   final bool includeStructuredProfile;
+  final bool includeProviders;
   final bool includePrograms;
   final bool includeAppSites;
   final bool includeCrisisResources;
@@ -103,6 +112,7 @@ class CareSummaryOptions {
       includeCalm ||
       includeBaselines ||
       includeStructuredProfile ||
+      includeProviders ||
       includePrograms ||
       includeAppSites ||
       includeCrisisResources;
@@ -254,6 +264,57 @@ List<pw.Widget> _crisisResourcesBlock() {
   ];
 }
 
+List<pw.Widget> _providersBlock(List<CareProvider> providers) {
+  final sorted = [...providers]
+    ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+  final out = <pw.Widget>[
+    pw.Text(
+      'Providers',
+      style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+    ),
+    pw.SizedBox(height: 6),
+  ];
+  if (sorted.isEmpty) {
+    out.add(
+      pw.Text(
+        'No active providers yet.',
+        style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+      ),
+    );
+    return out;
+  }
+  for (final provider in sorted) {
+    out.add(
+      _summaryEntry(
+        title: provider.name,
+        subtitle: _joinParts([
+              _labelForProviderKind(provider.kind),
+              provider.specialty,
+              provider.role,
+            ]) ??
+            _labelForProviderKind(provider.kind),
+        rows: [
+          _field('Contact', provider.contactName),
+          _field('Phone', provider.phone),
+          _field('After-hours phone', provider.afterHoursPhone),
+          _field('Email', provider.email),
+          _field('Fax', provider.fax),
+          _field('Address', provider.address),
+          _field(
+            provider.portalLabel?.trim().isEmpty ?? true
+                ? 'Portal'
+                : provider.portalLabel!.trim(),
+            provider.portalUrl,
+          ),
+          _field('After-hours instructions', provider.afterHoursInstructions),
+          _field('Notes', provider.notes),
+        ],
+      ),
+    );
+  }
+  return out;
+}
+
 List<pw.Widget> _programsBlock(List<Program> programs) {
   final sorted = [...programs]
     ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
@@ -395,6 +456,21 @@ String? _joinParts(Iterable<String?> parts) {
       .map((p) => p!.trim())
       .join(', ');
   return out.isEmpty ? null : out;
+}
+
+String _labelForProviderKind(CareProviderKind kind) {
+  switch (kind) {
+    case CareProviderKind.pcp:
+      return 'Primary care';
+    case CareProviderKind.specialist:
+      return 'Specialist';
+    case CareProviderKind.therapist:
+      return 'Therapist';
+    case CareProviderKind.dentist:
+      return 'Dental';
+    case CareProviderKind.other:
+      return 'Other';
+  }
 }
 
 List<pw.Widget> _buildStructuredSections(List<ProfileEntry> active) {
