@@ -1,17 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:were_all_in_this_together/core/router/app_router.dart';
+import 'package:were_all_in_this_together/core/theme/theme_mode_preference.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeModeAsync = ref.watch(themeModePreferenceProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         children: [
+          themeModeAsync.when(
+            loading: () => const ListTile(
+              leading: Icon(Icons.contrast_outlined),
+              title: Text('Appearance'),
+              subtitle: Text('Loading...'),
+            ),
+            error: (error, _) => ListTile(
+              leading: const Icon(Icons.contrast_outlined),
+              title: const Text('Appearance'),
+              subtitle: Text("Couldn't load appearance: $error"),
+            ),
+            data: (preference) => _AppearanceTile(
+              preference: preference,
+              onChanged: (next) => _saveThemeMode(context, ref, next),
+            ),
+          ),
           const ListTile(
             leading: Icon(Icons.person_outline),
             title: Text('People'),
@@ -55,6 +74,91 @@ class SettingsScreen extends StatelessWidget {
             title: Text('About'),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _saveThemeMode(
+    BuildContext context,
+    WidgetRef ref,
+    AppThemeModePreference preference,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final repo = ref.read(themeModePreferenceRepositoryProvider);
+      await repo.save(preference);
+      ref.invalidate(themeModePreferenceProvider);
+    } on Object catch (error) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text("Couldn't save appearance: $error"),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+}
+
+class _AppearanceTile extends StatelessWidget {
+  const _AppearanceTile({
+    required this.preference,
+    required this.onChanged,
+  });
+
+  final AppThemeModePreference preference;
+  final ValueChanged<AppThemeModePreference> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Card(
+        elevation: 0,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.contrast_outlined,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Appearance',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Choose a lower-glare dark mode, keep the light theme, or '
+                'follow your device setting.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 16),
+              SegmentedButton<AppThemeModePreference>(
+                segments: [
+                  for (final option in AppThemeModePreference.values)
+                    ButtonSegment(
+                      value: option,
+                      label: Text(option.label),
+                      tooltip: option.description,
+                    ),
+                ],
+                selected: {preference},
+                onSelectionChanged: (selection) {
+                  final next = selection.single;
+                  if (next != preference) onChanged(next);
+                },
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
