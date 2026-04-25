@@ -31,6 +31,8 @@ Future<void> _openMedications(WidgetTester tester) async {
     await tester.drag(gridScrollable, const Offset(0, 400));
     await tester.pumpAndSettle();
   }
+  await tester.ensureVisible(medsFinder);
+  await tester.pumpAndSettle();
   await tester.tap(medsFinder);
   await tester.pumpAndSettle();
 }
@@ -66,8 +68,9 @@ void main() {
     },
   );
 
-  testWidgets('adding a medication returns to the list with the new tile',
-      (tester) async {
+  testWidgets('adding a medication returns to the list with the new tile', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildTestApp());
     await tester.pumpAndSettle();
 
@@ -95,8 +98,9 @@ void main() {
     expect(find.text('No medications yet'), findsNothing);
   });
 
-  testWidgets('Save with an empty name shows a validation error',
-      (tester) async {
+  testWidgets('Save with an empty name shows a validation error', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildTestApp());
     await tester.pumpAndSettle();
 
@@ -362,6 +366,13 @@ void main() {
 
       // Seed one provider via the UI, then return to home so the
       // Medications flow can observe it through the picker provider.
+      if (find.text('Providers').evaluate().isEmpty) {
+        await tester.scrollUntilVisible(
+          find.text('Providers'),
+          400,
+          scrollable: find.byType(Scrollable).first,
+        );
+      }
       await tester.ensureVisible(find.text('Providers'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Providers'));
@@ -409,7 +420,6 @@ void main() {
       expect(find.textContaining('by Dr. Chen'), findsOneWidget);
     },
   );
-
 
   testWidgets(
     'isReminderEligible matches what the editor produces — daily with no '

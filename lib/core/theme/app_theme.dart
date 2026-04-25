@@ -19,26 +19,27 @@ class AppTheme {
   static ThemeData light() => _base(Brightness.light);
 
   static ThemeData dark() {
-    final scheme = ColorScheme.fromSeed(
-      seedColor: _seed,
-      brightness: Brightness.dark,
-    ).copyWith(
-      surface: const Color(0xFF111817),
-      surfaceContainerLowest: const Color(0xFF0D1413),
-      surfaceContainerLow: const Color(0xFF182221),
-      surfaceContainer: const Color(0xFF1D2927),
-      surfaceContainerHigh: const Color(0xFF263331),
-      surfaceContainerHighest: const Color(0xFF303D3B),
-      onSurface: const Color(0xFFE5ECE9),
-      onSurfaceVariant: const Color(0xFFC3D0CC),
-      primary: const Color(0xFF9BCDC3),
-      onPrimary: const Color(0xFF073731),
-      primaryContainer: const Color(0xFF24544D),
-      onPrimaryContainer: const Color(0xFFD2F1EC),
-      secondaryContainer: const Color(0xFF344B47),
-      onSecondaryContainer: const Color(0xFFD7E7E3),
-      outline: const Color(0xFF84938F),
-    );
+    final scheme =
+        ColorScheme.fromSeed(
+          seedColor: _seed,
+          brightness: Brightness.dark,
+        ).copyWith(
+          surface: const Color(0xFF111817),
+          surfaceContainerLowest: const Color(0xFF0D1413),
+          surfaceContainerLow: const Color(0xFF182221),
+          surfaceContainer: const Color(0xFF1D2927),
+          surfaceContainerHigh: const Color(0xFF263331),
+          surfaceContainerHighest: const Color(0xFF303D3B),
+          onSurface: const Color(0xFFE5ECE9),
+          onSurfaceVariant: const Color(0xFFC3D0CC),
+          primary: const Color(0xFF9BCDC3),
+          onPrimary: const Color(0xFF073731),
+          primaryContainer: const Color(0xFF24544D),
+          onPrimaryContainer: const Color(0xFFD2F1EC),
+          secondaryContainer: const Color(0xFF344B47),
+          onSecondaryContainer: const Color(0xFFD7E7E3),
+          outline: const Color(0xFF84938F),
+        );
     return _base(
       Brightness.dark,
       colorScheme: scheme,
@@ -51,7 +52,8 @@ class AppTheme {
     ColorScheme? colorScheme,
     Color? scaffoldBackgroundColor,
   }) {
-    final scheme = colorScheme ??
+    final scheme =
+        colorScheme ??
         ColorScheme.fromSeed(
           seedColor: _seed,
           brightness: brightness,
@@ -114,20 +116,33 @@ class AppTheme {
     const onSurface = Color(0xFFE8ECEF);
     const accent = Color(0xFF8AB0A8);
 
-    final scheme = ColorScheme.fromSeed(
-      seedColor: accent,
-      brightness: Brightness.dark,
-    ).copyWith(
-      surface: bg,
-      onSurface: onSurface,
-      surfaceContainerHighest: surface,
-      primary: accent,
-    );
+    final scheme =
+        ColorScheme.fromSeed(
+          seedColor: accent,
+          brightness: Brightness.dark,
+        ).copyWith(
+          surface: bg,
+          onSurface: onSurface,
+          surfaceContainerHighest: surface,
+          primary: accent,
+        );
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
       scaffoldBackgroundColor: bg,
+      appBarTheme: const AppBarTheme(
+        centerTitle: false,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: onSurface,
+        surfaceTintColor: Colors.transparent,
+        titleTextStyle: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w500,
+          color: onSurface,
+        ),
+      ),
       textTheme: const TextTheme(
         bodyLarge: TextStyle(fontSize: 18, height: 1.5, color: onSurface),
         bodyMedium: TextStyle(fontSize: 16, height: 1.5, color: onSurface),

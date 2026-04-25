@@ -5,16 +5,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:were_all_in_this_together/core/router/app_router.dart';
+import 'package:were_all_in_this_together/features/appointments/data/appointment_repository.dart';
+import 'package:were_all_in_this_together/features/medications/data/medication_group_repository.dart';
+import 'package:were_all_in_this_together/features/medications/data/medication_repository.dart';
+import 'package:were_all_in_this_together/features/medications/domain/scheduled_dose.dart';
+import 'package:were_all_in_this_together/features/milestones/data/milestone_repository.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 import 'package:were_all_in_this_together/features/people/presentation/widgets/person_avatar.dart';
 import 'package:were_all_in_this_together/features/people/presentation/widgets/person_switcher_sheet.dart';
+import 'package:were_all_in_this_together/features/today/domain/today_appointment_item.dart';
+import 'package:were_all_in_this_together/features/today/domain/today_item.dart';
+import 'package:were_all_in_this_together/features/today/domain/today_milestone_item.dart';
+import 'package:were_all_in_this_together/features/today/presentation/today_providers.dart';
 
 /// Home screen.
 ///
 /// Layout:
 ///   * AppBar — app title + search, settings, and about.
 ///   * Person banner — active-Person switcher.
-///   * Feature grid — tiles for each main domain.
+///   * Today dashboard — active-Person needs first, then secondary actions.
 ///   * Persistent "Calm" bar at the bottom, always one tap from dysregulation
 ///     support.
 class HomeScreen extends StatelessWidget {
@@ -48,7 +57,7 @@ class HomeScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _PersonBanner(),
-            Expanded(child: _FeatureGrid()),
+            Expanded(child: _HomeDashboard()),
           ],
         ),
       ),
@@ -131,8 +140,7 @@ class _PersonBanner extends ConsumerWidget {
                       'Focused on',
                       style: TextStyle(
                         fontSize: 12,
-                        color:
-                            scheme.onPrimaryContainer.withValues(alpha: 0.7),
+                        color: scheme.onPrimaryContainer.withValues(alpha: 0.7),
                       ),
                     ),
                     Text(
@@ -279,88 +287,184 @@ class _BannerError extends StatelessWidget {
   }
 }
 
-class _FeatureGrid extends StatelessWidget {
-  const _FeatureGrid();
+class _HomeDashboard extends ConsumerWidget {
+  const _HomeDashboard();
 
-  static const _tiles = <_FeatureTileData>[
-    _FeatureTileData(
-      label: "Today's doses",
-      icon: Icons.brightness_5_outlined,
-      description: "What's due today",
-      route: Routes.today,
-    ),
-    _FeatureTileData(
-      label: 'Appointments',
-      icon: Icons.event_outlined,
-      description: 'Upcoming visits & reminders',
-      route: Routes.appointments,
-    ),
-    _FeatureTileData(
+  static const _actions = <_HomeActionData>[
+    _HomeActionData(
       label: 'Medications',
       icon: Icons.medication_outlined,
-      description: 'Current list + history',
+      description: 'Current meds, schedules, and history',
       route: Routes.medications,
     ),
-    _FeatureTileData(
+    _HomeActionData(
+      label: 'Appointments',
+      icon: Icons.event_outlined,
+      description: 'Upcoming visits and reminders',
+      route: Routes.appointments,
+    ),
+    _HomeActionData(
       label: 'Profile',
       icon: Icons.psychology_outlined,
-      description: 'Stims, routines, what helps',
+      description: 'What helps, baselines, and routines',
       route: Routes.profile,
     ),
-    _FeatureTileData(
+    _HomeActionData(
       label: 'Milestones & dates',
       icon: Icons.history_edu_outlined,
-      description: 'Diagnoses, shots, milestones',
+      description: 'Diagnoses, shots, and important dates',
       route: Routes.milestones,
     ),
-    _FeatureTileData(
+    _HomeActionData(
       label: 'Providers',
       icon: Icons.local_hospital_outlined,
-      description: 'Doctors, therapists, specialists',
+      description: 'Care-team contacts and portals',
       route: Routes.careProviders,
     ),
-    _FeatureTileData(
+    _HomeActionData(
       label: 'Programs',
       icon: Icons.school_outlined,
-      description: 'Schools, camps, after-care',
+      description: 'Schools, camps, and after-care',
       route: Routes.programs,
     ),
-    _FeatureTileData(
+    _HomeActionData(
       label: 'Apps & Sites',
       icon: Icons.link_outlined,
-      description: 'Portals, telehealth, IEP tools',
+      description: 'Portals and tools, never passwords',
       route: Routes.appsSites,
     ),
-    _FeatureTileData(
+    _HomeActionData(
       label: 'Notes',
       icon: Icons.sticky_note_2_outlined,
-      description: 'Day-to-day observations',
+      description: 'Observations and daily context',
       route: Routes.notes,
     ),
   ];
 
   @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth > 700 ? 3 : 2;
-        return GridView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          itemCount: _tiles.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activePersonAsync = ref.watch(activePersonProvider);
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          activePersonAsync.when(
+            loading: () => const _TodayNeedsLoading(),
+            error: (error, _) => _TodayNeedsError(message: '$error'),
+            data: (person) {
+              if (person == null) return const _TodayNeedsNoPerson();
+              final todayItemsAsync = ref.watch(
+                _homeTodayItemsProvider(
+                  (personId: person.id, displayName: person.displayName),
+                ),
+              );
+              return todayItemsAsync.when(
+                loading: () => const _TodayNeedsLoading(),
+                error: (error, _) => _TodayNeedsError(message: '$error'),
+                data: (items) {
+                  final activeItems = items
+                      .where((item) => item.personId == person.id)
+                      .toList();
+                  return _TodayNeedsCard(
+                    personName: person.displayName,
+                    items: activeItems,
+                  );
+                },
+              );
+            },
           ),
-          itemBuilder: (context, index) => _FeatureTile(data: _tiles[index]),
-        );
-      },
+          const SizedBox(height: 16),
+          Text(
+            'Other things you may need',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          for (final action in _actions) _HomeActionTile(action: action),
+        ],
+      ),
     );
   }
 }
 
-class _FeatureTileData {
-  const _FeatureTileData({
+// Riverpod's family provider type is intentionally inferred; spelling it out
+// would expose implementation-heavy generic names without improving call sites.
+// ignore: specify_nonobvious_property_types
+final _homeTodayItemsProvider =
+    FutureProvider.family<
+      List<TodayItem>,
+      ({String personId, String displayName})
+    >((ref, person) async {
+      final now = ref.watch(todayClockProvider)();
+      final startOfDay = DateTime(now.year, now.month, now.day);
+      final startOfTomorrow = startOfDay.add(const Duration(days: 1));
+
+      final meds = await ref
+          .watch(medicationRepositoryProvider)
+          .listActiveForPerson(person.personId);
+      final groups = await ref
+          .watch(medicationGroupRepositoryProvider)
+          .listActiveForPerson(person.personId);
+      final appts = await ref
+          .watch(appointmentRepositoryProvider)
+          .listForPersonInRange(
+            personId: person.personId,
+            fromInclusive: startOfDay,
+            toExclusive: startOfTomorrow,
+          );
+      final milestones = await ref
+          .watch(milestoneRepositoryProvider)
+          .listActiveForPerson(person.personId);
+
+      final medItems = expandTodayItems(
+        medications: [
+          for (final medication in meds)
+            DoseSchedulingContext(
+              medication: medication,
+              personDisplayName: person.displayName,
+            ),
+        ],
+        groups: [
+          for (final group in groups)
+            GroupSchedulingContext(
+              group: group,
+              personDisplayName: person.displayName,
+            ),
+        ],
+        fromInclusive: startOfDay,
+        toExclusive: startOfTomorrow,
+      );
+      final appointmentItems = expandTodayAppointmentItems(
+        appointments: [
+          for (final appointment in appts)
+            OwnedTodayAppointment(
+              appointment: appointment,
+              personDisplayName: person.displayName,
+            ),
+        ],
+        fromInclusive: startOfDay,
+        toExclusive: startOfTomorrow,
+      );
+      final milestoneItems = expandTodayMilestoneItems(
+        milestones: [
+          for (final milestone in milestones)
+            OwnedTodayMilestone(
+              milestone: milestone,
+              personDisplayName: person.displayName,
+            ),
+        ],
+        now: now,
+      );
+
+      return <TodayItem>[
+        ...medItems,
+        ...appointmentItems,
+        ...milestoneItems,
+      ]..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+    });
+
+class _HomeActionData {
+  const _HomeActionData({
     required this.label,
     required this.icon,
     required this.description,
@@ -372,47 +476,297 @@ class _FeatureTileData {
   final String route;
 }
 
-class _FeatureTile extends StatelessWidget {
-  const _FeatureTile({required this.data});
-  final _FeatureTileData data;
+class _TodayNeedsCard extends StatelessWidget {
+  const _TodayNeedsCard({required this.personName, required this.items});
+
+  final String personName;
+  final List<TodayItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final meds = items.where(
+      (item) => item is TodaySoloItem || item is TodayGroupItem,
+    );
+    final appointments = items.whereType<TodayAppointmentItem>();
+    final milestones = items.whereType<TodayMilestoneItem>();
+    final preview = items.take(4).toList();
+    return Card(
+      elevation: 0,
+      color: scheme.surfaceContainerLow,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              "Today's needs for $personName",
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              items.isEmpty
+                  ? 'Nothing scheduled for today. Keep things light.'
+                  : 'Start with what is time-sensitive, then come back later.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () => context.push(Routes.today),
+              icon: const Icon(Icons.brightness_5_outlined),
+              label: const Text("Today's doses"),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _NeedCount(
+                    count: meds.length,
+                    label: 'Meds',
+                    icon: Icons.medication_outlined,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _NeedCount(
+                    count: appointments.length,
+                    label: 'Visits',
+                    icon: Icons.event_outlined,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _NeedCount(
+                    count: milestones.length,
+                    label: 'Dates',
+                    icon: Icons.history_edu_outlined,
+                  ),
+                ),
+              ],
+            ),
+            if (preview.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              for (final item in preview) _TodayNeedRow(item: item),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NeedCount extends StatelessWidget {
+  const _NeedCount({
+    required this.count,
+    required this.label,
+    required this.icon,
+  });
+
+  final int count;
+  final String label;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: scheme.primary),
+          const SizedBox(height: 6),
+          Text('$count', style: Theme.of(context).textTheme.titleLarge),
+          Text(label, style: Theme.of(context).textTheme.bodySmall),
+        ],
+      ),
+    );
+  }
+}
+
+class _TodayNeedRow extends StatelessWidget {
+  const _TodayNeedRow({required this.item});
+
+  final TodayItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final summary = _summaryFor(item);
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(summary.icon),
+      title: Text(summary.title),
+      subtitle: Text(summary.subtitle),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => context.push(summary.route),
+    );
+  }
+
+  ({IconData icon, String title, String subtitle, String route}) _summaryFor(
+    TodayItem item,
+  ) {
+    final local = item.scheduledAt.toLocal();
+    final time = _formatTime(local);
+    if (item is TodaySoloItem) {
+      final dose = item.dose;
+      return (
+        icon: Icons.medication_outlined,
+        title: dose.medicationName,
+        subtitle: _joinParts([time, dose.dose]),
+        route: Routes.medicationEdit(dose.medicationId),
+      );
+    }
+    if (item is TodayGroupItem) {
+      return (
+        icon: Icons.medication_liquid_outlined,
+        title: item.groupName,
+        subtitle: '$time · ${item.members.length} meds',
+        route: Routes.medicationGroupEdit(item.groupId),
+      );
+    }
+    if (item is TodayAppointmentItem) {
+      return (
+        icon: Icons.event_outlined,
+        title: item.appointment.title,
+        subtitle: _joinParts([time, item.appointment.location]),
+        route: Routes.appointmentEdit(item.appointment.id),
+      );
+    }
+    if (item is TodayMilestoneItem) {
+      return (
+        icon: Icons.history_edu_outlined,
+        title: item.milestone.title,
+        subtitle: milestoneAnniversarySubtitle(
+          milestone: item.milestone,
+          today: DateTime(local.year, local.month, local.day),
+        ),
+        route: Routes.milestoneEdit(item.milestone.id),
+      );
+    }
+    return (
+      icon: Icons.check_circle_outline,
+      title: 'Today',
+      subtitle: time,
+      route: Routes.today,
+    );
+  }
+
+  static String _formatTime(DateTime d) {
+    final hour = d.hour == 0 ? 12 : (d.hour > 12 ? d.hour - 12 : d.hour);
+    final minute = d.minute.toString().padLeft(2, '0');
+    final suffix = d.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $suffix';
+  }
+
+  static String _joinParts(Iterable<String?> parts) {
+    return parts
+        .where((part) => part != null && part.trim().isNotEmpty)
+        .map((part) => part!.trim())
+        .join(' · ');
+  }
+}
+
+class _HomeActionTile extends StatelessWidget {
+  const _HomeActionTile({required this.action});
+
+  final _HomeActionData action;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () => unawaited(context.push(data.route)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Icon(data.icon, size: 32, color: scheme.primary),
-              const SizedBox(height: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    data.label,
-                    style: Theme.of(context).textTheme.titleMedium,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    data.description,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ],
-          ),
+      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: Icon(action.icon, color: scheme.primary),
+        title: Text(action.label),
+        subtitle: Text(action.description),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => unawaited(context.push(action.route)),
+      ),
+    );
+  }
+}
+
+class _TodayNeedsLoading extends StatelessWidget {
+  const _TodayNeedsLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Card(
+      elevation: 0,
+      child: Padding(
+        padding: EdgeInsets.all(24),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+    );
+  }
+}
+
+class _TodayNeedsNoPerson extends StatelessWidget {
+  const _TodayNeedsNoPerson();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Add someone first',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              "Today's needs will show here once a person is on the roster.",
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () => context.push(Routes.today),
+              icon: const Icon(Icons.brightness_5_outlined),
+              label: const Text("Today's doses"),
+            ),
+            const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: () => context.push(Routes.personNew),
+              icon: const Icon(Icons.person_add_alt_1),
+              label: const Text('Add person'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TodayNeedsError extends StatelessWidget {
+  const _TodayNeedsError({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Icon(
+              Icons.error_outline,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
         ),
       ),
     );

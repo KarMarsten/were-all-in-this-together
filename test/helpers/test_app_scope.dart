@@ -13,6 +13,7 @@ import 'package:were_all_in_this_together/features/medications/data/notification
 import 'package:were_all_in_this_together/features/medications/domain/notification_preferences.dart';
 import 'package:were_all_in_this_together/features/medications/notifications/pending_ack_drainer.dart';
 import 'package:were_all_in_this_together/features/people/data/active_person_preference.dart';
+import 'package:were_all_in_this_together/features/safety_plan/data/calm_resource_preferences.dart';
 
 import 'fake_notification_service.dart';
 import 'in_memory_active_person_preference.dart';
@@ -26,6 +27,7 @@ import 'in_memory_key_storage.dart';
 Widget buildTestApp({
   List<Override> extraOverrides = const [],
   String? initialActivePersonId,
+  bool calmSetupComplete = true,
 }) {
   // SharedPreferences plugin channel is not wired in `flutter test`;
   // `setMockInitialValues` installs an in-memory backend so anything
@@ -48,18 +50,26 @@ Widget buildTestApp({
       // which hits a platform channel the moment it's touched. A fake
       // keeps widget tests hermetic without giving up coverage of the
       // reminder-sync plumbing.
-      notificationServiceProvider
-          .overrideWith((_) => FakeNotificationService()),
+      notificationServiceProvider.overrideWith(
+        (_) => FakeNotificationService(),
+      ),
       // Notification prefs normally round-trip through SharedPreferences;
       // in widget tests we resolve synchronously with defaults so the
       // reconciler fires without waiting on a mock plugin.
-      notificationPreferencesProvider
-          .overrideWith((_) async => const NotificationPreferences()),
+      notificationPreferencesProvider.overrideWith(
+        (_) async => const NotificationPreferences(),
+      ),
       // The drainer is wired into the App's lifecycle observer; with a
       // real AppDatabase but no real Person keys it would no-op anyway,
       // but an explicit no-op keeps widget tests from flaking on the
       // post-frame drain call.
       pendingAckDrainerProvider.overrideWith((_) => _NoopAckDrainer()),
+      calmResourcePreferencesProvider.overrideWith(
+        (_) async => CalmResourcePreferences(
+          resources: defaultCalmResources,
+          setupComplete: calmSetupComplete,
+        ),
+      ),
       ...extraOverrides,
     ],
     child: const App(),
