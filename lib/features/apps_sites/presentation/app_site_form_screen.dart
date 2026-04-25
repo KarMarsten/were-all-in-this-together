@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:were_all_in_this_together/core/router/app_router.dart';
 import 'package:were_all_in_this_together/features/apps_sites/data/app_site_repository.dart';
 import 'package:were_all_in_this_together/features/apps_sites/domain/app_site.dart';
 import 'package:were_all_in_this_together/features/apps_sites/presentation/providers.dart';
@@ -126,6 +127,14 @@ class _AppSiteFormScreenState extends ConsumerState<AppSiteFormScreen> {
         uri.host.isEmpty ||
         (uri.scheme != 'http' && uri.scheme != 'https')) {
       return 'Enter a valid URL';
+    }
+    return null;
+  }
+
+  static Program? _programById(List<Program> programs, String? id) {
+    if (id == null) return null;
+    for (final program in programs) {
+      if (program.id == id) return program;
     }
     return null;
   }
@@ -259,32 +268,81 @@ class _AppSiteFormScreenState extends ConsumerState<AppSiteFormScreen> {
                     final providersAsync = ref.watch(
                       careProviderPickerProvider(personId),
                     );
-                    final programsAsync = ref.watch(activeProgramsProvider);
-                    final archivedProgramsAsync = ref.watch(
-                      archivedProgramsProvider,
+                    final programsAsync = ref.watch(
+                      allProgramsForPersonProvider(personId),
                     );
                     return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         providersAsync.when(
                           loading: () => const SizedBox.shrink(),
                           error: (e, _) => Text("Couldn't load providers: $e"),
-                          data: (providers) => _ProviderLinkField(
-                            value: _providerId,
-                            providers: providers.all,
-                            onChanged: (value) {
-                              setState(() => _providerId = value);
-                            },
-                          ),
+                          data: (providers) {
+                            final linkedProvider =
+                                providers.byId(_providerId ?? '');
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _ProviderLinkField(
+                                  value: _providerId,
+                                  providers: providers.all,
+                                  onChanged: (value) {
+                                    setState(() => _providerId = value);
+                                  },
+                                ),
+                                if (linkedProvider != null) ...[
+                                  const SizedBox(height: 8),
+                                  OutlinedButton.icon(
+                                    icon: const Icon(Icons.open_in_new),
+                                    label: Text(
+                                      'Open ${linkedProvider.name}',
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    onPressed: () => context.push(
+                                      Routes.careProviderDetail(
+                                        linkedProvider.id,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            );
+                          },
                         ),
                         const SizedBox(height: 16),
-                        _ProgramLinkField(
-                          value: _programId,
-                          programs: [
-                            ...?programsAsync.value,
-                            ...?archivedProgramsAsync.value,
-                          ],
-                          onChanged: (value) {
-                            setState(() => _programId = value);
+                        programsAsync.when(
+                          loading: () => const SizedBox.shrink(),
+                          error: (e, _) => Text("Couldn't load programs: $e"),
+                          data: (programs) {
+                            final linkedProgram = _programById(
+                              programs,
+                              _programId,
+                            );
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _ProgramLinkField(
+                                  value: _programId,
+                                  programs: programs,
+                                  onChanged: (value) {
+                                    setState(() => _programId = value);
+                                  },
+                                ),
+                                if (linkedProgram != null) ...[
+                                  const SizedBox(height: 8),
+                                  OutlinedButton.icon(
+                                    icon: const Icon(Icons.open_in_new),
+                                    label: Text(
+                                      'Open ${linkedProgram.name}',
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    onPressed: () => context.push(
+                                      Routes.programEdit(linkedProgram.id),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            );
                           },
                         ),
                         const SizedBox(height: 16),

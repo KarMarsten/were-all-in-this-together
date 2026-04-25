@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:were_all_in_this_together/core/router/app_router.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 import 'package:were_all_in_this_together/features/programs/data/program_repository.dart';
 import 'package:were_all_in_this_together/features/programs/domain/program.dart';
@@ -281,13 +282,35 @@ class _ProgramFormScreenState extends ConsumerState<ProgramFormScreen> {
                     return providersAsync.when(
                       loading: () => const SizedBox.shrink(),
                       error: (e, _) => Text("Couldn't load providers: $e"),
-                      data: (providers) => _ProviderLinkField(
-                        value: _providerId,
-                        providers: providers.all,
-                        onChanged: (value) {
-                          setState(() => _providerId = value);
-                        },
-                      ),
+                      data: (providers) {
+                        final linkedProvider =
+                            providers.byId(_providerId ?? '');
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _ProviderLinkField(
+                              value: _providerId,
+                              providers: providers.all,
+                              onChanged: (value) {
+                                setState(() => _providerId = value);
+                              },
+                            ),
+                            if (linkedProvider != null) ...[
+                              const SizedBox(height: 8),
+                              OutlinedButton.icon(
+                                icon: const Icon(Icons.open_in_new),
+                                label: Text(
+                                  'Open ${linkedProvider.name}',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                onPressed: () => context.push(
+                                  Routes.careProviderDetail(linkedProvider.id),
+                                ),
+                              ),
+                            ],
+                          ],
+                        );
+                      },
                     );
                   },
                 ),
