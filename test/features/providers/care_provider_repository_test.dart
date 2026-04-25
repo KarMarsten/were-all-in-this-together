@@ -57,10 +57,17 @@ void main() {
         name: 'Dr. Chen',
         kind: CareProviderKind.pcp,
         specialty: 'Developmental pediatrics',
+        role: 'Medication prescriber',
+        contactName: 'Ana',
         phone: '+1 555-123-4567',
+        email: 'office@example.com',
+        fax: '+1 555-222-3333',
         address: '1 Elm St, Anytown',
+        portalLabel: 'MyChart',
         portalUrl: 'https://mychart.example.com',
-        notes: 'Front desk: Ana',
+        afterHoursPhone: '+1 555-999-0000',
+        afterHoursInstructions: 'Call nurse line first.',
+        notes: 'Bring insurance card',
       );
 
       expect(prov.id, isNotEmpty);
@@ -68,10 +75,17 @@ void main() {
       expect(prov.name, 'Dr. Chen');
       expect(prov.kind, CareProviderKind.pcp);
       expect(prov.specialty, 'Developmental pediatrics');
+      expect(prov.role, 'Medication prescriber');
+      expect(prov.contactName, 'Ana');
       expect(prov.phone, '+1 555-123-4567');
+      expect(prov.email, 'office@example.com');
+      expect(prov.fax, '+1 555-222-3333');
       expect(prov.address, '1 Elm St, Anytown');
+      expect(prov.portalLabel, 'MyChart');
       expect(prov.portalUrl, 'https://mychart.example.com');
-      expect(prov.notes, 'Front desk: Ana');
+      expect(prov.afterHoursPhone, '+1 555-999-0000');
+      expect(prov.afterHoursInstructions, 'Call nurse line first.');
+      expect(prov.notes, 'Bring insurance card');
       expect(prov.createdAt, prov.updatedAt);
       expect(prov.deletedAt, isNull);
       expect(prov.rowVersion, 1);
@@ -223,18 +237,27 @@ void main() {
         created.copyWith(
           name: 'Dr. Chen-Lopez',
           specialty: 'DBP',
+          role: 'Care coordinator',
           phone: '+1 555-000-0000',
+          email: 'new-office@example.com',
+          afterHoursInstructions: 'Use urgent line after 5pm.',
         ),
       );
       expect(updated.name, 'Dr. Chen-Lopez');
       expect(updated.specialty, 'DBP');
+      expect(updated.role, 'Care coordinator');
       expect(updated.phone, '+1 555-000-0000');
+      expect(updated.email, 'new-office@example.com');
+      expect(updated.afterHoursInstructions, 'Use urgent line after 5pm.');
       expect(updated.rowVersion, created.rowVersion + 1);
 
       final reloaded = await providers.findById(created.id);
       expect(reloaded!.name, 'Dr. Chen-Lopez');
       expect(reloaded.specialty, 'DBP');
+      expect(reloaded.role, 'Care coordinator');
       expect(reloaded.phone, '+1 555-000-0000');
+      expect(reloaded.email, 'new-office@example.com');
+      expect(reloaded.afterHoursInstructions, 'Use urgent line after 5pm.');
     });
 
     test('refuses to change personId', () async {

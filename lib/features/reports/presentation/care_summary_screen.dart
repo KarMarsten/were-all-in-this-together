@@ -13,6 +13,8 @@ import 'package:were_all_in_this_together/features/profile/domain/profile_entry.
 import 'package:were_all_in_this_together/features/profile/presentation/providers.dart';
 import 'package:were_all_in_this_together/features/programs/domain/program.dart';
 import 'package:were_all_in_this_together/features/programs/presentation/providers.dart';
+import 'package:were_all_in_this_together/features/providers/domain/care_provider.dart';
+import 'package:were_all_in_this_together/features/providers/presentation/providers.dart';
 import 'package:were_all_in_this_together/features/reports/data/care_summary_pdf.dart';
 
 /// PDF handoff: baselines + active structured profile + Calm guide + resources.
@@ -27,6 +29,7 @@ class _CareSummaryScreenState extends ConsumerState<CareSummaryScreen> {
   bool _includeCalm = true;
   bool _includeBaselines = true;
   bool _includeStructuredProfile = true;
+  bool _includeProviders = true;
   bool _includePrograms = true;
   bool _includeAppSites = true;
   bool _includeCrisisResources = true;
@@ -35,6 +38,7 @@ class _CareSummaryScreenState extends ConsumerState<CareSummaryScreen> {
         includeCalm: _includeCalm,
         includeBaselines: _includeBaselines,
         includeStructuredProfile: _includeStructuredProfile,
+        includeProviders: _includeProviders,
         includePrograms: _includePrograms,
         includeAppSites: _includeAppSites,
         includeCrisisResources: _includeCrisisResources,
@@ -47,6 +51,7 @@ class _CareSummaryScreenState extends ConsumerState<CareSummaryScreen> {
     }
     final profile = await ref.read(activePersonProfileProvider.future);
     final all = await ref.read(profileEntriesForActivePersonProvider.future);
+    final providers = await ref.read(careProvidersListProvider.future);
     final programs = await ref.read(activeProgramsProvider.future);
     final appSites = await ref.read(activeAppSitesProvider.future);
     final active = all
@@ -55,6 +60,7 @@ class _CareSummaryScreenState extends ConsumerState<CareSummaryScreen> {
     final raw = await buildCareSummaryPdf(
       personName: person.displayName,
       activeEntries: active,
+      providers: providers,
       programs: programs,
       appSites: appSites,
       profile: profile,
@@ -78,6 +84,7 @@ class _CareSummaryScreenState extends ConsumerState<CareSummaryScreen> {
     final personAsync = ref.watch(activePersonProvider);
     final entriesAsync = ref.watch(profileEntriesForActivePersonProvider);
     final profileAsync = ref.watch(activePersonProfileProvider);
+    final providersAsync = ref.watch(careProvidersListProvider);
     final programsAsync = ref.watch(activeProgramsProvider);
     final appSitesAsync = ref.watch(activeAppSitesProvider);
     final canExport = personAsync.hasValue &&
@@ -163,6 +170,7 @@ class _CareSummaryScreenState extends ConsumerState<CareSummaryScreen> {
                 includeCalm: _includeCalm,
                 includeBaselines: _includeBaselines,
                 includeStructuredProfile: _includeStructuredProfile,
+                includeProviders: _includeProviders,
                 includePrograms: _includePrograms,
                 includeAppSites: _includeAppSites,
                 includeCrisisResources: _includeCrisisResources,
@@ -171,6 +179,8 @@ class _CareSummaryScreenState extends ConsumerState<CareSummaryScreen> {
                     setState(() => _includeBaselines = v),
                 onStructuredChanged: (v) =>
                     setState(() => _includeStructuredProfile = v),
+                onProvidersChanged: (v) =>
+                    setState(() => _includeProviders = v),
                 onProgramsChanged: (v) =>
                     setState(() => _includePrograms = v),
                 onAppSitesChanged: (v) =>
@@ -182,6 +192,7 @@ class _CareSummaryScreenState extends ConsumerState<CareSummaryScreen> {
               _PreviewCard(
                 entriesAsync: entriesAsync,
                 profileAsync: profileAsync,
+                providersAsync: providersAsync,
                 programsAsync: programsAsync,
                 appSitesAsync: appSitesAsync,
                 options: _options,
@@ -220,12 +231,14 @@ class _IncludeOptionsCard extends StatelessWidget {
     required this.includeCalm,
     required this.includeBaselines,
     required this.includeStructuredProfile,
+    required this.includeProviders,
     required this.includePrograms,
     required this.includeAppSites,
     required this.includeCrisisResources,
     required this.onCalmChanged,
     required this.onBaselinesChanged,
     required this.onStructuredChanged,
+    required this.onProvidersChanged,
     required this.onProgramsChanged,
     required this.onAppSitesChanged,
     required this.onCrisisChanged,
@@ -234,12 +247,14 @@ class _IncludeOptionsCard extends StatelessWidget {
   final bool includeCalm;
   final bool includeBaselines;
   final bool includeStructuredProfile;
+  final bool includeProviders;
   final bool includePrograms;
   final bool includeAppSites;
   final bool includeCrisisResources;
   final ValueChanged<bool> onCalmChanged;
   final ValueChanged<bool> onBaselinesChanged;
   final ValueChanged<bool> onStructuredChanged;
+  final ValueChanged<bool> onProvidersChanged;
   final ValueChanged<bool> onProgramsChanged;
   final ValueChanged<bool> onAppSitesChanged;
   final ValueChanged<bool> onCrisisChanged;
@@ -279,6 +294,12 @@ class _IncludeOptionsCard extends StatelessWidget {
               subtitle: const Text('Active profile entries by section.'),
             ),
             SwitchListTile(
+              value: includeProviders,
+              onChanged: onProvidersChanged,
+              title: const Text('Providers'),
+              subtitle: const Text('Care team contacts and after-hours info.'),
+            ),
+            SwitchListTile(
               value: includePrograms,
               onChanged: onProgramsChanged,
               title: const Text('Programs'),
@@ -307,6 +328,7 @@ class _PreviewCard extends StatelessWidget {
   const _PreviewCard({
     required this.entriesAsync,
     required this.profileAsync,
+    required this.providersAsync,
     required this.programsAsync,
     required this.appSitesAsync,
     required this.options,
@@ -314,6 +336,7 @@ class _PreviewCard extends StatelessWidget {
 
   final AsyncValue<List<ProfileEntry>> entriesAsync;
   final AsyncValue<Profile?> profileAsync;
+  final AsyncValue<List<CareProvider>> providersAsync;
   final AsyncValue<List<Program>> programsAsync;
   final AsyncValue<List<AppSite>> appSitesAsync;
   final CareSummaryOptions options;
@@ -350,6 +373,10 @@ class _PreviewCard extends StatelessWidget {
               },
               orElse: () => 0,
             );
+            final providerCount = providersAsync.maybeWhen(
+              data: (providers) => providers.length,
+              orElse: () => 0,
+            );
             final programCount = programsAsync.maybeWhen(
               data: (programs) => programs.length,
               orElse: () => 0,
@@ -376,6 +403,12 @@ class _PreviewCard extends StatelessWidget {
                   active.length,
                   singular: 'active structured profile line',
                   plural: 'active structured profile lines',
+                ),
+              if (options.includeProviders)
+                _countLine(
+                  providerCount,
+                  singular: 'provider',
+                  plural: 'providers',
                 ),
               if (options.includePrograms)
                 _countLine(

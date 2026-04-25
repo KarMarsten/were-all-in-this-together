@@ -11,9 +11,8 @@ import 'package:were_all_in_this_together/features/providers/presentation/url_op
 /// Read-focused detail view for a single [CareProvider].
 ///
 /// Renders every populated field as its own readable row and offers
-/// one-tap actions for the three things caregivers most often need to
-/// do with a provider record: call, open the portal, and navigate to
-/// the office.
+/// one-tap actions for the things caregivers most often need to do with a
+/// provider record: call, email, open the portal, and navigate to the office.
 ///
 /// An "Edit" action in the app bar jumps straight to the shared
 /// `CareProviderFormScreen` so the detail view stays focused on
@@ -67,6 +66,9 @@ class CareProviderDetailScreen extends ConsumerWidget {
                           if (provider.specialty != null &&
                               provider.specialty!.trim().isNotEmpty)
                             provider.specialty!.trim(),
+                          if (provider.role != null &&
+                              provider.role!.trim().isNotEmpty)
+                            provider.role!.trim(),
                         ].join(' · '),
                         style: text.bodyMedium
                             ?.copyWith(color: scheme.onSurfaceVariant),
@@ -94,8 +96,26 @@ class CareProviderDetailScreen extends ConsumerWidget {
                       ),
             ),
             _TapAction(
+              icon: Icons.email_outlined,
+              label: 'Email',
+              value: provider.email,
+              onTap: provider.email == null
+                  ? null
+                  : () => _open(
+                        context,
+                        () => opener.openEmail(provider.email!),
+                        failureMessage: "Couldn't open Mail.",
+                      ),
+            ),
+            _TapAction(
+              icon: Icons.print_outlined,
+              label: 'Fax',
+              value: provider.fax,
+              onTap: null,
+            ),
+            _TapAction(
               icon: Icons.public,
-              label: 'Portal',
+              label: _portalLabel(provider),
               value: provider.portalUrl,
               onTap: provider.portalUrl == null
                   ? null
@@ -104,6 +124,12 @@ class CareProviderDetailScreen extends ConsumerWidget {
                         () => opener.openWeb(provider.portalUrl!),
                         failureMessage: "Couldn't open the portal URL.",
                       ),
+            ),
+            _TapAction(
+              icon: Icons.contact_page_outlined,
+              label: 'Contact person',
+              value: provider.contactName,
+              onTap: null,
             ),
             _TapAction(
               icon: Icons.place_outlined,
@@ -117,6 +143,25 @@ class CareProviderDetailScreen extends ConsumerWidget {
                         () => opener.openMap(provider.address!),
                         failureMessage: "Couldn't open Maps.",
                       ),
+            ),
+            _TapAction(
+              icon: Icons.nightlight_outlined,
+              label: 'After-hours phone',
+              value: provider.afterHoursPhone,
+              onTap: provider.afterHoursPhone == null
+                  ? null
+                  : () => _open(
+                        context,
+                        () => opener.openTel(provider.afterHoursPhone!),
+                        failureMessage: "Couldn't start the call.",
+                      ),
+            ),
+            _TapAction(
+              icon: Icons.info_outline,
+              label: 'After-hours instructions',
+              value: provider.afterHoursInstructions,
+              multiline: true,
+              onTap: null,
             ),
             if (provider.notes != null && provider.notes!.trim().isNotEmpty)
               _NotesBlock(notes: provider.notes!.trim()),
@@ -153,6 +198,12 @@ class CareProviderDetailScreen extends ConsumerWidget {
         ),
       );
     }
+  }
+
+  String _portalLabel(CareProvider provider) {
+    final label = provider.portalLabel?.trim();
+    if (label == null || label.isEmpty) return 'Portal';
+    return label;
   }
 }
 
@@ -228,7 +279,7 @@ class _TapAction extends StatelessWidget {
           maxLines: multiline ? null : 1,
           overflow: multiline ? null : TextOverflow.ellipsis,
         ),
-        trailing: hasValue ? const Icon(Icons.launch) : null,
+        trailing: hasValue && onTap != null ? const Icon(Icons.launch) : null,
         onTap: hasValue ? onTap : null,
       ),
     );

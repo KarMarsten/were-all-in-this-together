@@ -21,6 +21,9 @@ void main() {
     await tester.tap(find.text('Calm'));
     await tester.pumpAndSettle();
 
-    expect(find.text('One thing at a time.'), findsOneWidget);
+    expect(
+      find.text('Lower the demand. One thing at a time.'),
+      findsOneWidget,
+    );
   });
 }

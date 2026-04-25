@@ -16,15 +16,23 @@ import 'package:were_all_in_this_together/features/providers/domain/care_provide
 /// Schema history:
 ///
 /// * **v1** — name, kind, specialty, phone, address, portalUrl, notes.
+/// * **v2** — role, contactName, email, fax, portalLabel, after-hours details.
 class EncryptedCareProviderPayload {
   const EncryptedCareProviderPayload({
     required this.schemaVersion,
     required this.name,
     required this.kind,
     this.specialty,
+    this.role,
+    this.contactName,
     this.phone,
+    this.email,
+    this.fax,
     this.address,
+    this.portalLabel,
     this.portalUrl,
+    this.afterHoursPhone,
+    this.afterHoursInstructions,
     this.notes,
   });
 
@@ -60,24 +68,38 @@ class EncryptedCareProviderPayload {
       name: name,
       kind: CareProviderKind.fromWireName(json['kind'] as String?),
       specialty: json['specialty'] as String?,
+      role: json['role'] as String?,
+      contactName: json['contactName'] as String?,
       phone: json['phone'] as String?,
+      email: json['email'] as String?,
+      fax: json['fax'] as String?,
       address: json['address'] as String?,
+      portalLabel: json['portalLabel'] as String?,
       portalUrl: json['portalUrl'] as String?,
+      afterHoursPhone: json['afterHoursPhone'] as String?,
+      afterHoursInstructions: json['afterHoursInstructions'] as String?,
       notes: json['notes'] as String?,
     );
   }
 
   /// The schema version written by this build. Bump only with a
   /// migration story in `fromJson`.
-  static const int currentSchemaVersion = 1;
+  static const int currentSchemaVersion = 2;
 
   final int schemaVersion;
   final String name;
   final CareProviderKind kind;
   final String? specialty;
+  final String? role;
+  final String? contactName;
   final String? phone;
+  final String? email;
+  final String? fax;
   final String? address;
+  final String? portalLabel;
   final String? portalUrl;
+  final String? afterHoursPhone;
+  final String? afterHoursInstructions;
   final String? notes;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
@@ -85,9 +107,17 @@ class EncryptedCareProviderPayload {
         'name': name,
         'kind': kind.wireName,
         if (specialty != null) 'specialty': specialty,
+        if (role != null) 'role': role,
+        if (contactName != null) 'contactName': contactName,
         if (phone != null) 'phone': phone,
+        if (email != null) 'email': email,
+        if (fax != null) 'fax': fax,
         if (address != null) 'address': address,
+        if (portalLabel != null) 'portalLabel': portalLabel,
         if (portalUrl != null) 'portalUrl': portalUrl,
+        if (afterHoursPhone != null) 'afterHoursPhone': afterHoursPhone,
+        if (afterHoursInstructions != null)
+          'afterHoursInstructions': afterHoursInstructions,
         if (notes != null) 'notes': notes,
       };
 }

@@ -370,15 +370,19 @@ and holding a consistent vocabulary is a feature, not a polish task.
   note, and notes per Person; explicitly no passwords).
 - Programs — **shipped** (encrypted school / camp / after-care rows with
   contact name/role, phone, email, address, website, hours, notes, and actions).
+- Providers — **shipped** (encrypted care-team rows with specialty/role,
+  contact person, phone, email, fax, address, portal label/URL, after-hours
+  details, notes, and actions).
 - Profile + Notes — **shipped** locally (structured entries, Calm surfacing,
   observation timeline, profile-line links).
-- Safety plan (Calm: authored coping + crisis + profile blocks) — iterate on
-  copy as needed.
+- Safety plan (Calm: authored coping + crisis + profile blocks) — concrete,
+  profile-aware copy with care-team handoff links.
 - **Care summary** PDF — **shipped** (selectable Calm quick guide, baselines,
-  active structured lines, Programs, Apps & Sites, and support resources);
-  deepen with locale-specific hotlines when vetted.
+  active structured lines, Providers, Programs, Apps & Sites, and support
+  resources); deepen with locale-specific hotlines when vetted.
 - Global search — **shipped** across People, meds, appointments, Notes,
-  profile entries, providers, Programs, and Apps & Sites.
+  profile entries, providers, Programs, and Apps & Sites, with match ranking
+  and highlighted result text.
 
 ### Phase 2 — Multi-device + multi-user
 

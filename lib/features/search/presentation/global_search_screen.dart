@@ -77,6 +77,7 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
                   separatorBuilder: (_, _) => const Divider(height: 1),
                   itemBuilder: (context, i) => _SearchResultTile(
                     result: results[i],
+                    query: q,
                   ),
                 );
               },
@@ -116,7 +117,11 @@ final _globalSearchResultsProvider =
           title: person.displayName,
           subtitle: 'Person',
           route: Routes.personEdit(person.id),
-          rank: 0,
+          rank: _rankingOffset(
+            q,
+            primary: [person.displayName],
+            secondary: [person.pronouns],
+          ),
         ),
       );
     }
@@ -178,7 +183,12 @@ Iterable<_SearchResult> _medicationResults(
       title: med.name,
       subtitle: _joinParts(['Medication', owner, med.dose]),
       route: Routes.medicationEdit(med.id),
-      rank: 10,
+      rank: 10 +
+          _rankingOffset(
+            q,
+            primary: [med.name],
+            secondary: [med.dose, med.prescriber, med.notes],
+          ),
     );
   }
 }
@@ -200,7 +210,12 @@ Iterable<_SearchResult> _appointmentResults(
         appt.location,
       ]),
       route: Routes.appointmentEdit(appt.id),
-      rank: 20,
+      rank: 20 +
+          _rankingOffset(
+            q,
+            primary: [appt.title],
+            secondary: [appt.location, appt.notes],
+          ),
     );
   }
 }
@@ -222,7 +237,12 @@ Iterable<_SearchResult> _observationResults(
         _formatDate(note.observedAt.toLocal()),
       ]),
       route: Routes.noteEdit(note.id),
-      rank: 30,
+      rank: 30 +
+          _rankingOffset(
+            q,
+            primary: [note.label],
+            secondary: [note.notes, ...note.tags],
+          ),
     );
   }
 }
@@ -244,7 +264,12 @@ Iterable<_SearchResult> _profileEntryResults(
         labelForProfileEntryStatus(entry.status),
       ]),
       route: Routes.profileEntryEdit(entry.id),
-      rank: 40,
+      rank: 40 +
+          _rankingOffset(
+            q,
+            primary: [entry.label],
+            secondary: [entry.details],
+          ),
     );
   }
 }
@@ -258,9 +283,16 @@ Iterable<_SearchResult> _providerResults(
     if (!_matches(q, [
       provider.name,
       provider.specialty,
+      provider.role,
+      provider.contactName,
       provider.phone,
+      provider.email,
+      provider.fax,
       provider.address,
+      provider.portalLabel,
       provider.portalUrl,
+      provider.afterHoursPhone,
+      provider.afterHoursInstructions,
       provider.notes,
     ])) {
       continue;
@@ -273,9 +305,29 @@ Iterable<_SearchResult> _providerResults(
         owner,
         _labelForProviderKind(provider.kind),
         provider.specialty,
+        provider.role,
+        provider.contactName,
       ]),
       route: Routes.careProviderDetail(provider.id),
-      rank: 50,
+      rank: 50 +
+          _rankingOffset(
+            q,
+            primary: [provider.name],
+            secondary: [
+              provider.specialty,
+              provider.role,
+              provider.contactName,
+              provider.phone,
+              provider.email,
+              provider.fax,
+              provider.address,
+              provider.portalLabel,
+              provider.portalUrl,
+              provider.afterHoursPhone,
+              provider.afterHoursInstructions,
+              provider.notes,
+            ],
+          ),
     );
   }
 }
@@ -309,7 +361,21 @@ Iterable<_SearchResult> _programResults(
         program.contactName,
       ]),
       route: Routes.programEdit(program.id),
-      rank: 60,
+      rank: 60 +
+          _rankingOffset(
+            q,
+            primary: [program.name],
+            secondary: [
+              program.phone,
+              program.contactName,
+              program.contactRole,
+              program.email,
+              program.address,
+              program.websiteUrl,
+              program.hours,
+              program.notes,
+            ],
+          ),
     );
   }
 }
@@ -340,13 +406,51 @@ Iterable<_SearchResult> _appSiteResults(
         site.url,
       ]),
       route: Routes.appSiteEdit(site.id),
-      rank: 70,
+      rank: 70 +
+          _rankingOffset(
+            q,
+            primary: [site.title],
+            secondary: [
+              site.url,
+              labelForAppSiteCategory(site.category),
+              site.usernameHint,
+              site.loginNote,
+              site.notes,
+            ],
+          ),
     );
   }
 }
 
 bool _matches(String q, Iterable<String?> fields) {
   return fields.any((f) => f != null && f.toLowerCase().contains(q));
+}
+
+int _rankingOffset(
+  String q, {
+  required Iterable<String?> primary,
+  Iterable<String?> secondary = const <String?>[],
+}) {
+  var best = 99;
+  for (final field in primary) {
+    best = best < _fieldRank(q, field, 0) ? best : _fieldRank(q, field, 0);
+  }
+  for (final field in secondary) {
+    best = best < _fieldRank(q, field, 8) ? best : _fieldRank(q, field, 8);
+  }
+  return best;
+}
+
+int _fieldRank(String q, String? raw, int penalty) {
+  final field = raw?.trim().toLowerCase();
+  if (field == null || field.isEmpty) return 99;
+  if (field == q) return penalty;
+  if (field.startsWith(q)) return penalty + 1;
+  if (field.split(RegExp(r'\s+')).any((part) => part.startsWith(q))) {
+    return penalty + 3;
+  }
+  if (field.contains(q)) return penalty + 6;
+  return 99;
 }
 
 String _joinParts(Iterable<String?> parts) {
@@ -395,18 +499,55 @@ class _SearchResult {
 }
 
 class _SearchResultTile extends StatelessWidget {
-  const _SearchResultTile({required this.result});
+  const _SearchResultTile({required this.result, required this.query});
 
   final _SearchResult result;
+  final String query;
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
       leading: Icon(result.icon),
-      title: Text(result.title),
-      subtitle: Text(result.subtitle),
+      title: _HighlightedText(text: result.title, query: query),
+      subtitle: _HighlightedText(text: result.subtitle, query: query),
       trailing: const Icon(Icons.chevron_right),
       onTap: () => context.push(result.route),
+    );
+  }
+}
+
+class _HighlightedText extends StatelessWidget {
+  const _HighlightedText({required this.text, required this.query});
+
+  final String text;
+  final String query;
+
+  @override
+  Widget build(BuildContext context) {
+    final q = query.trim();
+    if (q.isEmpty) return Text(text);
+    final lower = text.toLowerCase();
+    final start = lower.indexOf(q.toLowerCase());
+    if (start < 0) return Text(text);
+    final end = start + q.length;
+    final scheme = Theme.of(context).colorScheme;
+    final style = DefaultTextStyle.of(context).style;
+    return Text.rich(
+      TextSpan(
+        style: style,
+        children: [
+          if (start > 0) TextSpan(text: text.substring(0, start)),
+          TextSpan(
+            text: text.substring(start, end),
+            style: TextStyle(
+              backgroundColor: scheme.secondaryContainer,
+              color: scheme.onSecondaryContainer,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (end < text.length) TextSpan(text: text.substring(end)),
+        ],
+      ),
     );
   }
 }

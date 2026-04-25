@@ -54,6 +54,10 @@ Future<RecordingUrlOpener> _seedAndOpenDetail(WidgetTester tester) async {
     '+1 555-111-2222',
   );
   await tester.enterText(
+    find.widgetWithText(TextFormField, 'Email (optional)'),
+    'office@example.com',
+  );
+  await tester.enterText(
     find.widgetWithText(TextFormField, 'Address (optional)'),
     '1 Elm St',
   );
@@ -87,15 +91,28 @@ void main() {
   testWidgets('tap-to-portal opens the web URL', (tester) async {
     final opener = await _seedAndOpenDetail(tester);
 
+    await tester.ensureVisible(find.text('https://mychart.example.com'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('https://mychart.example.com'));
     await tester.pumpAndSettle();
 
     expect(opener.webCalls, ['https://mychart.example.com']);
   });
 
+  testWidgets('tap-to-email opens Mail', (tester) async {
+    final opener = await _seedAndOpenDetail(tester);
+
+    await tester.tap(find.text('office@example.com'));
+    await tester.pumpAndSettle();
+
+    expect(opener.emailCalls, ['office@example.com']);
+  });
+
   testWidgets('tap-to-map opens the address', (tester) async {
     final opener = await _seedAndOpenDetail(tester);
 
+    await tester.ensureVisible(find.text('1 Elm St'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('1 Elm St'));
     await tester.pumpAndSettle();
 

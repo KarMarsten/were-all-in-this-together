@@ -36,9 +36,16 @@ class _CareProviderFormScreenState
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name;
   late final TextEditingController _specialty;
+  late final TextEditingController _role;
+  late final TextEditingController _contactName;
   late final TextEditingController _phone;
+  late final TextEditingController _email;
+  late final TextEditingController _fax;
   late final TextEditingController _address;
+  late final TextEditingController _portalLabel;
   late final TextEditingController _portalUrl;
+  late final TextEditingController _afterHoursPhone;
+  late final TextEditingController _afterHoursInstructions;
   late final TextEditingController _notes;
   late CareProviderKind _kind;
   bool _saving = false;
@@ -49,9 +56,20 @@ class _CareProviderFormScreenState
     final seed = widget.initialProvider;
     _name = TextEditingController(text: seed?.name ?? '');
     _specialty = TextEditingController(text: seed?.specialty ?? '');
+    _role = TextEditingController(text: seed?.role ?? '');
+    _contactName = TextEditingController(text: seed?.contactName ?? '');
     _phone = TextEditingController(text: seed?.phone ?? '');
+    _email = TextEditingController(text: seed?.email ?? '');
+    _fax = TextEditingController(text: seed?.fax ?? '');
     _address = TextEditingController(text: seed?.address ?? '');
+    _portalLabel = TextEditingController(text: seed?.portalLabel ?? '');
     _portalUrl = TextEditingController(text: seed?.portalUrl ?? '');
+    _afterHoursPhone = TextEditingController(
+      text: seed?.afterHoursPhone ?? '',
+    );
+    _afterHoursInstructions = TextEditingController(
+      text: seed?.afterHoursInstructions ?? '',
+    );
     _notes = TextEditingController(text: seed?.notes ?? '');
     // Default new providers to `specialist` — the most common bucket
     // for the kind of providers families track after their PCP is
@@ -65,9 +83,16 @@ class _CareProviderFormScreenState
   void dispose() {
     _name.dispose();
     _specialty.dispose();
+    _role.dispose();
+    _contactName.dispose();
     _phone.dispose();
+    _email.dispose();
+    _fax.dispose();
     _address.dispose();
+    _portalLabel.dispose();
     _portalUrl.dispose();
+    _afterHoursPhone.dispose();
+    _afterHoursInstructions.dispose();
     _notes.dispose();
     super.dispose();
   }
@@ -140,11 +165,48 @@ class _CareProviderFormScreenState
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
+                  controller: _role,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Role / relationship (optional)',
+                    hintText: 'Medication prescriber, IEP contact, etc.',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _contactName,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Contact person (optional)',
+                    hintText: 'Scheduler, nurse line, front desk, etc.',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
                   controller: _phone,
                   keyboardType: TextInputType.phone,
                   decoration: const InputDecoration(
                     labelText: 'Phone (optional)',
                     hintText: '+1 555-123-4567',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _email,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Email (optional)',
+                    hintText: 'office@example.com',
+                  ),
+                  validator: _emailError,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _fax,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Fax (optional)',
+                    hintText: '+1 555-222-3333',
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -156,6 +218,15 @@ class _CareProviderFormScreenState
                   decoration: const InputDecoration(
                     labelText: 'Address (optional)',
                     alignLabelWithHint: true,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _portalLabel,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Portal label (optional)',
+                    hintText: 'MyChart, intake portal, billing portal',
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -177,6 +248,27 @@ class _CareProviderFormScreenState
                     }
                     return null;
                   },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _afterHoursPhone,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'After-hours phone (optional)',
+                    hintText: '+1 555-999-0000',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _afterHoursInstructions,
+                  textCapitalization: TextCapitalization.sentences,
+                  minLines: 2,
+                  maxLines: 4,
+                  decoration: const InputDecoration(
+                    labelText: 'After-hours instructions (optional)',
+                    helperText: 'What to do when the office is closed.',
+                    alignLabelWithHint: true,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -220,9 +312,18 @@ class _CareProviderFormScreenState
             name: _name.text.trim(),
             kind: _kind,
             specialty: _nullIfBlank(_specialty.text),
+            role: _nullIfBlank(_role.text),
+            contactName: _nullIfBlank(_contactName.text),
             phone: _nullIfBlank(_phone.text),
+            email: _nullIfBlank(_email.text),
+            fax: _nullIfBlank(_fax.text),
             address: _nullIfBlank(_address.text),
+            portalLabel: _nullIfBlank(_portalLabel.text),
             portalUrl: _nullIfBlank(_portalUrl.text),
+            afterHoursPhone: _nullIfBlank(_afterHoursPhone.text),
+            afterHoursInstructions: _nullIfBlank(
+              _afterHoursInstructions.text,
+            ),
             notes: _nullIfBlank(_notes.text),
           ),
         );
@@ -240,9 +341,18 @@ class _CareProviderFormScreenState
           name: _name.text.trim(),
           kind: _kind,
           specialty: _nullIfBlank(_specialty.text),
+          role: _nullIfBlank(_role.text),
+          contactName: _nullIfBlank(_contactName.text),
           phone: _nullIfBlank(_phone.text),
+          email: _nullIfBlank(_email.text),
+          fax: _nullIfBlank(_fax.text),
           address: _nullIfBlank(_address.text),
+          portalLabel: _nullIfBlank(_portalLabel.text),
           portalUrl: _nullIfBlank(_portalUrl.text),
+          afterHoursPhone: _nullIfBlank(_afterHoursPhone.text),
+          afterHoursInstructions: _nullIfBlank(
+            _afterHoursInstructions.text,
+          ),
           notes: _nullIfBlank(_notes.text),
         );
       }
@@ -265,6 +375,19 @@ class _CareProviderFormScreenState
   static String? _nullIfBlank(String s) {
     final trimmed = s.trim();
     return trimmed.isEmpty ? null : trimmed;
+  }
+
+  static String? _emailError(String? value) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty) return null;
+    final parsed = Uri.tryParse('mailto:$trimmed');
+    if (parsed == null ||
+        parsed.path.isEmpty ||
+        !trimmed.contains('@') ||
+        trimmed.contains(' ')) {
+      return 'Enter an email address or leave it blank';
+    }
+    return null;
   }
 }
 
