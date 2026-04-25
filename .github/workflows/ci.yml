@@ -46,8 +46,67 @@ jobs:
       - name: Test
         run: flutter test
 
-  security:
-    name: Security (Snyk Code)
+  dependency-review:
+    name: Dependency review
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@v4
+        continue-on-error: true
+        with:
+          fail-on-severity: high
+
+  dependency-vulnerabilities:
+    name: Dependency vulnerabilities (OSV)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # OSV Scanner reads lockfiles (including pubspec.lock) and checks them
+      # against the public Open Source Vulnerabilities database. This covers
+      # pub.dev packages, where Snyk's open-source scanner is not useful.
+      - name: Scan lockfiles with OSV
+        uses: google/osv-scanner-action/osv-scanner-action@v2
+        with:
+          scan-args: |-
+            --lockfile=pubspec.lock
+
+  secrets:
+    name: Secret scan (Gitleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Official Gitleaks action. Personal repositories only need the built-in
+      # GITHUB_TOKEN; organization repos may also require GITLEAKS_LICENSE.
+      - name: Scan repository for committed secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  sast:
+    name: SAST (Snyk Code)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # Required so the workflow can upload SARIF results into GitHub Code
@@ -82,9 +141,7 @@ jobs:
       # We deliberately don't run `snyk test` (Open Source / dependency
       # scanning) — Snyk does not support pub.dev packages, so running it
       # on a Flutter pubspec would produce a misleading "no issues" result.
-      # For pub.dev dependency CVEs use a scanner that reads the public
-      # OSV database (e.g. google/osv-scanner); we can add that alongside
-      # Snyk in a follow-up.
+      # Pub.dev dependency CVEs are handled separately by the OSV job above.
       #
       # --severity-threshold=high means we fail the job on High and
       # Critical findings only. Mediums and lows still appear in the SARIF
@@ -99,7 +156,7 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
           if [ -z "${SNYK_TOKEN}" ]; then
-            echo "::warning title=Snyk skipped::SNYK_TOKEN is not set; skipping Snyk Code scan. Add a SNYK_TOKEN repository secret (https://app.snyk.io/account) to enable vulnerability scanning."
+            echo "::warning title=Snyk skipped::SNYK_TOKEN is not set; skipping Snyk Code scan. Add a SNYK_TOKEN repository secret (https://app.snyk.io/account) to enable SAST."
             exit 0
           fi
           snyk code test \
