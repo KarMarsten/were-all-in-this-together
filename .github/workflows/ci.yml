@@ -79,11 +79,17 @@ jobs:
       # OSV Scanner reads lockfiles (including pubspec.lock) and checks them
       # against the public Open Source Vulnerabilities database. This covers
       # pub.dev packages, where Snyk's open-source scanner is not useful.
-      - name: Scan lockfiles with OSV
-        uses: google/osv-scanner-action/osv-scanner-action@v2.3.4
-        with:
-          scan-args: |-
-            --lockfile=pubspec.lock
+      #
+      # We install the CLI directly instead of using google/osv-scanner-action:
+      # that repository exposes reusable workflows, not a stable step action
+      # ref, so `uses: google/osv-scanner-action@...` fails during setup.
+      - name: Install OSV Scanner
+        run: |
+          go install github.com/google/osv-scanner/v2/cmd/osv-scanner@latest
+          echo "$HOME/go/bin" >> "$GITHUB_PATH"
+
+      - name: Scan pubspec.lock with OSV
+        run: osv-scanner scan --lockfile=pubspec.lock
 
   secrets:
     name: Secret scan (Gitleaks)
