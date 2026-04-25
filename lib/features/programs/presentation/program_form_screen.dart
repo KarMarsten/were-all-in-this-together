@@ -22,6 +22,12 @@ class _ProgramFormScreenState extends ConsumerState<ProgramFormScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name;
   late final TextEditingController _phone;
+  late final TextEditingController _contactName;
+  late final TextEditingController _contactRole;
+  late final TextEditingController _email;
+  late final TextEditingController _address;
+  late final TextEditingController _websiteUrl;
+  late final TextEditingController _hours;
   late final TextEditingController _notes;
   late ProgramKind _kind;
   bool _saving = false;
@@ -32,6 +38,12 @@ class _ProgramFormScreenState extends ConsumerState<ProgramFormScreen> {
     final s = widget.initialProgram;
     _name = TextEditingController(text: s?.name ?? '');
     _phone = TextEditingController(text: s?.phone ?? '');
+    _contactName = TextEditingController(text: s?.contactName ?? '');
+    _contactRole = TextEditingController(text: s?.contactRole ?? '');
+    _email = TextEditingController(text: s?.email ?? '');
+    _address = TextEditingController(text: s?.address ?? '');
+    _websiteUrl = TextEditingController(text: s?.websiteUrl ?? '');
+    _hours = TextEditingController(text: s?.hours ?? '');
     _notes = TextEditingController(text: s?.notes ?? '');
     _kind = s?.kind ?? ProgramKind.school;
   }
@@ -40,6 +52,12 @@ class _ProgramFormScreenState extends ConsumerState<ProgramFormScreen> {
   void dispose() {
     _name.dispose();
     _phone.dispose();
+    _contactName.dispose();
+    _contactRole.dispose();
+    _email.dispose();
+    _address.dispose();
+    _websiteUrl.dispose();
+    _hours.dispose();
     _notes.dispose();
     super.dispose();
   }
@@ -57,6 +75,12 @@ class _ProgramFormScreenState extends ConsumerState<ProgramFormScreen> {
             kind: _kind,
             name: _name.text.trim(),
             phone: _nullIfBlank(_phone.text),
+            contactName: _nullIfBlank(_contactName.text),
+            contactRole: _nullIfBlank(_contactRole.text),
+            email: _nullIfBlank(_email.text),
+            address: _nullIfBlank(_address.text),
+            websiteUrl: _nullIfBlank(_websiteUrl.text),
+            hours: _nullIfBlank(_hours.text),
             notes: _nullIfBlank(_notes.text),
           ),
         );
@@ -73,6 +97,12 @@ class _ProgramFormScreenState extends ConsumerState<ProgramFormScreen> {
           kind: _kind,
           name: _name.text.trim(),
           phone: _nullIfBlank(_phone.text),
+          contactName: _nullIfBlank(_contactName.text),
+          contactRole: _nullIfBlank(_contactRole.text),
+          email: _nullIfBlank(_email.text),
+          address: _nullIfBlank(_address.text),
+          websiteUrl: _nullIfBlank(_websiteUrl.text),
+          hours: _nullIfBlank(_hours.text),
           notes: _nullIfBlank(_notes.text),
         );
       }
@@ -92,6 +122,24 @@ class _ProgramFormScreenState extends ConsumerState<ProgramFormScreen> {
   static String? _nullIfBlank(String s) {
     final t = s.trim();
     return t.isEmpty ? null : t;
+  }
+
+  static String? _emailError(String? raw) {
+    final value = raw?.trim() ?? '';
+    if (value.isEmpty) return null;
+    final ok = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value);
+    return ok ? null : 'Enter a valid email address';
+  }
+
+  static String? _urlError(String? raw) {
+    final value = raw?.trim() ?? '';
+    if (value.isEmpty) return null;
+    final normalized = ProgramRepository.normalizeUserUrl(value);
+    final parsed = Uri.tryParse(normalized);
+    if (parsed == null || !parsed.hasScheme || parsed.host.isEmpty) {
+      return 'Enter a valid website URL';
+    }
+    return null;
   }
 
   @override
@@ -157,6 +205,68 @@ class _ProgramFormScreenState extends ConsumerState<ProgramFormScreen> {
                   keyboardType: TextInputType.phone,
                   decoration: const InputDecoration(
                     labelText: 'Main phone (optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _contactName,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Contact name (optional)',
+                    hintText: 'Front desk, Ms. Patel, camp director…',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _contactRole,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Contact role (optional)',
+                    hintText: 'Teacher, registrar, coordinator…',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _email,
+                  keyboardType: TextInputType.emailAddress,
+                  autocorrect: false,
+                  decoration: const InputDecoration(
+                    labelText: 'Email (optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: _emailError,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _address,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Address (optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _websiteUrl,
+                  keyboardType: TextInputType.url,
+                  autocorrect: false,
+                  decoration: const InputDecoration(
+                    labelText: 'Website / portal URL (optional)',
+                    hintText: 'school.example.org',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: _urlError,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _hours,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Schedule / hours (optional)',
+                    hintText: 'Mon–Fri 8:00–3:00, summer session dates…',
                     border: OutlineInputBorder(),
                   ),
                 ),

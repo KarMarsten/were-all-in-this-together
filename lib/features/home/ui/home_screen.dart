@@ -12,9 +12,8 @@ import 'package:were_all_in_this_together/features/people/presentation/widgets/p
 /// Home screen.
 ///
 /// Layout:
-///   * AppBar — app title + settings.
-///   * Person banner — placeholder (a Person switcher will live here once the
-///     data layer exists).
+///   * AppBar — app title + search, settings, and about.
+///   * Person banner — active-Person switcher.
 ///   * Feature grid — tiles for each main domain.
 ///   * Persistent "Calm" bar at the bottom, always one tap from dysregulation
 ///     support.
@@ -37,6 +36,11 @@ class HomeScreen extends StatelessWidget {
             icon: const Icon(Icons.settings_outlined),
             onPressed: () => context.push(Routes.settings),
           ),
+          IconButton(
+            tooltip: 'About',
+            icon: const Icon(Icons.info_outline),
+            onPressed: () => _showAboutApp(context),
+          ),
         ],
       ),
       body: const SafeArea(
@@ -51,6 +55,39 @@ class HomeScreen extends StatelessWidget {
       bottomNavigationBar: const _CalmBar(),
     );
   }
+}
+
+void _showAboutApp(BuildContext context) {
+  final textTheme = Theme.of(context).textTheme;
+  showAboutDialog(
+    context: context,
+    applicationName: "We're All In This Together",
+    applicationVersion: '0.1.0',
+    applicationIcon: ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: Image.asset(
+        'assets/images/app_icon.png',
+        width: 56,
+        height: 56,
+      ),
+    ),
+    applicationLegalese: 'Private, local-first family support.',
+    children: [
+      const SizedBox(height: 16),
+      Text(
+        'A private, end-to-end encrypted life-admin app for families '
+        'supporting a neurodivergent child, a neurodivergent parent, or both.',
+        style: textTheme.bodyMedium,
+      ),
+      const SizedBox(height: 12),
+      Text(
+        'Phase 1 is local-only: People, medications, appointments, providers, '
+        'profile, notes, milestones, richer programs, apps & sites, PDFs, '
+        'cross-domain search, and Calm tools live on this device.',
+        style: textTheme.bodyMedium,
+      ),
+    ],
+  );
 }
 
 /// Banner at the top of home that declares who the app is focused on right
@@ -313,7 +350,6 @@ class _FeatureGrid extends StatelessWidget {
             crossAxisCount: crossAxisCount,
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
-            childAspectRatio: 1.1,
           ),
           itemBuilder: (context, index) => _FeatureTile(data: _tiles[index]),
         );
@@ -360,6 +396,8 @@ class _FeatureTile extends StatelessWidget {
                   Text(
                     data.label,
                     style: Theme.of(context).textTheme.titleMedium,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -367,6 +405,8 @@ class _FeatureTile extends StatelessWidget {
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: scheme.onSurfaceVariant,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),

@@ -6,6 +6,7 @@ import 'package:were_all_in_this_together/core/router/app_router.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 import 'package:were_all_in_this_together/features/programs/domain/program.dart';
 import 'package:were_all_in_this_together/features/programs/presentation/providers.dart';
+import 'package:were_all_in_this_together/features/providers/presentation/url_opener.dart';
 
 /// Schools, camps, after-care — encrypted per active Person.
 class ProgramsListScreen extends ConsumerWidget {
@@ -108,25 +109,137 @@ class ProgramsListScreen extends ConsumerWidget {
         ),
       );
       for (final p in group) {
-        final parts = <String>[
-          if (p.phone != null && p.phone!.trim().isNotEmpty) p.phone!,
-          if (p.notes != null && p.notes!.trim().isNotEmpty) p.notes!.trim(),
-        ];
-        out.add(
-          ListTile(
-            title: Text(p.name),
-            subtitle: Text(
-              parts.isEmpty ? 'Tap to edit' : parts.join(' · '),
-            ),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push(Routes.programEdit(p.id)),
-          ),
-        );
+        out.add(_ProgramTile(program: p));
       }
     }
     return out;
   }
 }
+
+class _ProgramTile extends ConsumerWidget {
+  const _ProgramTile({required this.program});
+
+  final Program program;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final opener = ref.watch(urlOpenerProvider);
+    final availableActions = <_ProgramAction>[
+      if (_notBlank(program.phone)) _ProgramAction.call,
+      if (_notBlank(program.email)) _ProgramAction.email,
+      if (_notBlank(program.websiteUrl)) _ProgramAction.web,
+      if (_notBlank(program.address)) _ProgramAction.map,
+    ];
+
+    return ListTile(
+      title: Text(program.name),
+      subtitle: Text(_subtitle(program)),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (availableActions.isNotEmpty)
+            PopupMenuButton<_ProgramAction>(
+              tooltip: 'Program actions',
+              icon: const Icon(Icons.more_vert),
+              onSelected: (action) => _handleAction(
+                context: context,
+                opener: opener,
+                action: action,
+              ),
+              itemBuilder: (context) => [
+                for (final action in availableActions)
+                  PopupMenuItem(
+                    value: action,
+                    child: Text(_actionLabel(action)),
+                  ),
+              ],
+            ),
+          const Icon(Icons.chevron_right),
+        ],
+      ),
+      onTap: () => context.push(Routes.programEdit(program.id)),
+    );
+  }
+
+  static bool _notBlank(String? value) =>
+      value != null && value.trim().isNotEmpty;
+
+  static String _subtitle(Program p) {
+    final contact = [p.contactName, p.contactRole]
+        .where(_notBlank)
+        .map((s) => s!.trim())
+        .join(', ');
+    final parts = <String>[
+      if (contact.isNotEmpty) contact,
+      if (_notBlank(p.hours)) p.hours!.trim(),
+      if (_notBlank(p.phone)) p.phone!.trim(),
+      if (_notBlank(p.email)) p.email!.trim(),
+      if (_notBlank(p.address)) p.address!.trim(),
+      if (_notBlank(p.notes)) p.notes!.trim(),
+    ];
+    return parts.isEmpty ? 'Tap to edit' : parts.join(' · ');
+  }
+
+  Future<void> _handleAction({
+    required BuildContext context,
+    required UrlOpener opener,
+    required _ProgramAction action,
+  }) {
+    switch (action) {
+      case _ProgramAction.call:
+        return _open(
+          context,
+          () => opener.openTel(program.phone!),
+          "Couldn't open phone",
+        );
+      case _ProgramAction.email:
+        return _open(
+          context,
+          () => opener.openEmail(program.email!),
+          "Couldn't open email",
+        );
+      case _ProgramAction.web:
+        return _open(
+          context,
+          () => opener.openWeb(program.websiteUrl!),
+          "Couldn't open website",
+        );
+      case _ProgramAction.map:
+        return _open(
+          context,
+          () => opener.openMap(program.address!),
+          "Couldn't open map",
+        );
+    }
+  }
+
+  static String _actionLabel(_ProgramAction action) {
+    switch (action) {
+      case _ProgramAction.call:
+        return 'Call';
+      case _ProgramAction.email:
+        return 'Email';
+      case _ProgramAction.web:
+        return 'Open website';
+      case _ProgramAction.map:
+        return 'Open map';
+    }
+  }
+
+  static Future<void> _open(
+    BuildContext context,
+    Future<bool> Function() action,
+    String failureMessage,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final ok = await action();
+    if (!ok) {
+      messenger.showSnackBar(SnackBar(content: Text(failureMessage)));
+    }
+  }
+}
+
+enum _ProgramAction { call, email, web, map }
 
 class _EmptyState extends StatelessWidget {
   const _EmptyState();

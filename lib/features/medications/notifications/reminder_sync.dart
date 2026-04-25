@@ -79,8 +79,9 @@ final _reconcilerDoseLogsProvider =
 /// * Dose logs in the window (an ACK drained, a Today-screen
 ///   "Taken", etc.).
 ///
-/// Hold a `ref.watch(reminderSyncProvider)` at the app root for the
-/// subscription to stay alive.
+/// This remains available for focused tests and future long-lived sync flows,
+/// but the app no longer watches it at startup because the iOS notification
+/// plugin and pending-queue reads can make launch feel blocked.
 final reminderSyncProvider = Provider<void>((ref) {
   final reconciler = ReminderReconciler(
     service: ref.watch(notificationServiceProvider),
@@ -131,6 +132,39 @@ void _maybeReconcile(Ref ref, ReminderReconciler reconciler) {
       logs: logsData,
     ),
   );
+}
+
+/// Reconcile medication reminders once, without keeping a listener alive.
+///
+/// Used from mutation flows (save/archive/restore and permission grant) instead
+/// of app startup. Querying the database, timezone, notification plugin, and OS
+/// pending-notification queue can be noticeable on iOS; doing it after an
+/// explicit reminder-relevant action keeps launch responsive.
+Future<void> reconcileMedicationRemindersOnce(WidgetRef ref) async {
+  final reconciler = ReminderReconciler(
+    service: ref.read(notificationServiceProvider),
+    windowDuration: ref.read(reminderWindowProvider),
+  );
+  try {
+    final meds = await ref.read(allActiveMedicationsProvider.future);
+    final prefs = await ref.read(notificationPreferencesProvider.future);
+    Map<DoseIdentity, DoseLog>? logs;
+    try {
+      logs = await ref.read(_reconcilerDoseLogsProvider.future);
+    } on Object catch (error, st) {
+      debugPrint('reminderSync: dose-log load skipped ($error)');
+      debugPrintStack(stackTrace: st);
+    }
+    await _safeReconcile(
+      reconciler: reconciler,
+      meds: meds,
+      preferences: prefs,
+      logs: logs,
+    );
+  } on Object catch (error, st) {
+    debugPrint('reminderSync: one-shot reconcile failed ($error)');
+    debugPrintStack(stackTrace: st);
+  }
 }
 
 Future<void> _safeReconcile({

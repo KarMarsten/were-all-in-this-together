@@ -45,8 +45,9 @@ final allUpcomingAppointmentsProvider =
 /// by `scheduledAt - reminderLeadMinutes`. The only input that can
 /// change that is the appointment row itself.
 ///
-/// Hold a `ref.watch(appointmentReminderSyncProvider)` at the app
-/// root for the subscription to stay alive.
+/// This remains available for focused tests and future long-lived sync flows,
+/// but the app no longer watches it at startup because iOS pending-notification
+/// reads can make launch feel blocked.
 final appointmentReminderSyncProvider = Provider<void>((ref) {
   final reconciler = AppointmentReminderReconciler(
     service: ref.watch(notificationServiceProvider),
@@ -67,6 +68,26 @@ void _maybeReconcile(
   if (appts is! AsyncData<List<OwnedAppointment>>) return;
 
   unawaited(_safeReconcile(reconciler: reconciler, appointments: appts.value));
+}
+
+/// Reconcile appointment reminders once, without keeping a listener alive.
+///
+/// Used after appointment save/archive/restore instead of app startup so iOS
+/// notification maintenance never competes with the first interactive frame.
+Future<void> reconcileAppointmentRemindersOnce(WidgetRef ref) async {
+  final reconciler = AppointmentReminderReconciler(
+    service: ref.read(notificationServiceProvider),
+  );
+  try {
+    final appointments = await ref.read(allUpcomingAppointmentsProvider.future);
+    await _safeReconcile(
+      reconciler: reconciler,
+      appointments: appointments,
+    );
+  } on Object catch (error, st) {
+    debugPrint('appointmentReminderSync: one-shot reconcile failed ($error)');
+    debugPrintStack(stackTrace: st);
+  }
 }
 
 Future<void> _safeReconcile({

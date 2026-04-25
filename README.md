@@ -8,8 +8,9 @@ access.
 > **Status:** Phase 1 (local-only MVP) in progress. Crypto, encrypted
 > local database, People, Medications, **Profile** (baselines + structured
 > lines + Calm surfacing), **Notes** (observations timeline), **Care summary
-> PDF**, **global search** (people only for now), **Programs**, and **Apps &
-> Sites** (encrypted per-person lists) are in the app. Multi-device sync is
+> PDF**, **global search** (people, meds, appointments, notes, profile entries,
+> providers, programs, apps/sites), **Programs**, and **Apps & Sites** are in
+> the app. Multi-device sync is
 > Phase 2. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the plan.
 
 ---
@@ -84,15 +85,17 @@ access.
   triggers, what helps, early signs, other) with status, optional dates,
   archive/restore, and Calm surfacing for the in-the-moment screen. **Notes**
   (observations) are a separate timeline with optional links to profile lines.
-- **Care summary (PDF)** — from **Settings**, export baselines + every
-  **active** structured line (grouped by section) + national crisis lines for
-  babysitters, grandparents, and respite (same `printing` path as the
-  adherence report).
-- **Search** — app-bar entry on Home; filters the **People** roster by
-  display name (more domains later).
-- **Programs** and **Apps & Sites** — per-person encrypted lists (school /
-  camp / after-care with optional phone; portal URLs with open-in-browser).
-  Archive and restore match other domains.
+- **Care summary (PDF)** — from **Settings**, export a selectable handoff:
+  Calm quick guide (early signs / triggers / what helps), baselines, active
+  structured profile lines, and support resources for babysitters,
+  grandparents, and respite (same `printing` path as the adherence report).
+- **Search** — app-bar entry on Home; searches People, medications,
+  appointments, Notes, profile entries, providers, Programs, and Apps & Sites.
+- **Programs** and **Apps & Sites** — per-person encrypted lists. Programs
+  cover school / camp / after-care with contact name/role, phone, email,
+  address, website/portal URL, schedule/hours, notes, and one-tap actions.
+  Apps & Sites track portal URLs + notes with open-in-browser. Archive and
+  restore match other domains.
 - **Calm** — in-the-moment coping strategies and crisis contacts, reachable
   in one tap from anywhere, rendered in a dedicated low-stimulation theme.
 
@@ -103,14 +106,13 @@ Priorities **0–5** for Phase 1 (see recent commits and
 
 0. **Doc sync** — keep this README, `lib/features/README.md`, and the repo
    layout tree aligned with shipped routes and schema bumps.
-1. **Programs & Apps & Sites (depth)** — richer fields (contacts tree,
-   calendars deferred), validation, and cross-links as needs emerge.
-2. **Care summary depth** — optional Calm-only sections, richer crisis block,
+1. **Apps & Sites depth** — richer categories / username hints (no passwords),
+   validation, and cross-links as needs emerge.
+2. **Care summary depth** — keep expanding export options and add
    locale-specific hotlines where we can cite them safely.
 3. **Calm** — continue replacing any remaining generic copy with concrete,
    profile-aware guidance where it helps.
-4. **Global search** — extend beyond People (medications, appointments,
-   notes, profile labels).
+4. **Global search depth** — ranking, highlighting, and more targeted filters.
 5. **Phase 2 — Multi-device, multi-caregiver sync** — Supabase (EU), per-person
    key shares, QR pairing, first-ACK-wins attribution. Not started; see
    architecture doc for privacy and pairing design.
@@ -156,9 +158,9 @@ lib/
     ├── profile/           baselines + structured entries + Notes / Calm hooks
     ├── observations/      Notes timeline (Observation)
     ├── appointments/      visits + local reminders + Today integration
-    ├── programs/          schools, camps, after-care (encrypted)
+    ├── programs/          schools, camps, after-care + contacts/actions
     ├── apps_sites/        portal URLs + notes (encrypted)
-    ├── search/            global search (People only in v1)
+    ├── search/            cross-domain local search
     └── milestones/        per-Person life-log of dated events
 docs/
 └── ARCHITECTURE.md        decision log + data model + phases + naming conventions

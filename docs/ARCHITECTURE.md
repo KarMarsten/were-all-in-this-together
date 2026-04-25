@@ -367,15 +367,17 @@ and holding a consistent vocabulary is a feature, not a polish task.
 - Medications + history + **Medication report** PDF.
 - Milestones & dates.
 - Apps & Sites — **shipped** (encrypted URL + title + notes per Person).
-- Programs — **shipped** (encrypted name / phone / notes; kind for grouping).
+- Programs — **shipped** (encrypted school / camp / after-care rows with
+  contact name/role, phone, email, address, website, hours, notes, and actions).
 - Profile + Notes — **shipped** locally (structured entries, Calm surfacing,
   observation timeline, profile-line links).
 - Safety plan (Calm: authored coping + crisis + profile blocks) — iterate on
   copy as needed.
-- **Care summary** PDF — **shipped** (baselines + active structured + crisis
-  lines); deepen with locale-specific hotlines when vetted.
-- Global search — **partial** (People names); extend to meds / appointments /
-  notes / profile labels.
+- **Care summary** PDF — **shipped** (selectable Calm quick guide, baselines,
+  active structured lines, and support resources); deepen with locale-specific
+  hotlines when vetted.
+- Global search — **shipped** across People, meds, appointments, Notes,
+  profile entries, providers, Programs, and Apps & Sites.
 
 ### Phase 2 — Multi-device + multi-user
 

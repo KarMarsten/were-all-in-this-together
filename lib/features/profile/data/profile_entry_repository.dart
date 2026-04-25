@@ -192,6 +192,27 @@ class ProfileEntryRepository {
     return _decodeMany(rows, personId);
   }
 
+  /// Non-archived rows for [personId] across that Person's profile.
+  ///
+  /// Search uses this shape because it already has a roster-wide Person list
+  /// and should not call `ProfileRepository.getOrCreateForPerson`, which would
+  /// create empty profile rows just because the user typed into search.
+  Future<List<ProfileEntry>> listActiveForPerson(String personId) async {
+    final rows =
+        await (_db.select(_db.profileEntries)
+              ..where(
+                (e) => e.personId.equals(personId) & e.deletedAt.isNull(),
+              )
+              ..orderBy([
+                (e) => OrderingTerm(
+                  expression: e.createdAt,
+                  mode: OrderingMode.desc,
+                ),
+              ]))
+            .get();
+    return _decodeMany(rows, personId);
+  }
+
   /// By id, including archived — for edit / deep links.
   Future<ProfileEntry?> findById(String id) async {
     final row = await (_db.select(

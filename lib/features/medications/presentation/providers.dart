@@ -45,10 +45,8 @@ void invalidateMedicationsState(WidgetRef ref) {
   ref
     ..invalidate(medicationsListProvider)
     ..invalidate(archivedMedicationsListProvider)
-    // Invalidating the "all active" list re-triggers reminder
-    // reconciliation via `reminderSyncProvider`'s listener — the
-    // OS-level notification queue is treated as derived state and
-    // must stay in lockstep with whatever the user just did.
+    // Invalidating the roster-wide list keeps one-shot reminder
+    // reconciliation pointed at fresh data after the form flow saves.
     ..invalidate(allActiveMedicationsProvider)
     // Any medication mutation also appends a history event, so the
     // timeline has to re-fetch.

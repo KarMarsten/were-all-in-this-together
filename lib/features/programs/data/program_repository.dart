@@ -56,6 +56,12 @@ class ProgramRepository {
     required ProgramKind kind,
     required String name,
     String? phone,
+    String? contactName,
+    String? contactRole,
+    String? email,
+    String? address,
+    String? websiteUrl,
+    String? hours,
     String? notes,
   }) async {
     if (name.trim().isEmpty) {
@@ -74,6 +80,12 @@ class ProgramRepository {
       schemaVersion: EncryptedProgramPayload.currentSchemaVersion,
       name: name.trim(),
       phone: _nullIfBlank(phone),
+      contactName: _nullIfBlank(contactName),
+      contactRole: _nullIfBlank(contactRole),
+      email: _nullIfBlank(email),
+      address: _nullIfBlank(address),
+      websiteUrl: _normalizeOptionalUrl(websiteUrl),
+      hours: _nullIfBlank(hours),
       notes: _nullIfBlank(notes),
     );
     final encrypted = await _sealPayload(
@@ -100,6 +112,12 @@ class ProgramRepository {
       createdAt: now,
       updatedAt: now,
       phone: _nullIfBlank(phone),
+      contactName: _nullIfBlank(contactName),
+      contactRole: _nullIfBlank(contactRole),
+      email: _nullIfBlank(email),
+      address: _nullIfBlank(address),
+      websiteUrl: _normalizeOptionalUrl(websiteUrl),
+      hours: _nullIfBlank(hours),
       notes: _nullIfBlank(notes),
     );
   }
@@ -165,6 +183,12 @@ class ProgramRepository {
       schemaVersion: EncryptedProgramPayload.currentSchemaVersion,
       name: updated.name.trim(),
       phone: _nullIfBlank(updated.phone),
+      contactName: _nullIfBlank(updated.contactName),
+      contactRole: _nullIfBlank(updated.contactRole),
+      email: _nullIfBlank(updated.email),
+      address: _nullIfBlank(updated.address),
+      websiteUrl: _normalizeOptionalUrl(updated.websiteUrl),
+      hours: _nullIfBlank(updated.hours),
       notes: _nullIfBlank(updated.notes),
     );
     final encrypted = await _sealPayload(
@@ -184,6 +208,14 @@ class ProgramRepository {
     );
     return updated.copyWith(
       name: updated.name.trim(),
+      phone: _nullIfBlank(updated.phone),
+      contactName: _nullIfBlank(updated.contactName),
+      contactRole: _nullIfBlank(updated.contactRole),
+      email: _nullIfBlank(updated.email),
+      address: _nullIfBlank(updated.address),
+      websiteUrl: _normalizeOptionalUrl(updated.websiteUrl),
+      hours: _nullIfBlank(updated.hours),
+      notes: _nullIfBlank(updated.notes),
       updatedAt: now,
       rowVersion: updated.rowVersion + 1,
     );
@@ -219,6 +251,19 @@ class ProgramRepository {
     if (s == null) return null;
     final t = s.trim();
     return t.isEmpty ? null : t;
+  }
+
+  static String? _normalizeOptionalUrl(String? raw) {
+    final trimmed = _nullIfBlank(raw);
+    if (trimmed == null) return null;
+    return normalizeUserUrl(trimmed);
+  }
+
+  static String normalizeUserUrl(String raw) {
+    final trimmed = raw.trim();
+    final parsed = Uri.tryParse(trimmed);
+    if (parsed != null && parsed.hasScheme) return trimmed;
+    return 'https://$trimmed';
   }
 
   Future<List<Program>> _decodeMany(List<ProgramRow> rows) async {
@@ -275,6 +320,12 @@ class ProgramRepository {
         isUtc: true,
       ),
       phone: payload.phone,
+      contactName: payload.contactName,
+      contactRole: payload.contactRole,
+      email: payload.email,
+      address: payload.address,
+      websiteUrl: payload.websiteUrl,
+      hours: payload.hours,
       notes: payload.notes,
       deletedAt: row.deletedAt == null
           ? null

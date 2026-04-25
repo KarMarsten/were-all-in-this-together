@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:were_all_in_this_together/core/notifications/local_notification_service.dart';
 import 'package:were_all_in_this_together/core/notifications/notification_service.dart';
+import 'package:were_all_in_this_together/features/medications/notifications/reminder_sync.dart';
 
 /// Soft banner on the top of `MedicationsListScreen` that nudges the
 /// user to enable reminders — *once*, without blocking the UI.
@@ -53,6 +54,9 @@ class _ReminderPermissionBannerState
   Future<void> _request() async {
     final service = ref.read(notificationServiceProvider);
     final result = await service.requestPermission();
+    if (result == NotificationPermission.granted) {
+      unawaited(reconcileMedicationRemindersOnce(ref));
+    }
     if (!mounted) return;
     setState(() => _status = result);
   }

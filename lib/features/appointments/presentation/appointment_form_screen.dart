@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:were_all_in_this_together/features/appointments/data/appointment_repository.dart';
 import 'package:were_all_in_this_together/features/appointments/domain/appointment.dart';
+import 'package:were_all_in_this_together/features/appointments/notifications/appointment_reminder_sync.dart';
 import 'package:were_all_in_this_together/features/appointments/presentation/providers.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 import 'package:were_all_in_this_together/features/providers/domain/care_provider.dart';
@@ -275,6 +278,7 @@ class _AppointmentFormScreenState
         );
       }
       invalidateAppointmentsState(ref);
+      unawaited(reconcileAppointmentRemindersOnce(ref));
       if (!mounted) return;
       context.pop();
     } on Exception catch (e) {
@@ -550,6 +554,7 @@ class _ArchiveOrRestoreButton extends ConsumerWidget {
     try {
       await repo.archive(appointment.id);
       invalidateAppointmentsState(ref);
+      unawaited(reconcileAppointmentRemindersOnce(ref));
       if (!context.mounted) return;
       context.pop();
     } on Exception catch (e) {
@@ -568,6 +573,7 @@ class _ArchiveOrRestoreButton extends ConsumerWidget {
     try {
       await repo.restore(appointment.id);
       invalidateAppointmentsState(ref);
+      unawaited(reconcileAppointmentRemindersOnce(ref));
       if (!context.mounted) return;
       context.pop();
     } on Exception catch (e) {

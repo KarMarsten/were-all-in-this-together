@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +8,7 @@ import 'package:were_all_in_this_together/core/router/app_router.dart';
 import 'package:were_all_in_this_together/features/medications/data/medication_repository.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication.dart';
 import 'package:were_all_in_this_together/features/medications/domain/medication_schedule.dart';
+import 'package:were_all_in_this_together/features/medications/notifications/reminder_sync.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/providers.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/widgets/medication_icon.dart';
 import 'package:were_all_in_this_together/features/medications/presentation/widgets/medication_schedule_editor.dart';
@@ -287,6 +290,7 @@ class _MedicationFormScreenState extends ConsumerState<MedicationFormScreen> {
         );
       }
       invalidateMedicationsState(ref);
+      unawaited(reconcileMedicationRemindersOnce(ref));
       if (!mounted) return;
       context.pop();
     } on Exception catch (e) {
@@ -608,6 +612,7 @@ class _ArchiveOrRestoreButton extends ConsumerWidget {
     try {
       await repo.archive(medication.id);
       invalidateMedicationsState(ref);
+      unawaited(reconcileMedicationRemindersOnce(ref));
       if (!context.mounted) return;
       context.pop();
     } on Exception catch (e) {
@@ -626,6 +631,7 @@ class _ArchiveOrRestoreButton extends ConsumerWidget {
     try {
       await repo.restore(medication.id);
       invalidateMedicationsState(ref);
+      unawaited(reconcileMedicationRemindersOnce(ref));
       if (!context.mounted) return;
       context.pop();
     } on Exception catch (e) {

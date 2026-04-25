@@ -8,6 +8,7 @@ class RecordingUrlOpener implements UrlOpener {
   final List<({String phone, String? body})> smsCalls =
       <({String phone, String? body})>[];
   final List<String> webCalls = <String>[];
+  final List<String> emailCalls = <String>[];
   final List<String> mapCalls = <String>[];
 
   /// Controls whether the recorded call reports success to the caller.
@@ -30,6 +31,12 @@ class RecordingUrlOpener implements UrlOpener {
   @override
   Future<bool> openWeb(String url) async {
     webCalls.add(url);
+    return succeed;
+  }
+
+  @override
+  Future<bool> openEmail(String email) async {
+    emailCalls.add(email);
     return succeed;
   }
 

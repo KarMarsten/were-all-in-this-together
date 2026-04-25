@@ -5,9 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:were_all_in_this_together/core/router/app_router.dart';
 import 'package:were_all_in_this_together/core/theme/app_theme.dart';
-import 'package:were_all_in_this_together/features/appointments/notifications/appointment_reminder_sync.dart';
 import 'package:were_all_in_this_together/features/medications/notifications/pending_ack_drainer.dart';
-import 'package:were_all_in_this_together/features/medications/notifications/reminder_sync.dart';
 import 'package:were_all_in_this_together/features/people/presentation/providers.dart';
 
 class App extends ConsumerStatefulWidget {
@@ -56,13 +54,6 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(appRouterProvider);
-    // Watch the reminder-sync providers so their `ref.listen` calls
-    // stay subscribed for the app's lifetime. They have no visible
-    // output — they exist to keep the OS notification queue in step
-    // with the medication and appointment lists, respectively.
-    ref
-      ..watch(reminderSyncProvider)
-      ..watch(appointmentReminderSyncProvider);
     return MaterialApp.router(
       title: "We're All In This Together",
       theme: AppTheme.light(),

@@ -6,13 +6,31 @@ import 'package:intl/intl.dart';
 import 'package:printing/printing.dart';
 
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
+import 'package:were_all_in_this_together/features/profile/domain/profile.dart';
 import 'package:were_all_in_this_together/features/profile/domain/profile_entry.dart';
 import 'package:were_all_in_this_together/features/profile/presentation/providers.dart';
 import 'package:were_all_in_this_together/features/reports/data/care_summary_pdf.dart';
 
-/// One-tap PDF handoff: baselines + active structured profile + crisis lines.
-class CareSummaryScreen extends ConsumerWidget {
+/// PDF handoff: baselines + active structured profile + Calm guide + resources.
+class CareSummaryScreen extends ConsumerStatefulWidget {
   const CareSummaryScreen({super.key});
+
+  @override
+  ConsumerState<CareSummaryScreen> createState() => _CareSummaryScreenState();
+}
+
+class _CareSummaryScreenState extends ConsumerState<CareSummaryScreen> {
+  bool _includeCalm = true;
+  bool _includeBaselines = true;
+  bool _includeStructuredProfile = true;
+  bool _includeCrisisResources = true;
+
+  CareSummaryOptions get _options => CareSummaryOptions(
+        includeCalm: _includeCalm,
+        includeBaselines: _includeBaselines,
+        includeStructuredProfile: _includeStructuredProfile,
+        includeCrisisResources: _includeCrisisResources,
+      );
 
   Future<Uint8List> _buildBytes(WidgetRef ref) async {
     final person = await ref.read(activePersonProvider.future);
@@ -28,6 +46,7 @@ class CareSummaryScreen extends ConsumerWidget {
       personName: person.displayName,
       activeEntries: active,
       profile: profile,
+      options: _options,
     );
     return Uint8List.fromList(raw);
   }
@@ -43,8 +62,13 @@ class CareSummaryScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final personAsync = ref.watch(activePersonProvider);
+    final entriesAsync = ref.watch(profileEntriesForActivePersonProvider);
+    final profileAsync = ref.watch(activePersonProfileProvider);
+    final canExport = personAsync.hasValue &&
+        personAsync.value != null &&
+        _options.hasAnySection;
 
     return Scaffold(
       appBar: AppBar(
@@ -53,7 +77,7 @@ class CareSummaryScreen extends ConsumerWidget {
           IconButton(
             tooltip: 'Share or save as PDF',
             icon: const Icon(Icons.ios_share),
-            onPressed: personAsync.hasValue && personAsync.value != null
+            onPressed: canExport
                 ? () async {
                     final messenger = ScaffoldMessenger.of(context);
                     try {
@@ -74,7 +98,7 @@ class CareSummaryScreen extends ConsumerWidget {
           IconButton(
             tooltip: 'Print',
             icon: const Icon(Icons.print_outlined),
-            onPressed: personAsync.hasValue && personAsync.value != null
+            onPressed: canExport
                 ? () async {
                     final messenger = ScaffoldMessenger.of(context);
                     try {
@@ -115,28 +139,49 @@ class CareSummaryScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Exports communication, sleep, and appetite baselines, every '
-                'active structured profile line (grouped by section), and '
-                'national crisis resources. Paused or resolved lines stay in '
-                'the app but are omitted here.',
+                'Choose what to include, then export a short handoff PDF. '
+                'Paused or resolved profile lines stay in the app but are '
+                'omitted here.',
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
               const SizedBox(height: 24),
+              _IncludeOptionsCard(
+                includeCalm: _includeCalm,
+                includeBaselines: _includeBaselines,
+                includeStructuredProfile: _includeStructuredProfile,
+                includeCrisisResources: _includeCrisisResources,
+                onCalmChanged: (v) => setState(() => _includeCalm = v),
+                onBaselinesChanged: (v) =>
+                    setState(() => _includeBaselines = v),
+                onStructuredChanged: (v) =>
+                    setState(() => _includeStructuredProfile = v),
+                onCrisisChanged: (v) =>
+                    setState(() => _includeCrisisResources = v),
+              ),
+              const SizedBox(height: 16),
+              _PreviewCard(
+                entriesAsync: entriesAsync,
+                profileAsync: profileAsync,
+                options: _options,
+              ),
+              const SizedBox(height: 24),
               FilledButton.icon(
-                onPressed: () async {
-                  final messenger = ScaffoldMessenger.of(context);
-                  try {
-                    final bytes = await _buildBytes(ref);
-                    await Printing.sharePdf(
-                      bytes: bytes,
-                      filename: _filename(person.displayName),
-                    );
-                  } on Object catch (e) {
-                    messenger.showSnackBar(
-                      SnackBar(content: Text("Couldn't build PDF: $e")),
-                    );
-                  }
-                },
+                onPressed: canExport
+                    ? () async {
+                        final messenger = ScaffoldMessenger.of(context);
+                        try {
+                          final bytes = await _buildBytes(ref);
+                          await Printing.sharePdf(
+                            bytes: bytes,
+                            filename: _filename(person.displayName),
+                          );
+                        } on Object catch (e) {
+                          messenger.showSnackBar(
+                            SnackBar(content: Text("Couldn't build PDF: $e")),
+                          );
+                        }
+                      }
+                    : null,
                 icon: const Icon(Icons.picture_as_pdf_outlined),
                 label: const Text('Share PDF'),
               ),
@@ -146,4 +191,176 @@ class CareSummaryScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _IncludeOptionsCard extends StatelessWidget {
+  const _IncludeOptionsCard({
+    required this.includeCalm,
+    required this.includeBaselines,
+    required this.includeStructuredProfile,
+    required this.includeCrisisResources,
+    required this.onCalmChanged,
+    required this.onBaselinesChanged,
+    required this.onStructuredChanged,
+    required this.onCrisisChanged,
+  });
+
+  final bool includeCalm;
+  final bool includeBaselines;
+  final bool includeStructuredProfile;
+  final bool includeCrisisResources;
+  final ValueChanged<bool> onCalmChanged;
+  final ValueChanged<bool> onBaselinesChanged;
+  final ValueChanged<bool> onStructuredChanged;
+  final ValueChanged<bool> onCrisisChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+              child: Text(
+                'Include in PDF',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            SwitchListTile(
+              value: includeCalm,
+              onChanged: onCalmChanged,
+              title: const Text('Calm quick guide'),
+              subtitle: const Text('Early signs, triggers, and what helps.'),
+            ),
+            SwitchListTile(
+              value: includeBaselines,
+              onChanged: onBaselinesChanged,
+              title: const Text('Baselines'),
+              subtitle: const Text('Communication, sleep, and appetite.'),
+            ),
+            SwitchListTile(
+              value: includeStructuredProfile,
+              onChanged: onStructuredChanged,
+              title: const Text('Structured profile lines'),
+              subtitle: const Text('Active profile entries by section.'),
+            ),
+            SwitchListTile(
+              value: includeCrisisResources,
+              onChanged: onCrisisChanged,
+              title: const Text('Support resources'),
+              subtitle: const Text('Emergency, 988, text line, and care team.'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PreviewCard extends StatelessWidget {
+  const _PreviewCard({
+    required this.entriesAsync,
+    required this.profileAsync,
+    required this.options,
+  });
+
+  final AsyncValue<List<ProfileEntry>> entriesAsync;
+  final AsyncValue<Profile?> profileAsync;
+  final CareSummaryOptions options;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: entriesAsync.when(
+          loading: () => const Text('Loading preview...'),
+          error: (e, _) => Text("Couldn't load preview: $e"),
+          data: (entries) {
+            final active = entries
+                .where((e) => e.status == ProfileEntryStatus.active)
+                .toList();
+            final calmCount = active
+                .where(
+                  (e) =>
+                      e.section == ProfileEntrySection.earlySign ||
+                      e.section == ProfileEntrySection.trigger ||
+                      e.section == ProfileEntrySection.whatHelps,
+                )
+                .length;
+            final baselineCount = profileAsync.maybeWhen(
+              data: (profile) {
+                if (profile == null) return 0;
+                return [
+                  profile.communicationNotes,
+                  profile.sleepBaseline,
+                  profile.appetiteBaseline,
+                ].where((s) => s != null && s.trim().isNotEmpty).length;
+              },
+              orElse: () => 0,
+            );
+            final lines = <String>[
+              if (options.includeCalm)
+                _countLine(
+                  calmCount,
+                  singular: 'Calm-focused profile line',
+                  plural: 'Calm-focused profile lines',
+                ),
+              if (options.includeBaselines)
+                _countLine(
+                  baselineCount,
+                  singular: 'baseline section',
+                  plural: 'baseline sections',
+                ),
+              if (options.includeStructuredProfile)
+                _countLine(
+                  active.length,
+                  singular: 'active structured profile line',
+                  plural: 'active structured profile lines',
+                ),
+              if (options.includeCrisisResources)
+                'Support resources and crisis handoff notes',
+            ];
+            if (lines.isEmpty) {
+              return const Text('Turn on at least one section to export.');
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Preview',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                for (final line in lines)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('• '),
+                        Expanded(child: Text(line)),
+                      ],
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+String _countLine(
+  int count, {
+  required String singular,
+  required String plural,
+}) {
+  return '$count ${count == 1 ? singular : plural}';
 }

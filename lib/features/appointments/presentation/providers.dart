@@ -104,11 +104,9 @@ void invalidateAppointmentsState(WidgetRef ref) {
     ..invalidate(upcomingAppointmentsProvider)
     ..invalidate(pastAppointmentsProvider)
     ..invalidate(archivedAppointmentsProvider)
-    // Invalidating the roster-wide lists re-triggers reminder
-    // reconciliation via `appointmentReminderSyncProvider`'s
-    // listener *and* refreshes the Today screen feed — both are
-    // derived state and must stay in lockstep with whatever the
-    // user just did (new appointment, time change, archive,
+    // Invalidating the roster-wide lists keeps one-shot reminder
+    // reconciliation and the Today screen feed pointed at fresh data after
+    // whatever the user just did (new appointment, time change, archive,
     // restore).
     ..invalidate(allUpcomingAppointmentsProvider)
     ..invalidate(allTodayAppointmentsProvider);

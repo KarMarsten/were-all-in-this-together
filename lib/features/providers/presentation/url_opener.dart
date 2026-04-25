@@ -25,6 +25,9 @@ abstract interface class UrlOpener {
   /// so callers can surface an error.
   Future<bool> openWeb(String url);
 
+  /// Open the platform mail composer for [email].
+  Future<bool> openEmail(String email);
+
   /// Open [address] in the platform's default maps app.
   Future<bool> openMap(String address);
 }
@@ -80,6 +83,13 @@ class UrlLauncherUrlOpener implements UrlOpener {
     final parsed = Uri.tryParse(url);
     if (parsed == null) return Future.value(false);
     return _tryLaunch(parsed);
+  }
+
+  @override
+  Future<bool> openEmail(String email) {
+    final trimmed = email.trim();
+    if (trimmed.isEmpty) return Future.value(false);
+    return _tryLaunch(Uri(scheme: 'mailto', path: trimmed));
   }
 
   @override

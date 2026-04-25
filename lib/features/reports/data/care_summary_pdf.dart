@@ -11,12 +11,23 @@ Future<List<int>> buildCareSummaryPdf({
   required String personName,
   required List<ProfileEntry> activeEntries,
   Profile? profile,
+  CareSummaryOptions options = const CareSummaryOptions(),
   DateTime? generatedAt,
 }) async {
   final generated = (generatedAt ?? DateTime.now()).toUtc();
   final dateFmt = DateFormat.yMMMd();
-  final sections = _buildStructuredSections(activeEntries);
-  final baselineWidgets = _baselineBlock(profile);
+  final calmWidgets = options.includeCalm
+      ? _calmBlock(activeEntries)
+      : <pw.Widget>[];
+  final baselineWidgets = options.includeBaselines
+      ? _baselineBlock(profile)
+      : <pw.Widget>[];
+  final structuredWidgets = options.includeStructuredProfile
+      ? _buildStructuredSections(activeEntries)
+      : <pw.Widget>[];
+  final crisisWidgets = options.includeCrisisResources
+      ? _crisisResourcesBlock()
+      : <pw.Widget>[];
 
   final doc = pw.Document()
     ..addPage(
@@ -42,29 +53,39 @@ Future<List<int>> buildCareSummaryPdf({
             style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
           ),
           pw.SizedBox(height: 20),
+          ...calmWidgets,
+          if (calmWidgets.isNotEmpty) pw.SizedBox(height: 16),
           ...baselineWidgets,
           if (baselineWidgets.isNotEmpty) pw.SizedBox(height: 16),
-          ...sections,
-          pw.SizedBox(height: 20),
-          pw.Text(
-            'If you need more help',
-            style: pw.TextStyle(
-              fontSize: 12,
-              fontWeight: pw.FontWeight.bold,
-            ),
-          ),
-          pw.SizedBox(height: 8),
-          _pdfBullet(
-            '988 — Suicide & Crisis Lifeline (US, call or text).',
-          ),
-          _pdfBullet('Text HOME to 741741 — Crisis Text Line.'),
-          _pdfBullet(
-            'Use the Providers list in the app for your care team numbers.',
-          ),
+          ...structuredWidgets,
+          if (structuredWidgets.isNotEmpty && crisisWidgets.isNotEmpty)
+            pw.SizedBox(height: 20),
+          ...crisisWidgets,
         ],
       ),
     );
   return doc.save();
+}
+
+/// User-selectable sections for the care-summary export.
+class CareSummaryOptions {
+  const CareSummaryOptions({
+    this.includeCalm = true,
+    this.includeBaselines = true,
+    this.includeStructuredProfile = true,
+    this.includeCrisisResources = true,
+  });
+
+  final bool includeCalm;
+  final bool includeBaselines;
+  final bool includeStructuredProfile;
+  final bool includeCrisisResources;
+
+  bool get hasAnySection =>
+      includeCalm ||
+      includeBaselines ||
+      includeStructuredProfile ||
+      includeCrisisResources;
 }
 
 pw.Widget _pdfBullet(String text) {
@@ -121,6 +142,95 @@ List<pw.Widget> _baselineBlock(Profile? profile) {
     ),
     pw.SizedBox(height: 8),
     ...out,
+  ];
+}
+
+List<pw.Widget> _calmBlock(List<ProfileEntry> active) {
+  final sections = [
+    ProfileEntrySection.earlySign,
+    ProfileEntrySection.trigger,
+    ProfileEntrySection.whatHelps,
+  ];
+  final calmEntries = active
+      .where((e) => sections.contains(e.section))
+      .toList()
+    ..sort((a, b) {
+      final bySection = sections
+          .indexOf(a.section)
+          .compareTo(sections.indexOf(b.section));
+      if (bySection != 0) return bySection;
+      return a.label.toLowerCase().compareTo(b.label.toLowerCase());
+    });
+
+  final out = <pw.Widget>[
+    pw.Text(
+      'Calm quick guide',
+      style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+    ),
+    pw.SizedBox(height: 6),
+  ];
+
+  if (calmEntries.isEmpty) {
+    out.add(
+      pw.Text(
+        'No active early signs, triggers, or what-helps lines yet.',
+        style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+      ),
+    );
+    return out;
+  }
+
+  ProfileEntrySection? currentSection;
+  for (final entry in calmEntries) {
+    if (entry.section != currentSection) {
+      currentSection = entry.section;
+      out
+        ..add(pw.SizedBox(height: 6))
+        ..add(
+          pw.Text(
+            labelForProfileEntrySection(entry.section),
+            style: pw.TextStyle(
+              fontSize: 11,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.indigo800,
+            ),
+          ),
+        )
+        ..add(pw.SizedBox(height: 4));
+    }
+    final details = entry.details?.trim();
+    out.add(
+      _pdfBullet(
+        details == null || details.isEmpty
+            ? entry.label
+            : '${entry.label}: $details',
+      ),
+    );
+  }
+  return out;
+}
+
+List<pw.Widget> _crisisResourcesBlock() {
+  return [
+    pw.Text(
+      'If you need more help',
+      style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+    ),
+    pw.SizedBox(height: 8),
+    _pdfBullet(
+      'If there is immediate danger, call local emergency services.',
+    ),
+    _pdfBullet(
+      '988 — Suicide & Crisis Lifeline (US, call or text).',
+    ),
+    _pdfBullet('Text HOME to 741741 — Crisis Text Line (US/Canada).'),
+    _pdfBullet(
+      'Use the Providers list in the app for care-team numbers and portals.',
+    ),
+    _pdfBullet(
+      'For school, camp, or respite handoff: share this summary with a trusted '
+      'adult who can act on it.',
+    ),
   ];
 }
 
