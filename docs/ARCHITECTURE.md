@@ -375,8 +375,8 @@ and holding a consistent vocabulary is a feature, not a polish task.
 - Safety plan (Calm: authored coping + crisis + profile blocks) — iterate on
   copy as needed.
 - **Care summary** PDF — **shipped** (selectable Calm quick guide, baselines,
-  active structured lines, and support resources); deepen with locale-specific
-  hotlines when vetted.
+  active structured lines, Programs, Apps & Sites, and support resources);
+  deepen with locale-specific hotlines when vetted.
 - Global search — **shipped** across People, meds, appointments, Notes,
   profile entries, providers, Programs, and Apps & Sites.
 

@@ -17,7 +17,7 @@ through Riverpod providers or shared `core/` services).
 | `observations/`    | implemented   | Notes timeline (`Observation`), links to profile entries.                                 |
 | `appointments/`    | implemented   | Appointments + local-notification reminders, provider link, Today integration.             |
 | `medications/`     | implemented   | Meds + groups + schedule + Today + dose logs + notifications + adherence PDF.             |
-| `reports/`         | implemented   | Adherence report PDF + selectable **care summary** PDF with Calm/support sections.      |
+| `reports/`         | implemented   | Adherence report PDF + selectable **care summary** PDF with Calm/program/link sections. |
 | `providers/`       | implemented   | Care providers, phone/address/portal, archive-safe references.                          |
 | `programs/`        | implemented   | Schools / camps / after-care — encrypted contacts, actions, edit, archive.              |
 | `apps_sites/`      | implemented   | Categorized URLs + username hints / login notes (no passwords), open, archive.            |

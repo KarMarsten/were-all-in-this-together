@@ -83,7 +83,8 @@ void _showAboutApp(BuildContext context) {
       Text(
         'Phase 1 is local-only: People, medications, appointments, providers, '
         'profile, notes, milestones, richer programs and apps/sites, PDFs, '
-        'cross-domain search, and Calm tools live on this device.',
+        'care-summary handoffs, cross-domain search, and Calm tools live on '
+        'this device.',
         style: textTheme.bodyMedium,
       ),
     ],
