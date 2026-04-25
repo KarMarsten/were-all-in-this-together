@@ -18,6 +18,8 @@ final archivedAppSitesProvider = FutureProvider<List<AppSite>>((ref) async {
   return repo.listArchivedForPerson(personId);
 });
 
+// Riverpod's family provider type is intentionally inferred; spelling it out
+// would expose implementation-heavy generic names without improving call sites.
 // ignore: specify_nonobvious_property_types
 final allAppSitesForPersonProvider =
     FutureProvider.family<List<AppSite>, String>((ref, personId) async {
