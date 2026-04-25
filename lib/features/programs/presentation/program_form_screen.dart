@@ -6,6 +6,8 @@ import 'package:were_all_in_this_together/features/people/presentation/active_pe
 import 'package:were_all_in_this_together/features/programs/data/program_repository.dart';
 import 'package:were_all_in_this_together/features/programs/domain/program.dart';
 import 'package:were_all_in_this_together/features/programs/presentation/providers.dart';
+import 'package:were_all_in_this_together/features/providers/domain/care_provider.dart';
+import 'package:were_all_in_this_together/features/providers/presentation/providers.dart';
 
 class ProgramFormScreen extends ConsumerStatefulWidget {
   const ProgramFormScreen({this.initialProgram, super.key});
@@ -30,6 +32,7 @@ class _ProgramFormScreenState extends ConsumerState<ProgramFormScreen> {
   late final TextEditingController _hours;
   late final TextEditingController _notes;
   late ProgramKind _kind;
+  String? _providerId;
   bool _saving = false;
 
   @override
@@ -46,6 +49,7 @@ class _ProgramFormScreenState extends ConsumerState<ProgramFormScreen> {
     _hours = TextEditingController(text: s?.hours ?? '');
     _notes = TextEditingController(text: s?.notes ?? '');
     _kind = s?.kind ?? ProgramKind.school;
+    _providerId = s?.providerId;
   }
 
   @override
@@ -82,6 +86,7 @@ class _ProgramFormScreenState extends ConsumerState<ProgramFormScreen> {
             websiteUrl: _nullIfBlank(_websiteUrl.text),
             hours: _nullIfBlank(_hours.text),
             notes: _nullIfBlank(_notes.text),
+            providerId: _providerId,
           ),
         );
       } else {
@@ -104,6 +109,7 @@ class _ProgramFormScreenState extends ConsumerState<ProgramFormScreen> {
           websiteUrl: _nullIfBlank(_websiteUrl.text),
           hours: _nullIfBlank(_hours.text),
           notes: _nullIfBlank(_notes.text),
+          providerId: _providerId,
         );
       }
       invalidateProgramsState(ref);
@@ -145,6 +151,9 @@ class _ProgramFormScreenState extends ConsumerState<ProgramFormScreen> {
   @override
   Widget build(BuildContext context) {
     final title = widget.isEditing ? 'Edit program' : 'Add program';
+    final personIdAsync = widget.isEditing
+        ? AsyncValue.data(widget.initialProgram!.personId)
+        : ref.watch(activePersonIdProvider);
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
@@ -261,6 +270,29 @@ class _ProgramFormScreenState extends ConsumerState<ProgramFormScreen> {
                   validator: _urlError,
                 ),
                 const SizedBox(height: 16),
+                personIdAsync.when(
+                  loading: () => const SizedBox.shrink(),
+                  error: (e, _) => Text("Couldn't load providers: $e"),
+                  data: (personId) {
+                    if (personId == null) return const SizedBox.shrink();
+                    final providersAsync = ref.watch(
+                      careProviderPickerProvider(personId),
+                    );
+                    return providersAsync.when(
+                      loading: () => const SizedBox.shrink(),
+                      error: (e, _) => Text("Couldn't load providers: $e"),
+                      data: (providers) => _ProviderLinkField(
+                        value: _providerId,
+                        providers: providers.all,
+                        onChanged: (value) {
+                          setState(() => _providerId = value);
+                        },
+                      ),
+                    );
+                  },
+                ),
+                if (personIdAsync.hasValue && personIdAsync.value != null)
+                  const SizedBox(height: 16),
                 TextFormField(
                   controller: _hours,
                   textCapitalization: TextCapitalization.sentences,
@@ -362,5 +394,54 @@ class _ArchiveOrRestore extends ConsumerWidget {
         }
       },
     );
+  }
+}
+
+class _ProviderLinkField extends StatelessWidget {
+  const _ProviderLinkField({
+    required this.value,
+    required this.providers,
+    required this.onChanged,
+  });
+
+  final String? value;
+  final List<CareProvider> providers;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasCurrent =
+        value != null && !providers.any((provider) => provider.id == value);
+    return DropdownButtonFormField<String>(
+      initialValue: value ?? '',
+      isExpanded: true,
+      decoration: const InputDecoration(
+        labelText: 'Linked provider (optional)',
+        border: OutlineInputBorder(),
+      ),
+      items: [
+        const DropdownMenuItem(value: '', child: Text('None')),
+        if (hasCurrent)
+          DropdownMenuItem(
+            value: value,
+            child: const Text('Saved provider (not available)'),
+          ),
+        for (final provider in providers)
+          DropdownMenuItem(
+            value: provider.id,
+            child: Text(_providerLabel(provider)),
+          ),
+      ],
+      onChanged: (next) {
+        if (next == null) return;
+        onChanged(next.isEmpty ? null : next);
+      },
+    );
+  }
+
+  static String _providerLabel(CareProvider provider) {
+    final specialty = provider.specialty?.trim();
+    if (specialty == null || specialty.isEmpty) return provider.name;
+    return '${provider.name} · $specialty';
   }
 }

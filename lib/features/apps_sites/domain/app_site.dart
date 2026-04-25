@@ -41,6 +41,8 @@ abstract class AppSite with _$AppSite {
     String? usernameHint,
     String? loginNote,
     String? notes,
+    String? providerId,
+    String? programId,
     DateTime? deletedAt,
     @Default(1) int rowVersion,
     String? lastWriterDeviceId,

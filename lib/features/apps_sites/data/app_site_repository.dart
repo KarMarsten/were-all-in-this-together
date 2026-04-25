@@ -60,6 +60,8 @@ class AppSiteRepository {
     String? usernameHint,
     String? loginNote,
     String? notes,
+    String? providerId,
+    String? programId,
   }) async {
     if (title.trim().isEmpty) {
       throw ArgumentError.value(title, 'title', 'must not be empty');
@@ -82,6 +84,8 @@ class AppSiteRepository {
       usernameHint: _nullIfBlank(usernameHint),
       loginNote: _nullIfBlank(loginNote),
       notes: _nullIfBlank(notes),
+      providerId: _nullIfBlank(providerId),
+      programId: _nullIfBlank(programId),
     );
     final encrypted = await _sealPayload(
       appSiteId: id,
@@ -109,6 +113,8 @@ class AppSiteRepository {
       usernameHint: _nullIfBlank(usernameHint),
       loginNote: _nullIfBlank(loginNote),
       notes: _nullIfBlank(notes),
+      providerId: _nullIfBlank(providerId),
+      programId: _nullIfBlank(programId),
     );
   }
 
@@ -178,6 +184,8 @@ class AppSiteRepository {
       usernameHint: _nullIfBlank(updated.usernameHint),
       loginNote: _nullIfBlank(updated.loginNote),
       notes: _nullIfBlank(updated.notes),
+      providerId: _nullIfBlank(updated.providerId),
+      programId: _nullIfBlank(updated.programId),
     );
     final encrypted = await _sealPayload(
       appSiteId: updated.id,
@@ -199,6 +207,8 @@ class AppSiteRepository {
       usernameHint: _nullIfBlank(updated.usernameHint),
       loginNote: _nullIfBlank(updated.loginNote),
       notes: _nullIfBlank(updated.notes),
+      providerId: _nullIfBlank(updated.providerId),
+      programId: _nullIfBlank(updated.programId),
       updatedAt: now,
       rowVersion: updated.rowVersion + 1,
     );
@@ -316,6 +326,8 @@ class AppSiteRepository {
       usernameHint: payload.usernameHint,
       loginNote: payload.loginNote,
       notes: payload.notes,
+      providerId: payload.providerId,
+      programId: payload.programId,
       deletedAt: row.deletedAt == null
           ? null
           : DateTime.fromMillisecondsSinceEpoch(row.deletedAt!, isUtc: true),

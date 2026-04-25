@@ -8,6 +8,8 @@ class EncryptedAppSitePayload {
     this.usernameHint,
     this.loginNote,
     this.notes,
+    this.providerId,
+    this.programId,
   });
 
   factory EncryptedAppSitePayload.fromJson(Map<String, dynamic> json) {
@@ -43,10 +45,12 @@ class EncryptedAppSitePayload {
       usernameHint: json['usernameHint'] as String?,
       loginNote: json['loginNote'] as String?,
       notes: json['notes'] as String?,
+      providerId: json['providerId'] as String?,
+      programId: json['programId'] as String?,
     );
   }
 
-  static const int currentSchemaVersion = 2;
+  static const int currentSchemaVersion = 3;
 
   final int schemaVersion;
   final String title;
@@ -55,6 +59,8 @@ class EncryptedAppSitePayload {
   final String? usernameHint;
   final String? loginNote;
   final String? notes;
+  final String? providerId;
+  final String? programId;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
         'v': schemaVersion,
@@ -64,5 +70,7 @@ class EncryptedAppSitePayload {
         if (usernameHint != null) 'usernameHint': usernameHint,
         if (loginNote != null) 'loginNote': loginNote,
         if (notes != null) 'notes': notes,
+        if (providerId != null) 'providerId': providerId,
+        if (programId != null) 'programId': programId,
       };
 }

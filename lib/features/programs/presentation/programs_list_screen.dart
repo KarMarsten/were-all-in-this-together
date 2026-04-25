@@ -6,6 +6,7 @@ import 'package:were_all_in_this_together/core/router/app_router.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 import 'package:were_all_in_this_together/features/programs/domain/program.dart';
 import 'package:were_all_in_this_together/features/programs/presentation/providers.dart';
+import 'package:were_all_in_this_together/features/providers/presentation/providers.dart';
 import 'package:were_all_in_this_together/features/providers/presentation/url_opener.dart';
 
 /// Schools, camps, after-care — encrypted per active Person.
@@ -130,10 +131,16 @@ class _ProgramTile extends ConsumerWidget {
       if (_notBlank(program.websiteUrl)) _ProgramAction.web,
       if (_notBlank(program.address)) _ProgramAction.map,
     ];
+    final providerName = ref
+        .watch(careProviderPickerProvider(program.personId))
+        .maybeWhen(
+          data: (providers) => providers.byId(program.providerId ?? '')?.name,
+          orElse: () => null,
+        );
 
     return ListTile(
       title: Text(program.name),
-      subtitle: Text(_subtitle(program)),
+      subtitle: Text(_subtitle(program, providerName: providerName)),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -164,13 +171,14 @@ class _ProgramTile extends ConsumerWidget {
   static bool _notBlank(String? value) =>
       value != null && value.trim().isNotEmpty;
 
-  static String _subtitle(Program p) {
+  static String _subtitle(Program p, {String? providerName}) {
     final contact = [p.contactName, p.contactRole]
         .where(_notBlank)
         .map((s) => s!.trim())
         .join(', ');
     final parts = <String>[
       if (contact.isNotEmpty) contact,
+      if (_notBlank(providerName)) 'Provider: ${providerName!.trim()}',
       if (_notBlank(p.hours)) p.hours!.trim(),
       if (_notBlank(p.phone)) p.phone!.trim(),
       if (_notBlank(p.email)) p.email!.trim(),

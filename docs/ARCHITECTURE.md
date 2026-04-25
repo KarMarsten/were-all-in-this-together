@@ -367,9 +367,11 @@ and holding a consistent vocabulary is a feature, not a polish task.
 - Medications + history + **Medication report** PDF.
 - Milestones & dates.
 - Apps & Sites — **shipped** (encrypted categorized URL, username hint, login
-  note, and notes per Person; explicitly no passwords).
+  note, notes, and optional Provider/Program links per Person; explicitly no
+  passwords).
 - Programs — **shipped** (encrypted school / camp / after-care rows with
-  contact name/role, phone, email, address, website, hours, notes, and actions).
+  contact name/role, phone, email, address, website, hours, notes, optional
+  Provider link, and actions).
 - Providers — **shipped** (encrypted care-team rows with specialty/role,
   contact person, phone, email, fax, address, portal label/URL, after-hours
   details, notes, and actions).
@@ -382,7 +384,7 @@ and holding a consistent vocabulary is a feature, not a polish task.
   resources); deepen with locale-specific hotlines when vetted.
 - Global search — **shipped** across People, meds, appointments, Notes,
   profile entries, providers, Programs, and Apps & Sites, with match ranking
-  and highlighted result text.
+  highlighted result text, and linked Provider/Program context.
 
 ### Phase 2 — Multi-device + multi-user
 

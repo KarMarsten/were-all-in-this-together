@@ -6,6 +6,8 @@ import 'package:were_all_in_this_together/core/router/app_router.dart';
 import 'package:were_all_in_this_together/features/apps_sites/domain/app_site.dart';
 import 'package:were_all_in_this_together/features/apps_sites/presentation/providers.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
+import 'package:were_all_in_this_together/features/programs/presentation/providers.dart';
+import 'package:were_all_in_this_together/features/providers/presentation/providers.dart';
 import 'package:were_all_in_this_together/features/providers/presentation/url_opener.dart';
 
 /// Saved portal links and notes — never passwords (use a password manager).
@@ -121,18 +123,35 @@ class AppSitesListScreen extends ConsumerWidget {
   }
 }
 
-class _AppSiteTile extends StatelessWidget {
+class _AppSiteTile extends ConsumerWidget {
   const _AppSiteTile({required this.site, required this.opener});
 
   final AppSite site;
   final UrlOpener opener;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final providerName = ref
+        .watch(careProviderPickerProvider(site.personId))
+        .maybeWhen(
+          data: (providers) => providers.byId(site.providerId ?? '')?.name,
+          orElse: () => null,
+        );
+    final activePrograms = ref.watch(activeProgramsProvider).value;
+    final archivedPrograms = ref.watch(archivedProgramsProvider).value;
+    final programsById = {
+      for (final program in [...?activePrograms, ...?archivedPrograms])
+        program.id: program.name,
+    };
+    final programName = programsById[site.programId];
     return ListTile(
       title: Text(site.title),
       subtitle: Text(
-        _subtitle(site),
+        _subtitle(
+          site,
+          providerName: providerName,
+          programName: programName,
+        ),
         maxLines: 3,
         overflow: TextOverflow.ellipsis,
       ),
@@ -158,9 +177,15 @@ class _AppSiteTile extends StatelessWidget {
     );
   }
 
-  static String _subtitle(AppSite site) {
+  static String _subtitle(
+    AppSite site, {
+    String? providerName,
+    String? programName,
+  }) {
     final parts = <String>[
       site.url,
+      if (_notBlank(providerName)) 'Provider: ${providerName!.trim()}',
+      if (_notBlank(programName)) 'Program: ${programName!.trim()}',
       if (_notBlank(site.usernameHint))
         'Username hint: ${site.usernameHint!.trim()}',
       if (_notBlank(site.loginNote)) site.loginNote!.trim(),

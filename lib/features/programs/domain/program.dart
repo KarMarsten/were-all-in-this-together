@@ -40,6 +40,7 @@ abstract class Program with _$Program {
     String? websiteUrl,
     String? hours,
     String? notes,
+    String? providerId,
     DateTime? deletedAt,
     @Default(1) int rowVersion,
     String? lastWriterDeviceId,

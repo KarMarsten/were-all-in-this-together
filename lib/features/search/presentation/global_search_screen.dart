@@ -153,12 +153,22 @@ final _globalSearchResultsProvider =
 
     final providers = await providerRepo.listActiveForPerson(person.id);
     results.addAll(_providerResults(q, owner, providers));
+    final providerNamesById = {
+      for (final provider in providers) provider.id: provider.name,
+    };
 
     final programs = await programRepo.listActiveForPerson(person.id);
-    results.addAll(_programResults(q, owner, programs));
+    results.addAll(
+      _programResults(q, owner, programs, providerNamesById),
+    );
+    final programNamesById = {
+      for (final program in programs) program.id: program.name,
+    };
 
     final appSites = await appSiteRepo.listActiveForPerson(person.id);
-    results.addAll(_appSiteResults(q, owner, appSites));
+    results.addAll(
+      _appSiteResults(q, owner, appSites, providerNamesById, programNamesById),
+    );
   }
 
   results.sort((a, b) {
@@ -336,10 +346,13 @@ Iterable<_SearchResult> _programResults(
   String q,
   String owner,
   List<Program> programs,
+  Map<String, String> providerNamesById,
 ) sync* {
   for (final program in programs) {
+    final providerName = providerNamesById[program.providerId];
     if (!_matches(q, [
       program.name,
+      providerName,
       program.phone,
       program.contactName,
       program.contactRole,
@@ -358,6 +371,7 @@ Iterable<_SearchResult> _programResults(
         'Program',
         owner,
         labelForProgramKind(program.kind),
+        if (providerName != null) 'Provider: $providerName',
         program.contactName,
       ]),
       route: Routes.programEdit(program.id),
@@ -366,6 +380,7 @@ Iterable<_SearchResult> _programResults(
             q,
             primary: [program.name],
             secondary: [
+              providerName,
               program.phone,
               program.contactName,
               program.contactRole,
@@ -384,12 +399,18 @@ Iterable<_SearchResult> _appSiteResults(
   String q,
   String owner,
   List<AppSite> sites,
+  Map<String, String> providerNamesById,
+  Map<String, String> programNamesById,
 ) sync* {
   for (final site in sites) {
+    final providerName = providerNamesById[site.providerId];
+    final programName = programNamesById[site.programId];
     if (!_matches(q, [
       site.title,
       site.url,
       labelForAppSiteCategory(site.category),
+      providerName,
+      programName,
       site.usernameHint,
       site.loginNote,
       site.notes,
@@ -403,6 +424,8 @@ Iterable<_SearchResult> _appSiteResults(
         'App/Site',
         owner,
         labelForAppSiteCategory(site.category),
+        if (providerName != null) 'Provider: $providerName',
+        if (programName != null) 'Program: $programName',
         site.url,
       ]),
       route: Routes.appSiteEdit(site.id),
@@ -413,6 +436,8 @@ Iterable<_SearchResult> _appSiteResults(
             secondary: [
               site.url,
               labelForAppSiteCategory(site.category),
+              providerName,
+              programName,
               site.usernameHint,
               site.loginNote,
               site.notes,

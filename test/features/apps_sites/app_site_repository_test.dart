@@ -44,10 +44,14 @@ void main() {
       title: 'District portal',
       url: 'example.org/parents',
       notes: 'Use SSO',
+      providerId: 'provider-1',
+      programId: 'program-1',
     );
     final list = await sites.listActiveForPerson(personId);
     expect(list, hasLength(1));
     expect(list.single.title, 'District portal');
     expect(list.single.url, 'https://example.org/parents');
+    expect(list.single.providerId, 'provider-1');
+    expect(list.single.programId, 'program-1');
   });
 }

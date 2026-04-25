@@ -46,6 +46,7 @@ void main() {
       name: 'Roosevelt Elementary',
       phone: '555-0100',
       notes: 'Main office',
+      providerId: 'provider-1',
     );
     final list = await programs.listActiveForPerson(personId);
     expect(list, hasLength(1));
@@ -53,5 +54,6 @@ void main() {
     expect(list.single.kind, ProgramKind.school);
     final again = await programs.findById(created.id);
     expect(again?.phone, '555-0100');
+    expect(again?.providerId, 'provider-1');
   });
 }

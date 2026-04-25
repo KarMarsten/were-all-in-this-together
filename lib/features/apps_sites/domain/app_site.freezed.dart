@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AppSite {
 
- String get id; String get personId; String get title; String get url; DateTime get createdAt; DateTime get updatedAt; AppSiteCategory get category; String? get usernameHint; String? get loginNote; String? get notes; DateTime? get deletedAt; int get rowVersion; String? get lastWriterDeviceId; int get keyVersion;
+ String get id; String get personId; String get title; String get url; DateTime get createdAt; DateTime get updatedAt; AppSiteCategory get category; String? get usernameHint; String? get loginNote; String? get notes; String? get providerId; String? get programId; DateTime? get deletedAt; int get rowVersion; String? get lastWriterDeviceId; int get keyVersion;
 /// Create a copy of AppSite
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $AppSiteCopyWith<AppSite> get copyWith => _$AppSiteCopyWithImpl<AppSite>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppSite&&(identical(other.id, id) || other.id == id)&&(identical(other.personId, personId) || other.personId == personId)&&(identical(other.title, title) || other.title == title)&&(identical(other.url, url) || other.url == url)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.category, category) || other.category == category)&&(identical(other.usernameHint, usernameHint) || other.usernameHint == usernameHint)&&(identical(other.loginNote, loginNote) || other.loginNote == loginNote)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt)&&(identical(other.rowVersion, rowVersion) || other.rowVersion == rowVersion)&&(identical(other.lastWriterDeviceId, lastWriterDeviceId) || other.lastWriterDeviceId == lastWriterDeviceId)&&(identical(other.keyVersion, keyVersion) || other.keyVersion == keyVersion));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppSite&&(identical(other.id, id) || other.id == id)&&(identical(other.personId, personId) || other.personId == personId)&&(identical(other.title, title) || other.title == title)&&(identical(other.url, url) || other.url == url)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.category, category) || other.category == category)&&(identical(other.usernameHint, usernameHint) || other.usernameHint == usernameHint)&&(identical(other.loginNote, loginNote) || other.loginNote == loginNote)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.providerId, providerId) || other.providerId == providerId)&&(identical(other.programId, programId) || other.programId == programId)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt)&&(identical(other.rowVersion, rowVersion) || other.rowVersion == rowVersion)&&(identical(other.lastWriterDeviceId, lastWriterDeviceId) || other.lastWriterDeviceId == lastWriterDeviceId)&&(identical(other.keyVersion, keyVersion) || other.keyVersion == keyVersion));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,personId,title,url,createdAt,updatedAt,category,usernameHint,loginNote,notes,deletedAt,rowVersion,lastWriterDeviceId,keyVersion);
+int get hashCode => Object.hash(runtimeType,id,personId,title,url,createdAt,updatedAt,category,usernameHint,loginNote,notes,providerId,programId,deletedAt,rowVersion,lastWriterDeviceId,keyVersion);
 
 @override
 String toString() {
-  return 'AppSite(id: $id, personId: $personId, title: $title, url: $url, createdAt: $createdAt, updatedAt: $updatedAt, category: $category, usernameHint: $usernameHint, loginNote: $loginNote, notes: $notes, deletedAt: $deletedAt, rowVersion: $rowVersion, lastWriterDeviceId: $lastWriterDeviceId, keyVersion: $keyVersion)';
+  return 'AppSite(id: $id, personId: $personId, title: $title, url: $url, createdAt: $createdAt, updatedAt: $updatedAt, category: $category, usernameHint: $usernameHint, loginNote: $loginNote, notes: $notes, providerId: $providerId, programId: $programId, deletedAt: $deletedAt, rowVersion: $rowVersion, lastWriterDeviceId: $lastWriterDeviceId, keyVersion: $keyVersion)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $AppSiteCopyWith<$Res>  {
   factory $AppSiteCopyWith(AppSite value, $Res Function(AppSite) _then) = _$AppSiteCopyWithImpl;
 @useResult
 $Res call({
- String id, String personId, String title, String url, DateTime createdAt, DateTime updatedAt, AppSiteCategory category, String? usernameHint, String? loginNote, String? notes, DateTime? deletedAt, int rowVersion, String? lastWriterDeviceId, int keyVersion
+ String id, String personId, String title, String url, DateTime createdAt, DateTime updatedAt, AppSiteCategory category, String? usernameHint, String? loginNote, String? notes, String? providerId, String? programId, DateTime? deletedAt, int rowVersion, String? lastWriterDeviceId, int keyVersion
 });
 
 
@@ -62,7 +62,7 @@ class _$AppSiteCopyWithImpl<$Res>
 
 /// Create a copy of AppSite
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? personId = null,Object? title = null,Object? url = null,Object? createdAt = null,Object? updatedAt = null,Object? category = null,Object? usernameHint = freezed,Object? loginNote = freezed,Object? notes = freezed,Object? deletedAt = freezed,Object? rowVersion = null,Object? lastWriterDeviceId = freezed,Object? keyVersion = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? personId = null,Object? title = null,Object? url = null,Object? createdAt = null,Object? updatedAt = null,Object? category = null,Object? usernameHint = freezed,Object? loginNote = freezed,Object? notes = freezed,Object? providerId = freezed,Object? programId = freezed,Object? deletedAt = freezed,Object? rowVersion = null,Object? lastWriterDeviceId = freezed,Object? keyVersion = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,personId: null == personId ? _self.personId : personId // ignore: cast_nullable_to_non_nullable
@@ -74,6 +74,8 @@ as DateTime,category: null == category ? _self.category : category // ignore: ca
 as AppSiteCategory,usernameHint: freezed == usernameHint ? _self.usernameHint : usernameHint // ignore: cast_nullable_to_non_nullable
 as String?,loginNote: freezed == loginNote ? _self.loginNote : loginNote // ignore: cast_nullable_to_non_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
+as String?,providerId: freezed == providerId ? _self.providerId : providerId // ignore: cast_nullable_to_non_nullable
+as String?,programId: freezed == programId ? _self.programId : programId // ignore: cast_nullable_to_non_nullable
 as String?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,rowVersion: null == rowVersion ? _self.rowVersion : rowVersion // ignore: cast_nullable_to_non_nullable
 as int,lastWriterDeviceId: freezed == lastWriterDeviceId ? _self.lastWriterDeviceId : lastWriterDeviceId // ignore: cast_nullable_to_non_nullable
@@ -163,10 +165,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String personId,  String title,  String url,  DateTime createdAt,  DateTime updatedAt,  AppSiteCategory category,  String? usernameHint,  String? loginNote,  String? notes,  DateTime? deletedAt,  int rowVersion,  String? lastWriterDeviceId,  int keyVersion)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String personId,  String title,  String url,  DateTime createdAt,  DateTime updatedAt,  AppSiteCategory category,  String? usernameHint,  String? loginNote,  String? notes,  String? providerId,  String? programId,  DateTime? deletedAt,  int rowVersion,  String? lastWriterDeviceId,  int keyVersion)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AppSite() when $default != null:
-return $default(_that.id,_that.personId,_that.title,_that.url,_that.createdAt,_that.updatedAt,_that.category,_that.usernameHint,_that.loginNote,_that.notes,_that.deletedAt,_that.rowVersion,_that.lastWriterDeviceId,_that.keyVersion);case _:
+return $default(_that.id,_that.personId,_that.title,_that.url,_that.createdAt,_that.updatedAt,_that.category,_that.usernameHint,_that.loginNote,_that.notes,_that.providerId,_that.programId,_that.deletedAt,_that.rowVersion,_that.lastWriterDeviceId,_that.keyVersion);case _:
   return orElse();
 
 }
@@ -184,10 +186,10 @@ return $default(_that.id,_that.personId,_that.title,_that.url,_that.createdAt,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String personId,  String title,  String url,  DateTime createdAt,  DateTime updatedAt,  AppSiteCategory category,  String? usernameHint,  String? loginNote,  String? notes,  DateTime? deletedAt,  int rowVersion,  String? lastWriterDeviceId,  int keyVersion)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String personId,  String title,  String url,  DateTime createdAt,  DateTime updatedAt,  AppSiteCategory category,  String? usernameHint,  String? loginNote,  String? notes,  String? providerId,  String? programId,  DateTime? deletedAt,  int rowVersion,  String? lastWriterDeviceId,  int keyVersion)  $default,) {final _that = this;
 switch (_that) {
 case _AppSite():
-return $default(_that.id,_that.personId,_that.title,_that.url,_that.createdAt,_that.updatedAt,_that.category,_that.usernameHint,_that.loginNote,_that.notes,_that.deletedAt,_that.rowVersion,_that.lastWriterDeviceId,_that.keyVersion);case _:
+return $default(_that.id,_that.personId,_that.title,_that.url,_that.createdAt,_that.updatedAt,_that.category,_that.usernameHint,_that.loginNote,_that.notes,_that.providerId,_that.programId,_that.deletedAt,_that.rowVersion,_that.lastWriterDeviceId,_that.keyVersion);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -204,10 +206,10 @@ return $default(_that.id,_that.personId,_that.title,_that.url,_that.createdAt,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String personId,  String title,  String url,  DateTime createdAt,  DateTime updatedAt,  AppSiteCategory category,  String? usernameHint,  String? loginNote,  String? notes,  DateTime? deletedAt,  int rowVersion,  String? lastWriterDeviceId,  int keyVersion)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String personId,  String title,  String url,  DateTime createdAt,  DateTime updatedAt,  AppSiteCategory category,  String? usernameHint,  String? loginNote,  String? notes,  String? providerId,  String? programId,  DateTime? deletedAt,  int rowVersion,  String? lastWriterDeviceId,  int keyVersion)?  $default,) {final _that = this;
 switch (_that) {
 case _AppSite() when $default != null:
-return $default(_that.id,_that.personId,_that.title,_that.url,_that.createdAt,_that.updatedAt,_that.category,_that.usernameHint,_that.loginNote,_that.notes,_that.deletedAt,_that.rowVersion,_that.lastWriterDeviceId,_that.keyVersion);case _:
+return $default(_that.id,_that.personId,_that.title,_that.url,_that.createdAt,_that.updatedAt,_that.category,_that.usernameHint,_that.loginNote,_that.notes,_that.providerId,_that.programId,_that.deletedAt,_that.rowVersion,_that.lastWriterDeviceId,_that.keyVersion);case _:
   return null;
 
 }
@@ -219,7 +221,7 @@ return $default(_that.id,_that.personId,_that.title,_that.url,_that.createdAt,_t
 
 
 class _AppSite implements AppSite {
-  const _AppSite({required this.id, required this.personId, required this.title, required this.url, required this.createdAt, required this.updatedAt, this.category = AppSiteCategory.portal, this.usernameHint, this.loginNote, this.notes, this.deletedAt, this.rowVersion = 1, this.lastWriterDeviceId, this.keyVersion = 1});
+  const _AppSite({required this.id, required this.personId, required this.title, required this.url, required this.createdAt, required this.updatedAt, this.category = AppSiteCategory.portal, this.usernameHint, this.loginNote, this.notes, this.providerId, this.programId, this.deletedAt, this.rowVersion = 1, this.lastWriterDeviceId, this.keyVersion = 1});
   
 
 @override final  String id;
@@ -232,6 +234,8 @@ class _AppSite implements AppSite {
 @override final  String? usernameHint;
 @override final  String? loginNote;
 @override final  String? notes;
+@override final  String? providerId;
+@override final  String? programId;
 @override final  DateTime? deletedAt;
 @override@JsonKey() final  int rowVersion;
 @override final  String? lastWriterDeviceId;
@@ -247,16 +251,16 @@ _$AppSiteCopyWith<_AppSite> get copyWith => __$AppSiteCopyWithImpl<_AppSite>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppSite&&(identical(other.id, id) || other.id == id)&&(identical(other.personId, personId) || other.personId == personId)&&(identical(other.title, title) || other.title == title)&&(identical(other.url, url) || other.url == url)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.category, category) || other.category == category)&&(identical(other.usernameHint, usernameHint) || other.usernameHint == usernameHint)&&(identical(other.loginNote, loginNote) || other.loginNote == loginNote)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt)&&(identical(other.rowVersion, rowVersion) || other.rowVersion == rowVersion)&&(identical(other.lastWriterDeviceId, lastWriterDeviceId) || other.lastWriterDeviceId == lastWriterDeviceId)&&(identical(other.keyVersion, keyVersion) || other.keyVersion == keyVersion));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppSite&&(identical(other.id, id) || other.id == id)&&(identical(other.personId, personId) || other.personId == personId)&&(identical(other.title, title) || other.title == title)&&(identical(other.url, url) || other.url == url)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.category, category) || other.category == category)&&(identical(other.usernameHint, usernameHint) || other.usernameHint == usernameHint)&&(identical(other.loginNote, loginNote) || other.loginNote == loginNote)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.providerId, providerId) || other.providerId == providerId)&&(identical(other.programId, programId) || other.programId == programId)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt)&&(identical(other.rowVersion, rowVersion) || other.rowVersion == rowVersion)&&(identical(other.lastWriterDeviceId, lastWriterDeviceId) || other.lastWriterDeviceId == lastWriterDeviceId)&&(identical(other.keyVersion, keyVersion) || other.keyVersion == keyVersion));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,personId,title,url,createdAt,updatedAt,category,usernameHint,loginNote,notes,deletedAt,rowVersion,lastWriterDeviceId,keyVersion);
+int get hashCode => Object.hash(runtimeType,id,personId,title,url,createdAt,updatedAt,category,usernameHint,loginNote,notes,providerId,programId,deletedAt,rowVersion,lastWriterDeviceId,keyVersion);
 
 @override
 String toString() {
-  return 'AppSite(id: $id, personId: $personId, title: $title, url: $url, createdAt: $createdAt, updatedAt: $updatedAt, category: $category, usernameHint: $usernameHint, loginNote: $loginNote, notes: $notes, deletedAt: $deletedAt, rowVersion: $rowVersion, lastWriterDeviceId: $lastWriterDeviceId, keyVersion: $keyVersion)';
+  return 'AppSite(id: $id, personId: $personId, title: $title, url: $url, createdAt: $createdAt, updatedAt: $updatedAt, category: $category, usernameHint: $usernameHint, loginNote: $loginNote, notes: $notes, providerId: $providerId, programId: $programId, deletedAt: $deletedAt, rowVersion: $rowVersion, lastWriterDeviceId: $lastWriterDeviceId, keyVersion: $keyVersion)';
 }
 
 
@@ -267,7 +271,7 @@ abstract mixin class _$AppSiteCopyWith<$Res> implements $AppSiteCopyWith<$Res> {
   factory _$AppSiteCopyWith(_AppSite value, $Res Function(_AppSite) _then) = __$AppSiteCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String personId, String title, String url, DateTime createdAt, DateTime updatedAt, AppSiteCategory category, String? usernameHint, String? loginNote, String? notes, DateTime? deletedAt, int rowVersion, String? lastWriterDeviceId, int keyVersion
+ String id, String personId, String title, String url, DateTime createdAt, DateTime updatedAt, AppSiteCategory category, String? usernameHint, String? loginNote, String? notes, String? providerId, String? programId, DateTime? deletedAt, int rowVersion, String? lastWriterDeviceId, int keyVersion
 });
 
 
@@ -284,7 +288,7 @@ class __$AppSiteCopyWithImpl<$Res>
 
 /// Create a copy of AppSite
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? personId = null,Object? title = null,Object? url = null,Object? createdAt = null,Object? updatedAt = null,Object? category = null,Object? usernameHint = freezed,Object? loginNote = freezed,Object? notes = freezed,Object? deletedAt = freezed,Object? rowVersion = null,Object? lastWriterDeviceId = freezed,Object? keyVersion = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? personId = null,Object? title = null,Object? url = null,Object? createdAt = null,Object? updatedAt = null,Object? category = null,Object? usernameHint = freezed,Object? loginNote = freezed,Object? notes = freezed,Object? providerId = freezed,Object? programId = freezed,Object? deletedAt = freezed,Object? rowVersion = null,Object? lastWriterDeviceId = freezed,Object? keyVersion = null,}) {
   return _then(_AppSite(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,personId: null == personId ? _self.personId : personId // ignore: cast_nullable_to_non_nullable
@@ -296,6 +300,8 @@ as DateTime,category: null == category ? _self.category : category // ignore: ca
 as AppSiteCategory,usernameHint: freezed == usernameHint ? _self.usernameHint : usernameHint // ignore: cast_nullable_to_non_nullable
 as String?,loginNote: freezed == loginNote ? _self.loginNote : loginNote // ignore: cast_nullable_to_non_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
+as String?,providerId: freezed == providerId ? _self.providerId : providerId // ignore: cast_nullable_to_non_nullable
+as String?,programId: freezed == programId ? _self.programId : programId // ignore: cast_nullable_to_non_nullable
 as String?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,rowVersion: null == rowVersion ? _self.rowVersion : rowVersion // ignore: cast_nullable_to_non_nullable
 as int,lastWriterDeviceId: freezed == lastWriterDeviceId ? _self.lastWriterDeviceId : lastWriterDeviceId // ignore: cast_nullable_to_non_nullable

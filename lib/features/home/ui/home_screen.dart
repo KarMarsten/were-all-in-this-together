@@ -82,9 +82,9 @@ void _showAboutApp(BuildContext context) {
       const SizedBox(height: 12),
       Text(
         'Phase 1 is local-only: People, medications, appointments, providers, '
-        'profile, notes, milestones, richer providers/programs/apps/sites, '
-        'PDF care-summary handoffs, ranked search, and Calm tools live on this '
-        'device.',
+        'profile, notes, milestones, linked providers/programs/apps/sites, '
+        'PDF care-summary handoffs, ranked search, and Calm tools live on '
+        'this device.',
         style: textTheme.bodyMedium,
       ),
     ],
