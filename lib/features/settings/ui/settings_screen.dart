@@ -46,6 +46,15 @@ class SettingsScreen extends ConsumerWidget {
             onTap: () => context.push(Routes.notificationSettings),
           ),
           ListTile(
+            leading: const Icon(Icons.spa_outlined),
+            title: const Text('Calm resources'),
+            subtitle: const Text(
+              'Mindfulness and music links shown on the Calm screen',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push(Routes.calmResources),
+          ),
+          ListTile(
             leading: const Icon(Icons.picture_as_pdf_outlined),
             title: const Text('Care summary (PDF)'),
             subtitle: const Text(

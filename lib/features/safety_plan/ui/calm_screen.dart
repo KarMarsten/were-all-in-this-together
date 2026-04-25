@@ -10,6 +10,7 @@ import 'package:were_all_in_this_together/features/profile/domain/profile_entry.
 import 'package:were_all_in_this_together/features/profile/domain/profile_entry_contract.dart';
 import 'package:were_all_in_this_together/features/profile/presentation/providers.dart';
 import 'package:were_all_in_this_together/features/providers/presentation/url_opener.dart';
+import 'package:were_all_in_this_together/features/safety_plan/data/calm_resource_preferences.dart';
 
 /// The Calm / safety-plan screen.
 ///
@@ -26,6 +27,10 @@ import 'package:were_all_in_this_together/features/providers/presentation/url_op
 /// sleep, appetite when filled) and **active** structured profile lines
 /// surface here — see [calmHasStructuredProfileContent] and
 /// [sectionSurfacesOnCalm] for which sections lift out of Profile.
+/// Fixed width for leading bullets/icons on Calm list rows so body text lines up
+/// across "Right now" dots, profile bullets, and larger tap targets.
+const double _kCalmRowLeadingWidth = 24;
+
 class CalmScreen extends ConsumerWidget {
   const CalmScreen({super.key});
 
@@ -57,6 +62,7 @@ class CalmScreen extends ConsumerWidget {
                 children: [
                   Text(
                     'Lower the demand. One thing at a time.',
+                    textAlign: TextAlign.start,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 24),
@@ -104,6 +110,8 @@ class CalmScreen extends ConsumerWidget {
                     },
                   ),
                   const SizedBox(height: 16),
+                  const _CalmResourcesPanel(),
+                  const SizedBox(height: 16),
                   const _SectionCard(
                     heading: 'Coping strategies',
                     children: [
@@ -118,7 +126,8 @@ class CalmScreen extends ConsumerWidget {
                             'trying something new.',
                       ),
                       _PlanItem(
-                        text: 'Reach one safe person. A short check-in is '
+                        text:
+                            'Reach one safe person. A short check-in is '
                             'enough.',
                       ),
                     ],
@@ -128,11 +137,13 @@ class CalmScreen extends ConsumerWidget {
                     heading: 'Reasons to stay',
                     children: [
                       _PlanItem(
-                        text: 'This is a hard moment, not a verdict. The body '
+                        text:
+                            'This is a hard moment, not a verdict. The body '
                             'can come down before the problem is solved.',
                       ),
                       _PlanItem(
-                        text: 'You only need the next safe minute. Then the '
+                        text:
+                            'You only need the next safe minute. Then the '
                             'next.',
                       ),
                     ],
@@ -228,6 +239,7 @@ class _CalmBaselinesCard extends StatelessWidget {
           if (i > 0) const SizedBox(height: 16),
           Text(
             sections[i].title,
+            textAlign: TextAlign.start,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
               color: Theme.of(context).colorScheme.onSurface.withValues(
                 alpha: 0.85,
@@ -237,6 +249,7 @@ class _CalmBaselinesCard extends StatelessWidget {
           const SizedBox(height: 6),
           SelectableText(
             sections[i].body,
+            textAlign: TextAlign.start,
             style: Theme.of(context).textTheme.bodyLarge,
           ),
         ],
@@ -281,9 +294,12 @@ class _CalmProfileBlocks extends StatelessWidget {
                 'early signs, triggers, sensory preferences, or routines in '
                 'Profile.',
             children: [
-              TextButton(
-                onPressed: () => context.push(Routes.profile),
-                child: const Text('Open Profile'),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: () => context.push(Routes.profile),
+                  child: const Text('Open Profile'),
+                ),
               ),
             ],
           ),
@@ -305,17 +321,16 @@ class _CalmProfileBlocks extends StatelessWidget {
           });
 
     final blocks = _sortedInSection(ProfileEntrySection.routineBlock);
-    final steps = entries
-        .where((e) => e.section == ProfileEntrySection.routineStep)
-        .toList()
-      ..sort(_labelSort);
+    final steps =
+        entries
+            .where((e) => e.section == ProfileEntrySection.routineStep)
+            .toList()
+          ..sort(_labelSort);
 
     final routineChildren = <Widget>[];
     for (final b in blocks) {
       routineChildren.add(_ProfileEntryPlanItem(entry: b));
-      final under = steps
-          .where((s) => s.parentEntryId == b.id)
-          .toList()
+      final under = steps.where((s) => s.parentEntryId == b.id).toList()
         ..sort(_labelSort);
       for (final s in under) {
         routineChildren.add(
@@ -327,13 +342,15 @@ class _CalmProfileBlocks extends StatelessWidget {
       }
     }
     final blockIds = blocks.map((b) => b.id).toSet();
-    final orphaned = steps
-        .where(
-          (s) =>
-              s.parentEntryId == null || !blockIds.contains(s.parentEntryId),
-        )
-        .toList()
-      ..sort(_labelSort);
+    final orphaned =
+        steps
+            .where(
+              (s) =>
+                  s.parentEntryId == null ||
+                  !blockIds.contains(s.parentEntryId),
+            )
+            .toList()
+          ..sort(_labelSort);
     if (orphaned.isNotEmpty) {
       if (routineChildren.isNotEmpty) {
         routineChildren.add(const SizedBox(height: 8));
@@ -405,6 +422,117 @@ class _CalmProfileBlocks extends StatelessWidget {
   }
 }
 
+class _CalmResourcesPanel extends ConsumerWidget {
+  const _CalmResourcesPanel();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final preferencesAsync = ref.watch(calmResourcePreferencesProvider);
+    final opener = ref.watch(urlOpenerProvider);
+    return preferencesAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (error, _) => _SectionCard(
+        heading: 'Mindfulness & music',
+        children: [
+          Text(
+            "Couldn't load Calm resources. Open Settings to check them.",
+            textAlign: TextAlign.start,
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
+          const SizedBox(height: 12),
+          _CrisisContactTile(
+            icon: Icons.settings_outlined,
+            label: 'Open Calm resources',
+            onTap: () => context.push(Routes.calmResources),
+          ),
+        ],
+      ),
+      data: (preferences) {
+        final resources = preferences.resources;
+        if (resources.isEmpty) {
+          return _SectionCard(
+            heading: 'Mindfulness & music',
+            children: [
+              Text(
+                'Add a mindfulness practice or calming music link in Settings.',
+                textAlign: TextAlign.start,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+              const SizedBox(height: 12),
+              _CrisisContactTile(
+                icon: Icons.settings_outlined,
+                label: 'Set up Calm resources',
+                onTap: () => context.push(Routes.calmResources),
+              ),
+            ],
+          );
+        }
+        return _SectionCard(
+          heading: 'Mindfulness & music',
+          subtitle: 'Links you chose before this moment.',
+          children: [
+            for (final kind in CalmResourceKind.values) ...[
+              _CalmResourceGroup(
+                kind: kind,
+                resources: preferences.resourcesFor(kind),
+                opener: opener,
+              ),
+              if (kind != CalmResourceKind.values.last)
+                const SizedBox(height: 12),
+            ],
+            const SizedBox(height: 12),
+            _CrisisContactTile(
+              icon: Icons.tune_outlined,
+              label: 'Edit Calm resources',
+              onTap: () => context.push(Routes.calmResources),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _CalmResourceGroup extends StatelessWidget {
+  const _CalmResourceGroup({
+    required this.kind,
+    required this.resources,
+    required this.opener,
+  });
+
+  final CalmResourceKind kind;
+  final List<CalmResource> resources;
+  final UrlOpener opener;
+
+  @override
+  Widget build(BuildContext context) {
+    if (resources.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          kind.label,
+          textAlign: TextAlign.start,
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        const SizedBox(height: 8),
+        for (final resource in resources)
+          _CrisisContactTile(
+            icon: kind == CalmResourceKind.music
+                ? Icons.music_note_outlined
+                : Icons.self_improvement_outlined,
+            label: resource.label,
+            onTap: () => calmTryLaunch(
+              context,
+              () => opener.openWeb(resource.url),
+              failureMessage: "Couldn't open ${resource.label}.",
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class _ProfileEntryPlanItem extends StatelessWidget {
   const _ProfileEntryPlanItem({required this.entry});
 
@@ -418,10 +546,19 @@ class _ProfileEntryPlanItem extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.circle,
-            size: 6,
-            color: Theme.of(context).colorScheme.primary,
+          SizedBox(
+            width: _kCalmRowLeadingWidth,
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Icon(
+                  Icons.circle,
+                  size: 6,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -430,12 +567,14 @@ class _ProfileEntryPlanItem extends StatelessWidget {
               children: [
                 Text(
                   entry.label,
+                  textAlign: TextAlign.start,
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
                 if (details != null && details.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
                     details,
+                    textAlign: TextAlign.start,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(
                         context,
@@ -469,10 +608,11 @@ class _SectionCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
               heading.toUpperCase(),
+              textAlign: TextAlign.start,
               style: TextStyle(
                 fontSize: 12,
                 letterSpacing: 1.2,
@@ -485,6 +625,7 @@ class _SectionCard extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 subtitle!,
+                textAlign: TextAlign.start,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(
                     context,
@@ -512,15 +653,25 @@ class _PlanItem extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.circle,
-            size: 6,
-            color: Theme.of(context).colorScheme.primary,
+          SizedBox(
+            width: _kCalmRowLeadingWidth,
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Icon(
+                  Icons.circle,
+                  size: 6,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               text,
+              textAlign: TextAlign.start,
               style: Theme.of(context).textTheme.bodyLarge,
             ),
           ),
@@ -586,14 +737,24 @@ class _CrisisContactTile extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              icon,
-              color: Theme.of(context).colorScheme.primary,
+            SizedBox(
+              width: _kCalmRowLeadingWidth,
+              height: _kCalmRowLeadingWidth,
+              child: Icon(
+                icon,
+                size: 24,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(label, style: Theme.of(context).textTheme.bodyLarge),
+              child: Text(
+                label,
+                textAlign: TextAlign.start,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
             ),
           ],
         ),

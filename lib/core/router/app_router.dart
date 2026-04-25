@@ -48,6 +48,8 @@ import 'package:were_all_in_this_together/features/providers/presentation/care_p
 import 'package:were_all_in_this_together/features/providers/presentation/care_providers_list_screen.dart';
 import 'package:were_all_in_this_together/features/reports/presentation/adherence_report_screen.dart';
 import 'package:were_all_in_this_together/features/reports/presentation/care_summary_screen.dart';
+import 'package:were_all_in_this_together/features/safety_plan/data/calm_resource_preferences.dart';
+import 'package:were_all_in_this_together/features/safety_plan/ui/calm_resource_settings_screen.dart';
 import 'package:were_all_in_this_together/features/safety_plan/ui/calm_screen.dart';
 import 'package:were_all_in_this_together/features/search/presentation/global_search_screen.dart';
 import 'package:were_all_in_this_together/features/settings/ui/notification_settings_screen.dart';
@@ -60,6 +62,8 @@ abstract class Routes {
   static const home = '/';
   static const search = '/search';
   static const calm = '/calm';
+  static const calmSetup = '/calm/setup';
+  static const calmResources = '/settings/calm-resources';
   static const settings = '/settings';
   static const notificationSettings = '/settings/notifications';
   static const people = '/people';
@@ -160,7 +164,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.home,
         name: 'home',
-        builder: (context, state) => const HomeScreen(),
+        builder: (context, state) => const _HomeStartupGate(),
       ),
       GoRoute(
         path: Routes.search,
@@ -171,6 +175,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: Routes.calm,
         name: 'calm',
         builder: (context, state) => const CalmScreen(),
+      ),
+      GoRoute(
+        path: Routes.calmSetup,
+        name: 'calm-setup',
+        builder: (context, state) =>
+            const CalmResourceSettingsScreen(firstRun: true),
+      ),
+      GoRoute(
+        path: Routes.calmResources,
+        name: 'calm-resources',
+        builder: (context, state) => const CalmResourceSettingsScreen(),
       ),
       GoRoute(
         path: Routes.settings,
@@ -412,6 +427,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+class _HomeStartupGate extends ConsumerWidget {
+  const _HomeStartupGate();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final preferencesAsync = ref.watch(calmResourcePreferencesProvider);
+    return preferencesAsync.maybeWhen(
+      data: (preferences) => preferences.setupComplete
+          ? const HomeScreen()
+          : const CalmResourceSettingsScreen(firstRun: true),
+      orElse: () => const HomeScreen(),
+    );
+  }
+}
 
 /// Internal loader that resolves a Person by id before handing off to the
 /// shared form. Kept in this file because it exists purely to make the
