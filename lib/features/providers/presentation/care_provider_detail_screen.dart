@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:were_all_in_this_together/core/router/app_router.dart';
+import 'package:were_all_in_this_together/features/apps_sites/domain/app_site.dart';
+import 'package:were_all_in_this_together/features/apps_sites/presentation/providers.dart';
+import 'package:were_all_in_this_together/features/programs/domain/program.dart';
+import 'package:were_all_in_this_together/features/programs/presentation/providers.dart';
 import 'package:were_all_in_this_together/features/providers/domain/care_provider.dart';
 import 'package:were_all_in_this_together/features/providers/presentation/care_providers_list_screen.dart'
     show iconForKind, labelForKind;
@@ -28,6 +32,12 @@ class CareProviderDetailScreen extends ConsumerWidget {
     final text = Theme.of(context).textTheme;
     final opener = ref.watch(urlOpenerProvider);
     final isArchived = provider.deletedAt != null;
+    final linkedProgramsAsync = ref.watch(
+      allProgramsForPersonProvider(provider.personId),
+    );
+    final linkedSitesAsync = ref.watch(
+      allAppSitesForPersonProvider(provider.personId),
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -165,6 +175,11 @@ class CareProviderDetailScreen extends ConsumerWidget {
             ),
             if (provider.notes != null && provider.notes!.trim().isNotEmpty)
               _NotesBlock(notes: provider.notes!.trim()),
+            _LinkedRecordsSection(
+              providerId: provider.id,
+              programsAsync: linkedProgramsAsync,
+              sitesAsync: linkedSitesAsync,
+            ),
           ],
         ),
       ),
@@ -204,6 +219,73 @@ class CareProviderDetailScreen extends ConsumerWidget {
     final label = provider.portalLabel?.trim();
     if (label == null || label.isEmpty) return 'Portal';
     return label;
+  }
+}
+
+class _LinkedRecordsSection extends StatelessWidget {
+  const _LinkedRecordsSection({
+    required this.providerId,
+    required this.programsAsync,
+    required this.sitesAsync,
+  });
+
+  final String providerId;
+  final AsyncValue<List<Program>> programsAsync;
+  final AsyncValue<List<AppSite>> sitesAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    final programs = (programsAsync.value ?? const <Program>[])
+        .where((program) => program.providerId == providerId)
+        .toList()
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final sites = (sitesAsync.value ?? const <AppSite>[])
+        .where((site) => site.providerId == providerId)
+        .toList()
+      ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+    if (programsAsync.isLoading && sitesAsync.isLoading) {
+      return const Padding(
+        padding: EdgeInsets.only(top: 16),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (programs.isEmpty && sites.isEmpty) return const SizedBox.shrink();
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Card(
+        elevation: 0,
+        color: scheme.surfaceContainerLow,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+              child: Text(
+                'Linked records',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+            ),
+            for (final program in programs)
+              ListTile(
+                leading: const Icon(Icons.school_outlined),
+                title: Text(program.name),
+                subtitle: const Text('Program'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push(Routes.programEdit(program.id)),
+              ),
+            for (final site in sites)
+              ListTile(
+                leading: const Icon(Icons.link_outlined),
+                title: Text(site.title),
+                subtitle: const Text('App/Site'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push(Routes.appSiteEdit(site.id)),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

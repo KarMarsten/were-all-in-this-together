@@ -18,8 +18,18 @@ final archivedProgramsProvider = FutureProvider<List<Program>>((ref) async {
   return repo.listArchivedForPerson(personId);
 });
 
+// ignore: specify_nonobvious_property_types
+final allProgramsForPersonProvider =
+    FutureProvider.family<List<Program>, String>((ref, personId) async {
+  final repo = ref.watch(programRepositoryProvider);
+  final active = await repo.listActiveForPerson(personId);
+  final archived = await repo.listArchivedForPerson(personId);
+  return [...active, ...archived];
+});
+
 void invalidateProgramsState(WidgetRef ref) {
   ref
     ..invalidate(activeProgramsProvider)
-    ..invalidate(archivedProgramsProvider);
+    ..invalidate(archivedProgramsProvider)
+    ..invalidate(allProgramsForPersonProvider);
 }

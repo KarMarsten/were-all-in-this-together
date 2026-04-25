@@ -18,8 +18,18 @@ final archivedAppSitesProvider = FutureProvider<List<AppSite>>((ref) async {
   return repo.listArchivedForPerson(personId);
 });
 
+// ignore: specify_nonobvious_property_types
+final allAppSitesForPersonProvider =
+    FutureProvider.family<List<AppSite>, String>((ref, personId) async {
+  final repo = ref.watch(appSiteRepositoryProvider);
+  final active = await repo.listActiveForPerson(personId);
+  final archived = await repo.listArchivedForPerson(personId);
+  return [...active, ...archived];
+});
+
 void invalidateAppSitesState(WidgetRef ref) {
   ref
     ..invalidate(activeAppSitesProvider)
-    ..invalidate(archivedAppSitesProvider);
+    ..invalidate(archivedAppSitesProvider)
+    ..invalidate(allAppSitesForPersonProvider);
 }
