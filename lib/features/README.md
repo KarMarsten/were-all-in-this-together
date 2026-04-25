@@ -19,8 +19,8 @@ through Riverpod providers or shared `core/` services).
 | `medications/`     | implemented   | Meds + groups + schedule + Today + dose logs + notifications + adherence PDF.             |
 | `reports/`         | implemented   | Adherence report PDF + selectable **care summary** PDF with Providers/program/link sections. |
 | `providers/`       | implemented   | Care providers, contacts, after-hours info, actions, archive-safe references.              |
-| `programs/`        | implemented   | Schools / camps / after-care — encrypted contacts, actions, edit, archive.              |
-| `apps_sites/`      | implemented   | Categorized URLs + username hints / login notes (no passwords), open, archive.            |
+| `programs/`        | implemented   | Schools / camps / after-care — encrypted contacts, Provider links, actions, archive.       |
+| `apps_sites/`      | implemented   | Categorized URLs + username hints / login notes, Provider/Program links, no passwords.     |
 | `milestones/`      | implemented   | Milestones & dates: typed life-log, archive / restore.                                    |
 
 See [`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md) for the data model

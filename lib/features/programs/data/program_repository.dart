@@ -63,6 +63,7 @@ class ProgramRepository {
     String? websiteUrl,
     String? hours,
     String? notes,
+    String? providerId,
   }) async {
     if (name.trim().isEmpty) {
       throw ArgumentError.value(name, 'name', 'must not be empty');
@@ -87,6 +88,7 @@ class ProgramRepository {
       websiteUrl: _normalizeOptionalUrl(websiteUrl),
       hours: _nullIfBlank(hours),
       notes: _nullIfBlank(notes),
+      providerId: _nullIfBlank(providerId),
     );
     final encrypted = await _sealPayload(
       programId: id,
@@ -119,6 +121,7 @@ class ProgramRepository {
       websiteUrl: _normalizeOptionalUrl(websiteUrl),
       hours: _nullIfBlank(hours),
       notes: _nullIfBlank(notes),
+      providerId: _nullIfBlank(providerId),
     );
   }
 
@@ -190,6 +193,7 @@ class ProgramRepository {
       websiteUrl: _normalizeOptionalUrl(updated.websiteUrl),
       hours: _nullIfBlank(updated.hours),
       notes: _nullIfBlank(updated.notes),
+      providerId: _nullIfBlank(updated.providerId),
     );
     final encrypted = await _sealPayload(
       programId: updated.id,
@@ -216,6 +220,7 @@ class ProgramRepository {
       websiteUrl: _normalizeOptionalUrl(updated.websiteUrl),
       hours: _nullIfBlank(updated.hours),
       notes: _nullIfBlank(updated.notes),
+      providerId: _nullIfBlank(updated.providerId),
       updatedAt: now,
       rowVersion: updated.rowVersion + 1,
     );
@@ -327,6 +332,7 @@ class ProgramRepository {
       websiteUrl: payload.websiteUrl,
       hours: payload.hours,
       notes: payload.notes,
+      providerId: payload.providerId,
       deletedAt: row.deletedAt == null
           ? null
           : DateTime.fromMillisecondsSinceEpoch(row.deletedAt!, isUtc: true),

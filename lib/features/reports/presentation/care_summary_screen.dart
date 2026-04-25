@@ -63,6 +63,12 @@ class _CareSummaryScreenState extends ConsumerState<CareSummaryScreen> {
       providers: providers,
       programs: programs,
       appSites: appSites,
+      providerNamesById: {
+        for (final provider in providers) provider.id: provider.name,
+      },
+      programNamesById: {
+        for (final program in programs) program.id: program.name,
+      },
       profile: profile,
       options: _options,
     );

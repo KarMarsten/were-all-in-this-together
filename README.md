@@ -92,7 +92,8 @@ access.
   `printing` path as the adherence report).
 - **Search** — app-bar entry on Home; searches People, medications,
   appointments, Notes, profile entries, providers, Programs, and Apps & Sites,
-  with stronger matches ranked first and highlighted in results.
+  with stronger matches ranked first, highlighted in results, and linked
+  provider/program context included where available.
 - **Providers** — per-person encrypted care-team records with specialty/role,
   contact person, phone, email, fax, address, portal label/URL, after-hours
   instructions, notes, and one-tap call/email/portal/map actions.
@@ -100,8 +101,10 @@ access.
   cover school / camp / after-care with contact name/role, phone, email,
   address, website/portal URL, schedule/hours, notes, and one-tap actions.
   Apps & Sites track categorized portal/app URLs, username hints, login notes,
-  and notes (explicitly no passwords) with open-in-browser. Archive and restore
-  match other domains.
+  and notes (explicitly no passwords) with open-in-browser. Programs can link
+  to Providers; Apps & Sites can link to Providers and Programs so handoffs,
+  PDFs, and search show the relationship context. Archive and restore match
+  other domains.
 - **Calm** — in-the-moment coping strategies and crisis contacts, reachable
   in one tap from anywhere, rendered in a dedicated low-stimulation theme.
 
@@ -112,14 +115,12 @@ Priorities **0–5** for Phase 1 (see recent commits and
 
 0. **Doc sync** — keep this README, `lib/features/README.md`, and the repo
    layout tree aligned with shipped routes and schema bumps.
-1. **Programs & Apps & Sites cross-links** — optional links between programs,
-   providers, portals, and future calendar/contact surfaces as needs emerge.
-2. **Care summary depth** — keep expanding export options and add
+1. **Care summary depth** — keep expanding export options and add
    locale-specific hotlines where we can cite them safely.
-3. **Calm** — continue replacing any remaining generic copy with concrete,
+2. **Calm** — continue replacing any remaining generic copy with concrete,
    profile-aware guidance where it helps.
-4. **Global search depth** — ranking, highlighting, and more targeted filters.
-5. **Phase 2 — Multi-device, multi-caregiver sync** — Supabase (EU), per-person
+3. **Global search depth** — filters and more relationship-aware navigation.
+4. **Phase 2 — Multi-device, multi-caregiver sync** — Supabase (EU), per-person
    key shares, QR pairing, first-ACK-wins attribution. Not started; see
    architecture doc for privacy and pairing design.
 

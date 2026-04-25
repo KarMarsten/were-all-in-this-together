@@ -61,6 +61,8 @@ class CareProviderPickerData {
     }
     return null;
   }
+
+  List<CareProvider> get all => [...active, ...archived];
 }
 
 /// Picker data source keyed on a specific Person.

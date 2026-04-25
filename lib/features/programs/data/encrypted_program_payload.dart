@@ -11,6 +11,7 @@ class EncryptedProgramPayload {
     this.websiteUrl,
     this.hours,
     this.notes,
+    this.providerId,
   });
 
   factory EncryptedProgramPayload.fromJson(Map<String, dynamic> json) {
@@ -48,10 +49,11 @@ class EncryptedProgramPayload {
       websiteUrl: json['websiteUrl'] as String?,
       hours: json['hours'] as String?,
       notes: json['notes'] as String?,
+      providerId: json['providerId'] as String?,
     );
   }
 
-  static const int currentSchemaVersion = 2;
+  static const int currentSchemaVersion = 3;
 
   final int schemaVersion;
   final String name;
@@ -63,6 +65,7 @@ class EncryptedProgramPayload {
   final String? websiteUrl;
   final String? hours;
   final String? notes;
+  final String? providerId;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
         'v': schemaVersion,
@@ -75,5 +78,6 @@ class EncryptedProgramPayload {
         if (websiteUrl != null) 'websiteUrl': websiteUrl,
         if (hours != null) 'hours': hours,
         if (notes != null) 'notes': notes,
+        if (providerId != null) 'providerId': providerId,
       };
 }

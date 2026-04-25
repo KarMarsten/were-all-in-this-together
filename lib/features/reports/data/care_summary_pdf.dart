@@ -16,6 +16,8 @@ Future<List<int>> buildCareSummaryPdf({
   List<CareProvider> providers = const <CareProvider>[],
   List<Program> programs = const <Program>[],
   List<AppSite> appSites = const <AppSite>[],
+  Map<String, String> providerNamesById = const <String, String>{},
+  Map<String, String> programNamesById = const <String, String>{},
   Profile? profile,
   CareSummaryOptions options = const CareSummaryOptions(),
   DateTime? generatedAt,
@@ -35,10 +37,10 @@ Future<List<int>> buildCareSummaryPdf({
       ? _providersBlock(providers)
       : <pw.Widget>[];
   final programWidgets = options.includePrograms
-      ? _programsBlock(programs)
+      ? _programsBlock(programs, providerNamesById)
       : <pw.Widget>[];
   final appSiteWidgets = options.includeAppSites
-      ? _appSitesBlock(appSites)
+      ? _appSitesBlock(appSites, providerNamesById, programNamesById)
       : <pw.Widget>[];
   final crisisWidgets = options.includeCrisisResources
       ? _crisisResourcesBlock()
@@ -315,7 +317,10 @@ List<pw.Widget> _providersBlock(List<CareProvider> providers) {
   return out;
 }
 
-List<pw.Widget> _programsBlock(List<Program> programs) {
+List<pw.Widget> _programsBlock(
+  List<Program> programs,
+  Map<String, String> providerNamesById,
+) {
   final sorted = [...programs]
     ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
   final out = <pw.Widget>[
@@ -340,6 +345,7 @@ List<pw.Widget> _programsBlock(List<Program> programs) {
         title: program.name,
         subtitle: labelForProgramKind(program.kind),
         rows: [
+          _field('Linked provider', providerNamesById[program.providerId]),
           _field(
             'Contact',
             _joinParts([program.contactName, program.contactRole]),
@@ -357,7 +363,11 @@ List<pw.Widget> _programsBlock(List<Program> programs) {
   return out;
 }
 
-List<pw.Widget> _appSitesBlock(List<AppSite> appSites) {
+List<pw.Widget> _appSitesBlock(
+  List<AppSite> appSites,
+  Map<String, String> providerNamesById,
+  Map<String, String> programNamesById,
+) {
   final sorted = [...appSites]
     ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
   final out = <pw.Widget>[
@@ -387,6 +397,8 @@ List<pw.Widget> _appSitesBlock(List<AppSite> appSites) {
         title: site.title,
         subtitle: labelForAppSiteCategory(site.category),
         rows: [
+          _field('Linked provider', providerNamesById[site.providerId]),
+          _field('Linked program', programNamesById[site.programId]),
           _field('URL', site.url),
           _field('Username hint', site.usernameHint),
           _field('Login note', site.loginNote),
