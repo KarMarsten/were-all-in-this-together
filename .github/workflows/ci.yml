@@ -80,7 +80,7 @@ jobs:
       # against the public Open Source Vulnerabilities database. This covers
       # pub.dev packages, where Snyk's open-source scanner is not useful.
       - name: Scan lockfiles with OSV
-        uses: google/osv-scanner-action/osv-scanner-action@v2
+        uses: google/osv-scanner-action/osv-scanner-action@v2.3.4
         with:
           scan-args: |-
             --lockfile=pubspec.lock
