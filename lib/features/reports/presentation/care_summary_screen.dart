@@ -5,10 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:printing/printing.dart';
 
+import 'package:were_all_in_this_together/features/apps_sites/domain/app_site.dart';
+import 'package:were_all_in_this_together/features/apps_sites/presentation/providers.dart';
 import 'package:were_all_in_this_together/features/people/presentation/active_person_providers.dart';
 import 'package:were_all_in_this_together/features/profile/domain/profile.dart';
 import 'package:were_all_in_this_together/features/profile/domain/profile_entry.dart';
 import 'package:were_all_in_this_together/features/profile/presentation/providers.dart';
+import 'package:were_all_in_this_together/features/programs/domain/program.dart';
+import 'package:were_all_in_this_together/features/programs/presentation/providers.dart';
 import 'package:were_all_in_this_together/features/reports/data/care_summary_pdf.dart';
 
 /// PDF handoff: baselines + active structured profile + Calm guide + resources.
@@ -23,12 +27,16 @@ class _CareSummaryScreenState extends ConsumerState<CareSummaryScreen> {
   bool _includeCalm = true;
   bool _includeBaselines = true;
   bool _includeStructuredProfile = true;
+  bool _includePrograms = true;
+  bool _includeAppSites = true;
   bool _includeCrisisResources = true;
 
   CareSummaryOptions get _options => CareSummaryOptions(
         includeCalm: _includeCalm,
         includeBaselines: _includeBaselines,
         includeStructuredProfile: _includeStructuredProfile,
+        includePrograms: _includePrograms,
+        includeAppSites: _includeAppSites,
         includeCrisisResources: _includeCrisisResources,
       );
 
@@ -39,12 +47,16 @@ class _CareSummaryScreenState extends ConsumerState<CareSummaryScreen> {
     }
     final profile = await ref.read(activePersonProfileProvider.future);
     final all = await ref.read(profileEntriesForActivePersonProvider.future);
+    final programs = await ref.read(activeProgramsProvider.future);
+    final appSites = await ref.read(activeAppSitesProvider.future);
     final active = all
         .where((e) => e.status == ProfileEntryStatus.active)
         .toList();
     final raw = await buildCareSummaryPdf(
       personName: person.displayName,
       activeEntries: active,
+      programs: programs,
+      appSites: appSites,
       profile: profile,
       options: _options,
     );
@@ -66,6 +78,8 @@ class _CareSummaryScreenState extends ConsumerState<CareSummaryScreen> {
     final personAsync = ref.watch(activePersonProvider);
     final entriesAsync = ref.watch(profileEntriesForActivePersonProvider);
     final profileAsync = ref.watch(activePersonProfileProvider);
+    final programsAsync = ref.watch(activeProgramsProvider);
+    final appSitesAsync = ref.watch(activeAppSitesProvider);
     final canExport = personAsync.hasValue &&
         personAsync.value != null &&
         _options.hasAnySection;
@@ -149,12 +163,18 @@ class _CareSummaryScreenState extends ConsumerState<CareSummaryScreen> {
                 includeCalm: _includeCalm,
                 includeBaselines: _includeBaselines,
                 includeStructuredProfile: _includeStructuredProfile,
+                includePrograms: _includePrograms,
+                includeAppSites: _includeAppSites,
                 includeCrisisResources: _includeCrisisResources,
                 onCalmChanged: (v) => setState(() => _includeCalm = v),
                 onBaselinesChanged: (v) =>
                     setState(() => _includeBaselines = v),
                 onStructuredChanged: (v) =>
                     setState(() => _includeStructuredProfile = v),
+                onProgramsChanged: (v) =>
+                    setState(() => _includePrograms = v),
+                onAppSitesChanged: (v) =>
+                    setState(() => _includeAppSites = v),
                 onCrisisChanged: (v) =>
                     setState(() => _includeCrisisResources = v),
               ),
@@ -162,6 +182,8 @@ class _CareSummaryScreenState extends ConsumerState<CareSummaryScreen> {
               _PreviewCard(
                 entriesAsync: entriesAsync,
                 profileAsync: profileAsync,
+                programsAsync: programsAsync,
+                appSitesAsync: appSitesAsync,
                 options: _options,
               ),
               const SizedBox(height: 24),
@@ -198,20 +220,28 @@ class _IncludeOptionsCard extends StatelessWidget {
     required this.includeCalm,
     required this.includeBaselines,
     required this.includeStructuredProfile,
+    required this.includePrograms,
+    required this.includeAppSites,
     required this.includeCrisisResources,
     required this.onCalmChanged,
     required this.onBaselinesChanged,
     required this.onStructuredChanged,
+    required this.onProgramsChanged,
+    required this.onAppSitesChanged,
     required this.onCrisisChanged,
   });
 
   final bool includeCalm;
   final bool includeBaselines;
   final bool includeStructuredProfile;
+  final bool includePrograms;
+  final bool includeAppSites;
   final bool includeCrisisResources;
   final ValueChanged<bool> onCalmChanged;
   final ValueChanged<bool> onBaselinesChanged;
   final ValueChanged<bool> onStructuredChanged;
+  final ValueChanged<bool> onProgramsChanged;
+  final ValueChanged<bool> onAppSitesChanged;
   final ValueChanged<bool> onCrisisChanged;
 
   @override
@@ -249,6 +279,18 @@ class _IncludeOptionsCard extends StatelessWidget {
               subtitle: const Text('Active profile entries by section.'),
             ),
             SwitchListTile(
+              value: includePrograms,
+              onChanged: onProgramsChanged,
+              title: const Text('Programs'),
+              subtitle: const Text('School, camp, after-care contacts.'),
+            ),
+            SwitchListTile(
+              value: includeAppSites,
+              onChanged: onAppSitesChanged,
+              title: const Text('Apps & Sites'),
+              subtitle: const Text('URLs and login hints, never passwords.'),
+            ),
+            SwitchListTile(
               value: includeCrisisResources,
               onChanged: onCrisisChanged,
               title: const Text('Support resources'),
@@ -265,11 +307,15 @@ class _PreviewCard extends StatelessWidget {
   const _PreviewCard({
     required this.entriesAsync,
     required this.profileAsync,
+    required this.programsAsync,
+    required this.appSitesAsync,
     required this.options,
   });
 
   final AsyncValue<List<ProfileEntry>> entriesAsync;
   final AsyncValue<Profile?> profileAsync;
+  final AsyncValue<List<Program>> programsAsync;
+  final AsyncValue<List<AppSite>> appSitesAsync;
   final CareSummaryOptions options;
 
   @override
@@ -304,6 +350,14 @@ class _PreviewCard extends StatelessWidget {
               },
               orElse: () => 0,
             );
+            final programCount = programsAsync.maybeWhen(
+              data: (programs) => programs.length,
+              orElse: () => 0,
+            );
+            final appSiteCount = appSitesAsync.maybeWhen(
+              data: (appSites) => appSites.length,
+              orElse: () => 0,
+            );
             final lines = <String>[
               if (options.includeCalm)
                 _countLine(
@@ -323,8 +377,22 @@ class _PreviewCard extends StatelessWidget {
                   singular: 'active structured profile line',
                   plural: 'active structured profile lines',
                 ),
+              if (options.includePrograms)
+                _countLine(
+                  programCount,
+                  singular: 'program',
+                  plural: 'programs',
+                ),
+              if (options.includeAppSites)
+                _countLine(
+                  appSiteCount,
+                  singular: 'app/site link',
+                  plural: 'app/site links',
+                ),
               if (options.includeCrisisResources)
                 'Support resources and crisis handoff notes',
+              if (options.includeAppSites)
+                'No passwords, recovery codes, or security answers included',
             ];
             if (lines.isEmpty) {
               return const Text('Turn on at least one section to export.');

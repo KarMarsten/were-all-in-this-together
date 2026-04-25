@@ -2,14 +2,18 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
+import 'package:were_all_in_this_together/features/apps_sites/domain/app_site.dart';
 import 'package:were_all_in_this_together/features/profile/domain/profile.dart';
 import 'package:were_all_in_this_together/features/profile/domain/profile_entry.dart';
+import 'package:were_all_in_this_together/features/programs/domain/program.dart';
 
 /// Babysitter / respite style handoff: baselines, active structured lines
 /// (grouped by section), and national crisis resources.
 Future<List<int>> buildCareSummaryPdf({
   required String personName,
   required List<ProfileEntry> activeEntries,
+  List<Program> programs = const <Program>[],
+  List<AppSite> appSites = const <AppSite>[],
   Profile? profile,
   CareSummaryOptions options = const CareSummaryOptions(),
   DateTime? generatedAt,
@@ -24,6 +28,12 @@ Future<List<int>> buildCareSummaryPdf({
       : <pw.Widget>[];
   final structuredWidgets = options.includeStructuredProfile
       ? _buildStructuredSections(activeEntries)
+      : <pw.Widget>[];
+  final programWidgets = options.includePrograms
+      ? _programsBlock(programs)
+      : <pw.Widget>[];
+  final appSiteWidgets = options.includeAppSites
+      ? _appSitesBlock(appSites)
       : <pw.Widget>[];
   final crisisWidgets = options.includeCrisisResources
       ? _crisisResourcesBlock()
@@ -58,7 +68,11 @@ Future<List<int>> buildCareSummaryPdf({
           ...baselineWidgets,
           if (baselineWidgets.isNotEmpty) pw.SizedBox(height: 16),
           ...structuredWidgets,
-          if (structuredWidgets.isNotEmpty && crisisWidgets.isNotEmpty)
+          if (structuredWidgets.isNotEmpty) pw.SizedBox(height: 16),
+          ...programWidgets,
+          if (programWidgets.isNotEmpty) pw.SizedBox(height: 16),
+          ...appSiteWidgets,
+          if (appSiteWidgets.isNotEmpty && crisisWidgets.isNotEmpty)
             pw.SizedBox(height: 20),
           ...crisisWidgets,
         ],
@@ -73,18 +87,24 @@ class CareSummaryOptions {
     this.includeCalm = true,
     this.includeBaselines = true,
     this.includeStructuredProfile = true,
+    this.includePrograms = true,
+    this.includeAppSites = true,
     this.includeCrisisResources = true,
   });
 
   final bool includeCalm;
   final bool includeBaselines;
   final bool includeStructuredProfile;
+  final bool includePrograms;
+  final bool includeAppSites;
   final bool includeCrisisResources;
 
   bool get hasAnySection =>
       includeCalm ||
       includeBaselines ||
       includeStructuredProfile ||
+      includePrograms ||
+      includeAppSites ||
       includeCrisisResources;
 }
 
@@ -232,6 +252,149 @@ List<pw.Widget> _crisisResourcesBlock() {
       'adult who can act on it.',
     ),
   ];
+}
+
+List<pw.Widget> _programsBlock(List<Program> programs) {
+  final sorted = [...programs]
+    ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+  final out = <pw.Widget>[
+    pw.Text(
+      'Programs',
+      style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+    ),
+    pw.SizedBox(height: 6),
+  ];
+  if (sorted.isEmpty) {
+    out.add(
+      pw.Text(
+        'No active programs yet.',
+        style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+      ),
+    );
+    return out;
+  }
+  for (final program in sorted) {
+    out.add(
+      _summaryEntry(
+        title: program.name,
+        subtitle: labelForProgramKind(program.kind),
+        rows: [
+          _field(
+            'Contact',
+            _joinParts([program.contactName, program.contactRole]),
+          ),
+          _field('Phone', program.phone),
+          _field('Email', program.email),
+          _field('Address', program.address),
+          _field('Website', program.websiteUrl),
+          _field('Hours', program.hours),
+          _field('Notes', program.notes),
+        ],
+      ),
+    );
+  }
+  return out;
+}
+
+List<pw.Widget> _appSitesBlock(List<AppSite> appSites) {
+  final sorted = [...appSites]
+    ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+  final out = <pw.Widget>[
+    pw.Text(
+      'Apps & Sites',
+      style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+    ),
+    pw.SizedBox(height: 6),
+    pw.Text(
+      'No passwords, recovery codes, or security answers are included here.',
+      style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
+    ),
+    pw.SizedBox(height: 6),
+  ];
+  if (sorted.isEmpty) {
+    out.add(
+      pw.Text(
+        'No active apps or sites yet.',
+        style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+      ),
+    );
+    return out;
+  }
+  for (final site in sorted) {
+    out.add(
+      _summaryEntry(
+        title: site.title,
+        subtitle: labelForAppSiteCategory(site.category),
+        rows: [
+          _field('URL', site.url),
+          _field('Username hint', site.usernameHint),
+          _field('Login note', site.loginNote),
+          _field('Notes', site.notes),
+        ],
+      ),
+    );
+  }
+  return out;
+}
+
+({String label, String value})? _field(String label, String? raw) {
+  final value = raw?.trim();
+  if (value == null || value.isEmpty) return null;
+  return (label: label, value: value);
+}
+
+pw.Widget _summaryEntry({
+  required String title,
+  required String subtitle,
+  required List<({String label, String value})?> rows,
+}) {
+  final present = rows.nonNulls.toList();
+  return pw.Container(
+    margin: const pw.EdgeInsets.only(bottom: 10),
+    child: pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          title,
+          style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+        ),
+        pw.Padding(
+          padding: const pw.EdgeInsets.only(top: 1, bottom: 2),
+          child: pw.Text(
+            subtitle,
+            style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
+          ),
+        ),
+        for (final row in present)
+          pw.Padding(
+            padding: const pw.EdgeInsets.only(bottom: 2),
+            child: pw.RichText(
+              text: pw.TextSpan(
+                style: const pw.TextStyle(
+                  fontSize: 9,
+                  color: PdfColors.grey800,
+                ),
+                children: [
+                  pw.TextSpan(
+                    text: '${row.label}: ',
+                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                  ),
+                  pw.TextSpan(text: row.value),
+                ],
+              ),
+            ),
+          ),
+      ],
+    ),
+  );
+}
+
+String? _joinParts(Iterable<String?> parts) {
+  final out = parts
+      .where((p) => p != null && p.trim().isNotEmpty)
+      .map((p) => p!.trim())
+      .join(', ');
+  return out.isEmpty ? null : out;
 }
 
 List<pw.Widget> _buildStructuredSections(List<ProfileEntry> active) {

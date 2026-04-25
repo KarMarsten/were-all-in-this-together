@@ -87,8 +87,9 @@ access.
   (observations) are a separate timeline with optional links to profile lines.
 - **Care summary (PDF)** — from **Settings**, export a selectable handoff:
   Calm quick guide (early signs / triggers / what helps), baselines, active
-  structured profile lines, and support resources for babysitters,
-  grandparents, and respite (same `printing` path as the adherence report).
+  structured profile lines, Programs, Apps & Sites (no passwords), and support
+  resources for babysitters, grandparents, and respite (same `printing` path as
+  the adherence report).
 - **Search** — app-bar entry on Home; searches People, medications,
   appointments, Notes, profile entries, providers, Programs, and Apps & Sites.
 - **Programs** and **Apps & Sites** — per-person encrypted lists. Programs
