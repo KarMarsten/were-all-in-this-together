@@ -24,13 +24,15 @@ class GlobalSearchScreen extends ConsumerStatefulWidget {
   const GlobalSearchScreen({super.key});
 
   @override
-  ConsumerState<GlobalSearchScreen> createState() =>
-      _GlobalSearchScreenState();
+  ConsumerState<GlobalSearchScreen> createState() => _GlobalSearchScreenState();
 }
 
 class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
   final _controller = TextEditingController();
   String _query = '';
+  final Set<_SearchCategory> _enabledCategories = {
+    ..._SearchCategory.values,
+  };
 
   @override
   void dispose() {
@@ -42,6 +44,8 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
   Widget build(BuildContext context) {
     final q = _query.trim().toLowerCase();
     final resultsAsync = ref.watch(_globalSearchResultsProvider(q));
+    final allCategoriesSelected =
+        _enabledCategories.length == _SearchCategory.values.length;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Search')),
@@ -60,28 +64,52 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
               onChanged: (s) => setState(() => _query = s),
             ),
           ),
+          _SearchFilters(
+            enabledCategories: _enabledCategories,
+            allCategoriesSelected: allCategoriesSelected,
+            onSelectAll: () {
+              setState(() {
+                _enabledCategories
+                  ..clear()
+                  ..addAll(_SearchCategory.values);
+              });
+            },
+            onToggle: (category) {
+              setState(() {
+                if (_enabledCategories.contains(category)) {
+                  _enabledCategories.remove(category);
+                } else {
+                  _enabledCategories.add(category);
+                }
+              });
+            },
+          ),
           Expanded(
             child: q.isEmpty
                 ? const _SearchPrompt()
                 : resultsAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('$e')),
-              data: (results) {
-                if (results.isEmpty) {
-                  return const Center(child: Text('No matches.'));
-                }
-                return ListView.separated(
-                  keyboardDismissBehavior:
-                      ScrollViewKeyboardDismissBehavior.onDrag,
-                  itemCount: results.length,
-                  separatorBuilder: (_, _) => const Divider(height: 1),
-                  itemBuilder: (context, i) => _SearchResultTile(
-                    result: results[i],
-                    query: q,
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (e, _) => Center(child: Text('$e')),
+                    data: (results) {
+                      final visible = results
+                          .where((r) => _enabledCategories.contains(r.category))
+                          .toList();
+                      if (visible.isEmpty) {
+                        return const Center(child: Text('No matches.'));
+                      }
+                      return ListView.separated(
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
+                        itemCount: visible.length,
+                        separatorBuilder: (_, _) => const Divider(height: 1),
+                        itemBuilder: (context, i) => _SearchResultTile(
+                          result: visible[i],
+                          query: q,
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
           Padding(
             padding: const EdgeInsets.all(16),
@@ -103,83 +131,93 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
 // ignore: specify_nonobvious_property_types
 final _globalSearchResultsProvider =
     FutureProvider.family<List<_SearchResult>, String>((ref, query) async {
-  final q = query.trim().toLowerCase();
-  if (q.isEmpty) return const <_SearchResult>[];
+      final q = query.trim().toLowerCase();
+      if (q.isEmpty) return const <_SearchResult>[];
 
-  final people = await ref.watch(peopleListProvider.future);
-  final results = <_SearchResult>[];
+      final people = await ref.watch(peopleListProvider.future);
+      final results = <_SearchResult>[];
 
-  for (final person in people) {
-    if (_matches(q, [person.displayName, person.pronouns])) {
-      results.add(
-        _SearchResult(
-          icon: Icons.person_outline,
-          title: person.displayName,
-          subtitle: 'Person',
-          route: Routes.personEdit(person.id),
-          rank: _rankingOffset(
+      for (final person in people) {
+        if (_matches(q, [person.displayName, person.pronouns])) {
+          results.add(
+            _SearchResult(
+              category: _SearchCategory.people,
+              icon: Icons.person_outline,
+              title: person.displayName,
+              subtitle: 'Person',
+              route: Routes.personEdit(person.id),
+              rank: _rankingOffset(
+                q,
+                primary: [person.displayName],
+                secondary: [person.pronouns],
+              ),
+            ),
+          );
+        }
+      }
+
+      final medsRepo = ref.watch(medicationRepositoryProvider);
+      final apptRepo = ref.watch(appointmentRepositoryProvider);
+      final observationRepo = ref.watch(observationRepositoryProvider);
+      final profileEntryRepo = ref.watch(profileEntryRepositoryProvider);
+      final providerRepo = ref.watch(careProviderRepositoryProvider);
+      final programRepo = ref.watch(programRepositoryProvider);
+      final appSiteRepo = ref.watch(appSiteRepositoryProvider);
+
+      for (final person in people) {
+        final owner = person.displayName;
+        final meds = await medsRepo.listActiveForPerson(person.id);
+        results.addAll(_medicationResults(q, owner, meds));
+
+        final upcoming = await apptRepo.listUpcomingForPerson(person.id);
+        final past = await apptRepo.listPastForPerson(person.id);
+        results.addAll(_appointmentResults(q, owner, [...upcoming, ...past]));
+
+        final observations = await observationRepo.listActiveForPerson(
+          person.id,
+        );
+        results.addAll(_observationResults(q, owner, observations));
+
+        final profileEntries = await profileEntryRepo.listActiveForPerson(
+          person.id,
+        );
+        results.addAll(_profileEntryResults(q, owner, profileEntries));
+
+        final providers = await providerRepo.listActiveForPerson(person.id);
+        results.addAll(_providerResults(q, owner, providers));
+        final providerNamesById = {
+          for (final provider in providers) provider.id: provider.name,
+        };
+
+        final programs = await programRepo.listActiveForPerson(person.id);
+        results.addAll(
+          _programResults(q, owner, programs, providerNamesById),
+        );
+        final programNamesById = {
+          for (final program in programs) program.id: program.name,
+        };
+
+        final appSites = await appSiteRepo.listActiveForPerson(person.id);
+        results.addAll(
+          _appSiteResults(
             q,
-            primary: [person.displayName],
-            secondary: [person.pronouns],
+            owner,
+            appSites,
+            providerNamesById,
+            programNamesById,
           ),
-        ),
-      );
-    }
-  }
+        );
+      }
 
-  final medsRepo = ref.watch(medicationRepositoryProvider);
-  final apptRepo = ref.watch(appointmentRepositoryProvider);
-  final observationRepo = ref.watch(observationRepositoryProvider);
-  final profileEntryRepo = ref.watch(profileEntryRepositoryProvider);
-  final providerRepo = ref.watch(careProviderRepositoryProvider);
-  final programRepo = ref.watch(programRepositoryProvider);
-  final appSiteRepo = ref.watch(appSiteRepositoryProvider);
-
-  for (final person in people) {
-    final owner = person.displayName;
-    final meds = await medsRepo.listActiveForPerson(person.id);
-    results.addAll(_medicationResults(q, owner, meds));
-
-    final upcoming = await apptRepo.listUpcomingForPerson(person.id);
-    final past = await apptRepo.listPastForPerson(person.id);
-    results.addAll(_appointmentResults(q, owner, [...upcoming, ...past]));
-
-    final observations = await observationRepo.listActiveForPerson(person.id);
-    results.addAll(_observationResults(q, owner, observations));
-
-    final profileEntries =
-        await profileEntryRepo.listActiveForPerson(person.id);
-    results.addAll(_profileEntryResults(q, owner, profileEntries));
-
-    final providers = await providerRepo.listActiveForPerson(person.id);
-    results.addAll(_providerResults(q, owner, providers));
-    final providerNamesById = {
-      for (final provider in providers) provider.id: provider.name,
-    };
-
-    final programs = await programRepo.listActiveForPerson(person.id);
-    results.addAll(
-      _programResults(q, owner, programs, providerNamesById),
-    );
-    final programNamesById = {
-      for (final program in programs) program.id: program.name,
-    };
-
-    final appSites = await appSiteRepo.listActiveForPerson(person.id);
-    results.addAll(
-      _appSiteResults(q, owner, appSites, providerNamesById, programNamesById),
-    );
-  }
-
-  results.sort((a, b) {
-    final byRank = a.rank.compareTo(b.rank);
-    if (byRank != 0) return byRank;
-    final byTitle = a.title.toLowerCase().compareTo(b.title.toLowerCase());
-    if (byTitle != 0) return byTitle;
-    return a.subtitle.toLowerCase().compareTo(b.subtitle.toLowerCase());
-  });
-  return results;
-});
+      results.sort((a, b) {
+        final byRank = a.rank.compareTo(b.rank);
+        if (byRank != 0) return byRank;
+        final byTitle = a.title.toLowerCase().compareTo(b.title.toLowerCase());
+        if (byTitle != 0) return byTitle;
+        return a.subtitle.toLowerCase().compareTo(b.subtitle.toLowerCase());
+      });
+      return results;
+    });
 
 Iterable<_SearchResult> _medicationResults(
   String q,
@@ -189,11 +227,13 @@ Iterable<_SearchResult> _medicationResults(
   for (final med in meds) {
     if (!_matches(q, [med.name, med.dose, med.prescriber, med.notes])) continue;
     yield _SearchResult(
+      category: _SearchCategory.medications,
       icon: Icons.medication_outlined,
       title: med.name,
       subtitle: _joinParts(['Medication', owner, med.dose]),
       route: Routes.medicationEdit(med.id),
-      rank: 10 +
+      rank:
+          10 +
           _rankingOffset(
             q,
             primary: [med.name],
@@ -211,6 +251,7 @@ Iterable<_SearchResult> _appointmentResults(
   for (final appt in appointments) {
     if (!_matches(q, [appt.title, appt.location, appt.notes])) continue;
     yield _SearchResult(
+      category: _SearchCategory.appointments,
       icon: Icons.event_outlined,
       title: appt.title,
       subtitle: _joinParts([
@@ -220,7 +261,8 @@ Iterable<_SearchResult> _appointmentResults(
         appt.location,
       ]),
       route: Routes.appointmentEdit(appt.id),
-      rank: 20 +
+      rank:
+          20 +
           _rankingOffset(
             q,
             primary: [appt.title],
@@ -238,6 +280,7 @@ Iterable<_SearchResult> _observationResults(
   for (final note in observations) {
     if (!_matches(q, [note.label, note.notes, ...note.tags])) continue;
     yield _SearchResult(
+      category: _SearchCategory.notes,
       icon: Icons.sticky_note_2_outlined,
       title: note.label,
       subtitle: _joinParts([
@@ -247,7 +290,8 @@ Iterable<_SearchResult> _observationResults(
         _formatDate(note.observedAt.toLocal()),
       ]),
       route: Routes.noteEdit(note.id),
-      rank: 30 +
+      rank:
+          30 +
           _rankingOffset(
             q,
             primary: [note.label],
@@ -265,6 +309,7 @@ Iterable<_SearchResult> _profileEntryResults(
   for (final entry in entries) {
     if (!_matches(q, [entry.label, entry.details])) continue;
     yield _SearchResult(
+      category: _SearchCategory.profile,
       icon: Icons.psychology_outlined,
       title: entry.label,
       subtitle: _joinParts([
@@ -274,7 +319,8 @@ Iterable<_SearchResult> _profileEntryResults(
         labelForProfileEntryStatus(entry.status),
       ]),
       route: Routes.profileEntryEdit(entry.id),
-      rank: 40 +
+      rank:
+          40 +
           _rankingOffset(
             q,
             primary: [entry.label],
@@ -308,6 +354,7 @@ Iterable<_SearchResult> _providerResults(
       continue;
     }
     yield _SearchResult(
+      category: _SearchCategory.providers,
       icon: Icons.local_hospital_outlined,
       title: provider.name,
       subtitle: _joinParts([
@@ -319,7 +366,8 @@ Iterable<_SearchResult> _providerResults(
         provider.contactName,
       ]),
       route: Routes.careProviderDetail(provider.id),
-      rank: 50 +
+      rank:
+          50 +
           _rankingOffset(
             q,
             primary: [provider.name],
@@ -365,6 +413,7 @@ Iterable<_SearchResult> _programResults(
       continue;
     }
     yield _SearchResult(
+      category: _SearchCategory.programs,
       icon: Icons.school_outlined,
       title: program.name,
       subtitle: _joinParts([
@@ -375,7 +424,8 @@ Iterable<_SearchResult> _programResults(
         program.contactName,
       ]),
       route: Routes.programEdit(program.id),
-      rank: 60 +
+      rank:
+          60 +
           _rankingOffset(
             q,
             primary: [program.name],
@@ -418,6 +468,7 @@ Iterable<_SearchResult> _appSiteResults(
       continue;
     }
     yield _SearchResult(
+      category: _SearchCategory.appsSites,
       icon: Icons.link_outlined,
       title: site.title,
       subtitle: _joinParts([
@@ -429,7 +480,8 @@ Iterable<_SearchResult> _appSiteResults(
         site.url,
       ]),
       route: Routes.appSiteEdit(site.id),
-      rank: 70 +
+      rank:
+          70 +
           _rankingOffset(
             q,
             primary: [site.title],
@@ -509,6 +561,7 @@ String _labelForProviderKind(CareProviderKind kind) {
 
 class _SearchResult {
   const _SearchResult({
+    required this.category,
     required this.icon,
     required this.title,
     required this.subtitle,
@@ -516,11 +569,113 @@ class _SearchResult {
     required this.rank,
   });
 
+  final _SearchCategory category;
   final IconData icon;
   final String title;
   final String subtitle;
   final String route;
   final int rank;
+}
+
+enum _SearchCategory {
+  people,
+  medications,
+  appointments,
+  notes,
+  profile,
+  providers,
+  programs,
+  appsSites,
+}
+
+extension on _SearchCategory {
+  String get label {
+    switch (this) {
+      case _SearchCategory.people:
+        return 'People';
+      case _SearchCategory.medications:
+        return 'Meds';
+      case _SearchCategory.appointments:
+        return 'Appointments';
+      case _SearchCategory.notes:
+        return 'Notes';
+      case _SearchCategory.profile:
+        return 'Profile';
+      case _SearchCategory.providers:
+        return 'Providers';
+      case _SearchCategory.programs:
+        return 'Programs';
+      case _SearchCategory.appsSites:
+        return 'Apps & Sites';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case _SearchCategory.people:
+        return Icons.person_outline;
+      case _SearchCategory.medications:
+        return Icons.medication_outlined;
+      case _SearchCategory.appointments:
+        return Icons.event_outlined;
+      case _SearchCategory.notes:
+        return Icons.sticky_note_2_outlined;
+      case _SearchCategory.profile:
+        return Icons.psychology_outlined;
+      case _SearchCategory.providers:
+        return Icons.local_hospital_outlined;
+      case _SearchCategory.programs:
+        return Icons.school_outlined;
+      case _SearchCategory.appsSites:
+        return Icons.link_outlined;
+    }
+  }
+}
+
+class _SearchFilters extends StatelessWidget {
+  const _SearchFilters({
+    required this.enabledCategories,
+    required this.allCategoriesSelected,
+    required this.onSelectAll,
+    required this.onToggle,
+  });
+
+  final Set<_SearchCategory> enabledCategories;
+  final bool allCategoriesSelected;
+  final VoidCallback onSelectAll;
+  final ValueChanged<_SearchCategory> onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 48,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilterChip(
+              selected: allCategoriesSelected,
+              avatar: const Icon(Icons.all_inclusive, size: 18),
+              label: const Text('All'),
+              onSelected: (_) => onSelectAll(),
+            ),
+          ),
+          for (final category in _SearchCategory.values)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilterChip(
+                selected: enabledCategories.contains(category),
+                avatar: Icon(category.icon, size: 18),
+                label: Text(category.label),
+                onSelected: (_) => onToggle(category),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 class _SearchResultTile extends StatelessWidget {
