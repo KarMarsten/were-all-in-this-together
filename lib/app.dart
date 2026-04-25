@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:were_all_in_this_together/core/router/app_router.dart';
 import 'package:were_all_in_this_together/core/theme/app_theme.dart';
+import 'package:were_all_in_this_together/core/theme/theme_mode_preference.dart';
 import 'package:were_all_in_this_together/features/medications/notifications/pending_ack_drainer.dart';
 import 'package:were_all_in_this_together/features/people/presentation/providers.dart';
 
@@ -42,22 +43,32 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
 
   Future<void> _drain() async {
     if (!mounted) return;
-    final drainer = ref.read(pendingAckDrainerProvider);
-    final written = await drainer.drain();
-    if (written > 0 && mounted) {
-      // Something was actually ACKed while we were away — the
-      // reconciler's dose-log input is now stale, so nudge it.
-      ref.invalidate(peopleListProvider);
+    try {
+      final drainer = ref.read(pendingAckDrainerProvider);
+      final written = await drainer.drain();
+      if (written > 0 && mounted) {
+        // Something was actually ACKed while we were away — the
+        // reconciler's dose-log input is now stale, so nudge it.
+        ref.invalidate(peopleListProvider);
+      }
+    } on Object catch (error, st) {
+      debugPrint('App startup: pending ACK drain skipped ($error)');
+      debugPrintStack(stackTrace: st);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(appRouterProvider);
+    final themePreference = ref.watch(themeModePreferenceProvider);
     return MaterialApp.router(
       title: "We're All In This Together",
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
+      themeMode: themePreference.maybeWhen(
+        data: (preference) => preference.themeMode,
+        orElse: () => ThemeMode.system,
+      ),
       routerConfig: router,
       debugShowCheckedModeBanner: false,
     );

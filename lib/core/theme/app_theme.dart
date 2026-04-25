@@ -18,17 +18,55 @@ class AppTheme {
 
   static ThemeData light() => _base(Brightness.light);
 
-  static ThemeData dark() => _base(Brightness.dark);
-
-  static ThemeData _base(Brightness brightness) {
+  static ThemeData dark() {
     final scheme = ColorScheme.fromSeed(
       seedColor: _seed,
-      brightness: brightness,
+      brightness: Brightness.dark,
+    ).copyWith(
+      surface: const Color(0xFF111817),
+      surfaceContainerLowest: const Color(0xFF0D1413),
+      surfaceContainerLow: const Color(0xFF182221),
+      surfaceContainer: const Color(0xFF1D2927),
+      surfaceContainerHigh: const Color(0xFF263331),
+      surfaceContainerHighest: const Color(0xFF303D3B),
+      onSurface: const Color(0xFFE5ECE9),
+      onSurfaceVariant: const Color(0xFFC3D0CC),
+      primary: const Color(0xFF9BCDC3),
+      onPrimary: const Color(0xFF073731),
+      primaryContainer: const Color(0xFF24544D),
+      onPrimaryContainer: const Color(0xFFD2F1EC),
+      secondaryContainer: const Color(0xFF344B47),
+      onSecondaryContainer: const Color(0xFFD7E7E3),
+      outline: const Color(0xFF84938F),
     );
+    return _base(
+      Brightness.dark,
+      colorScheme: scheme,
+      scaffoldBackgroundColor: const Color(0xFF0D1413),
+    );
+  }
+
+  static ThemeData _base(
+    Brightness brightness, {
+    ColorScheme? colorScheme,
+    Color? scaffoldBackgroundColor,
+  }) {
+    final scheme = colorScheme ??
+        ColorScheme.fromSeed(
+          seedColor: _seed,
+          brightness: brightness,
+        );
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
+      scaffoldBackgroundColor: scaffoldBackgroundColor,
       visualDensity: VisualDensity.adaptivePlatformDensity,
+      appBarTheme: AppBarTheme(
+        centerTitle: false,
+        backgroundColor: scheme.surface,
+        foregroundColor: scheme.onSurface,
+        surfaceTintColor: Colors.transparent,
+      ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           minimumSize: const Size(88, 48),
@@ -41,6 +79,22 @@ class AppTheme {
           borderRadius: BorderRadius.circular(16),
         ),
         color: scheme.surfaceContainerLow,
+      ),
+      dividerTheme: DividerThemeData(
+        color: scheme.outlineVariant.withValues(alpha: 0.55),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: brightness == Brightness.dark,
+        fillColor: brightness == Brightness.dark
+            ? scheme.surfaceContainerLow
+            : null,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      listTileTheme: ListTileThemeData(
+        iconColor: scheme.primary,
+        textColor: scheme.onSurface,
       ),
     );
   }
