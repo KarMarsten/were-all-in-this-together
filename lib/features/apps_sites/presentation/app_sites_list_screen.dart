@@ -75,43 +75,10 @@ class AppSitesListScreen extends ConsumerWidget {
               if (active.isEmpty && archived.isEmpty) {
                 return const _EmptyState();
               }
-              final sorted = [...active]..sort(
-                  (a, b) =>
-                      a.title.toLowerCase().compareTo(b.title.toLowerCase()),
-                );
               return ListView(
                 padding: const EdgeInsets.fromLTRB(8, 8, 8, 96),
                 children: [
-                  for (final s in sorted)
-                    ListTile(
-                      title: Text(s.title),
-                      subtitle: Text(
-                        s.url,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            tooltip: 'Open link',
-                            icon: const Icon(Icons.open_in_new),
-                            onPressed: () async {
-                              final ok = await opener.openWeb(s.url);
-                              if (!ok && context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text("Couldn't open link."),
-                                  ),
-                                );
-                              }
-                            },
-                          ),
-                          const Icon(Icons.chevron_right),
-                        ],
-                      ),
-                      onTap: () => context.push(Routes.appSiteEdit(s.id)),
-                    ),
+                  ..._categoryGroups(context, active, opener),
                   if (archived.isNotEmpty)
                     _ArchivedSection(sites: archived),
                 ],
@@ -122,6 +89,88 @@ class AppSitesListScreen extends ConsumerWidget {
       ),
     );
   }
+
+  static List<Widget> _categoryGroups(
+    BuildContext context,
+    List<AppSite> sites,
+    UrlOpener opener,
+  ) {
+    final out = <Widget>[];
+    for (final category in AppSiteCategory.values) {
+      final group = sites.where((s) => s.category == category).toList()
+        ..sort(
+          (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
+        );
+      if (group.isEmpty) continue;
+      out.add(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 12, 8, 4),
+          child: Text(
+            labelForAppSiteCategory(category),
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+          ),
+        ),
+      );
+      for (final site in group) {
+        out.add(_AppSiteTile(site: site, opener: opener));
+      }
+    }
+    return out;
+  }
+}
+
+class _AppSiteTile extends StatelessWidget {
+  const _AppSiteTile({required this.site, required this.opener});
+
+  final AppSite site;
+  final UrlOpener opener;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Text(site.title),
+      subtitle: Text(
+        _subtitle(site),
+        maxLines: 3,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            tooltip: 'Open link',
+            icon: const Icon(Icons.open_in_new),
+            onPressed: () async {
+              final ok = await opener.openWeb(site.url);
+              if (!ok && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Couldn't open link.")),
+                );
+              }
+            },
+          ),
+          const Icon(Icons.chevron_right),
+        ],
+      ),
+      onTap: () => context.push(Routes.appSiteEdit(site.id)),
+    );
+  }
+
+  static String _subtitle(AppSite site) {
+    final parts = <String>[
+      site.url,
+      if (_notBlank(site.usernameHint))
+        'Username hint: ${site.usernameHint!.trim()}',
+      if (_notBlank(site.loginNote)) site.loginNote!.trim(),
+      if (_notBlank(site.notes)) site.notes!.trim(),
+    ];
+    return parts.join(' · ');
+  }
+
+  static bool _notBlank(String? value) =>
+      value != null && value.trim().isNotEmpty;
 }
 
 class _EmptyState extends StatelessWidget {
@@ -156,7 +205,11 @@ class _ArchivedSection extends StatelessWidget {
         for (final s in sites)
           ListTile(
             title: Text(s.title),
-            subtitle: Text(s.url, maxLines: 1, overflow: TextOverflow.ellipsis),
+            subtitle: Text(
+              '${labelForAppSiteCategory(s.category)} · ${s.url}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
             onTap: () => context.push(Routes.appSiteEdit(s.id)),
           ),
       ],

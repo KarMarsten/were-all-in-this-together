@@ -366,7 +366,8 @@ and holding a consistent vocabulary is a feature, not a polish task.
 - Providers.
 - Medications + history + **Medication report** PDF.
 - Milestones & dates.
-- Apps & Sites — **shipped** (encrypted URL + title + notes per Person).
+- Apps & Sites — **shipped** (encrypted categorized URL, username hint, login
+  note, and notes per Person; explicitly no passwords).
 - Programs — **shipped** (encrypted school / camp / after-care rows with
   contact name/role, phone, email, address, website, hours, notes, and actions).
 - Profile + Notes — **shipped** locally (structured entries, Calm surfacing,

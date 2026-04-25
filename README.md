@@ -94,8 +94,9 @@ access.
 - **Programs** and **Apps & Sites** — per-person encrypted lists. Programs
   cover school / camp / after-care with contact name/role, phone, email,
   address, website/portal URL, schedule/hours, notes, and one-tap actions.
-  Apps & Sites track portal URLs + notes with open-in-browser. Archive and
-  restore match other domains.
+  Apps & Sites track categorized portal/app URLs, username hints, login notes,
+  and notes (explicitly no passwords) with open-in-browser. Archive and restore
+  match other domains.
 - **Calm** — in-the-moment coping strategies and crisis contacts, reachable
   in one tap from anywhere, rendered in a dedicated low-stimulation theme.
 
@@ -106,8 +107,8 @@ Priorities **0–5** for Phase 1 (see recent commits and
 
 0. **Doc sync** — keep this README, `lib/features/README.md`, and the repo
    layout tree aligned with shipped routes and schema bumps.
-1. **Apps & Sites depth** — richer categories / username hints (no passwords),
-   validation, and cross-links as needs emerge.
+1. **Programs & Apps & Sites cross-links** — optional links between programs,
+   providers, portals, and future calendar/contact surfaces as needs emerge.
 2. **Care summary depth** — keep expanding export options and add
    locale-specific hotlines where we can cite them safely.
 3. **Calm** — continue replacing any remaining generic copy with concrete,

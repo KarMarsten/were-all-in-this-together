@@ -82,7 +82,7 @@ void _showAboutApp(BuildContext context) {
       const SizedBox(height: 12),
       Text(
         'Phase 1 is local-only: People, medications, appointments, providers, '
-        'profile, notes, milestones, richer programs, apps & sites, PDFs, '
+        'profile, notes, milestones, richer programs and apps/sites, PDFs, '
         'cross-domain search, and Calm tools live on this device.',
         style: textTheme.bodyMedium,
       ),

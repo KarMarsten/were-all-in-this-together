@@ -20,7 +20,7 @@ through Riverpod providers or shared `core/` services).
 | `reports/`         | implemented   | Adherence report PDF + selectable **care summary** PDF with Calm/support sections.      |
 | `providers/`       | implemented   | Care providers, phone/address/portal, archive-safe references.                          |
 | `programs/`        | implemented   | Schools / camps / after-care — encrypted contacts, actions, edit, archive.              |
-| `apps_sites/`      | implemented   | Portal URLs + notes (no passwords), open-in-browser, archive.                             |
+| `apps_sites/`      | implemented   | Categorized URLs + username hints / login notes (no passwords), open, archive.            |
 | `milestones/`      | implemented   | Milestones & dates: typed life-log, archive / restore.                                    |
 
 See [`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md) for the data model

@@ -4,6 +4,9 @@ class EncryptedAppSitePayload {
     required this.schemaVersion,
     required this.title,
     required this.url,
+    this.categoryIndex,
+    this.usernameHint,
+    this.loginNote,
     this.notes,
   });
 
@@ -36,21 +39,30 @@ class EncryptedAppSitePayload {
       schemaVersion: rawVersion,
       title: title,
       url: url,
+      categoryIndex: json['category'] as int?,
+      usernameHint: json['usernameHint'] as String?,
+      loginNote: json['loginNote'] as String?,
       notes: json['notes'] as String?,
     );
   }
 
-  static const int currentSchemaVersion = 1;
+  static const int currentSchemaVersion = 2;
 
   final int schemaVersion;
   final String title;
   final String url;
+  final int? categoryIndex;
+  final String? usernameHint;
+  final String? loginNote;
   final String? notes;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
         'v': schemaVersion,
         'title': title,
         'url': url,
+        if (categoryIndex != null) 'category': categoryIndex,
+        if (usernameHint != null) 'usernameHint': usernameHint,
+        if (loginNote != null) 'loginNote': loginNote,
         if (notes != null) 'notes': notes,
       };
 }

@@ -2,6 +2,32 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'app_site.freezed.dart';
 
+enum AppSiteCategory {
+  portal,
+  school,
+  therapy,
+  insurance,
+  app,
+  other,
+}
+
+String labelForAppSiteCategory(AppSiteCategory category) {
+  switch (category) {
+    case AppSiteCategory.portal:
+      return 'Portal';
+    case AppSiteCategory.school:
+      return 'School';
+    case AppSiteCategory.therapy:
+      return 'Therapy';
+    case AppSiteCategory.insurance:
+      return 'Insurance';
+    case AppSiteCategory.app:
+      return 'App';
+    case AppSiteCategory.other:
+      return 'Other';
+  }
+}
+
 @freezed
 abstract class AppSite with _$AppSite {
   const factory AppSite({
@@ -11,6 +37,9 @@ abstract class AppSite with _$AppSite {
     required String url,
     required DateTime createdAt,
     required DateTime updatedAt,
+    @Default(AppSiteCategory.portal) AppSiteCategory category,
+    String? usernameHint,
+    String? loginNote,
     String? notes,
     DateTime? deletedAt,
     @Default(1) int rowVersion,

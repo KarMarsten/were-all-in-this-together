@@ -320,11 +320,25 @@ Iterable<_SearchResult> _appSiteResults(
   List<AppSite> sites,
 ) sync* {
   for (final site in sites) {
-    if (!_matches(q, [site.title, site.url, site.notes])) continue;
+    if (!_matches(q, [
+      site.title,
+      site.url,
+      labelForAppSiteCategory(site.category),
+      site.usernameHint,
+      site.loginNote,
+      site.notes,
+    ])) {
+      continue;
+    }
     yield _SearchResult(
       icon: Icons.link_outlined,
       title: site.title,
-      subtitle: _joinParts(['App/Site', owner, site.url]),
+      subtitle: _joinParts([
+        'App/Site',
+        owner,
+        labelForAppSiteCategory(site.category),
+        site.url,
+      ]),
       route: Routes.appSiteEdit(site.id),
       rank: 70,
     );

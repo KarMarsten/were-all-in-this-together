@@ -56,6 +56,9 @@ class AppSiteRepository {
     required String personId,
     required String title,
     required String url,
+    AppSiteCategory category = AppSiteCategory.portal,
+    String? usernameHint,
+    String? loginNote,
     String? notes,
   }) async {
     if (title.trim().isEmpty) {
@@ -75,6 +78,9 @@ class AppSiteRepository {
       schemaVersion: EncryptedAppSitePayload.currentSchemaVersion,
       title: title.trim(),
       url: normalized,
+      categoryIndex: category.index,
+      usernameHint: _nullIfBlank(usernameHint),
+      loginNote: _nullIfBlank(loginNote),
       notes: _nullIfBlank(notes),
     );
     final encrypted = await _sealPayload(
@@ -99,6 +105,9 @@ class AppSiteRepository {
       url: normalized,
       createdAt: now,
       updatedAt: now,
+      category: category,
+      usernameHint: _nullIfBlank(usernameHint),
+      loginNote: _nullIfBlank(loginNote),
       notes: _nullIfBlank(notes),
     );
   }
@@ -165,6 +174,9 @@ class AppSiteRepository {
       schemaVersion: EncryptedAppSitePayload.currentSchemaVersion,
       title: updated.title.trim(),
       url: normalized,
+      categoryIndex: updated.category.index,
+      usernameHint: _nullIfBlank(updated.usernameHint),
+      loginNote: _nullIfBlank(updated.loginNote),
       notes: _nullIfBlank(updated.notes),
     );
     final encrypted = await _sealPayload(
@@ -184,6 +196,8 @@ class AppSiteRepository {
     return updated.copyWith(
       title: updated.title.trim(),
       url: normalized,
+      usernameHint: _nullIfBlank(updated.usernameHint),
+      loginNote: _nullIfBlank(updated.loginNote),
       notes: _nullIfBlank(updated.notes),
       updatedAt: now,
       rowVersion: updated.rowVersion + 1,
@@ -226,9 +240,17 @@ class AppSiteRepository {
     if (u != null &&
         u.hasScheme &&
         (u.scheme == 'http' || u.scheme == 'https')) {
+      if (u.host.isEmpty) {
+        throw ArgumentError.value(raw, 'url', 'must include a host');
+      }
       return t;
     }
-    return 'https://$t';
+    final normalized = 'https://$t';
+    final parsed = Uri.tryParse(normalized);
+    if (parsed == null || parsed.host.isEmpty) {
+      throw ArgumentError.value(raw, 'url', 'must include a host');
+    }
+    return normalized;
   }
 
   static String? _nullIfBlank(String? s) {
@@ -290,6 +312,9 @@ class AppSiteRepository {
         row.updatedAt,
         isUtc: true,
       ),
+      category: _categoryFromIndex(payload.categoryIndex),
+      usernameHint: payload.usernameHint,
+      loginNote: payload.loginNote,
       notes: payload.notes,
       deletedAt: row.deletedAt == null
           ? null
@@ -298,6 +323,15 @@ class AppSiteRepository {
       lastWriterDeviceId: row.lastWriterDeviceId,
       keyVersion: row.keyVersion,
     );
+  }
+
+  AppSiteCategory _categoryFromIndex(int? index) {
+    if (index == null ||
+        index < 0 ||
+        index >= AppSiteCategory.values.length) {
+      return AppSiteCategory.portal;
+    }
+    return AppSiteCategory.values[index];
   }
 
   List<int> _aadFor({

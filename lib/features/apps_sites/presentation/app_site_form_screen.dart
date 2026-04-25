@@ -23,7 +23,10 @@ class _AppSiteFormScreenState extends ConsumerState<AppSiteFormScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _title;
   late final TextEditingController _url;
+  late final TextEditingController _usernameHint;
+  late final TextEditingController _loginNote;
   late final TextEditingController _notes;
+  late AppSiteCategory _category;
   bool _saving = false;
 
   @override
@@ -32,13 +35,18 @@ class _AppSiteFormScreenState extends ConsumerState<AppSiteFormScreen> {
     final s = widget.initialSite;
     _title = TextEditingController(text: s?.title ?? '');
     _url = TextEditingController(text: s?.url ?? '');
+    _usernameHint = TextEditingController(text: s?.usernameHint ?? '');
+    _loginNote = TextEditingController(text: s?.loginNote ?? '');
     _notes = TextEditingController(text: s?.notes ?? '');
+    _category = s?.category ?? AppSiteCategory.portal;
   }
 
   @override
   void dispose() {
     _title.dispose();
     _url.dispose();
+    _usernameHint.dispose();
+    _loginNote.dispose();
     _notes.dispose();
     super.dispose();
   }
@@ -55,6 +63,9 @@ class _AppSiteFormScreenState extends ConsumerState<AppSiteFormScreen> {
           cur.copyWith(
             title: _title.text.trim(),
             url: _url.text.trim(),
+            category: _category,
+            usernameHint: _nullIfBlank(_usernameHint.text),
+            loginNote: _nullIfBlank(_loginNote.text),
             notes: _nullIfBlank(_notes.text),
           ),
         );
@@ -70,6 +81,9 @@ class _AppSiteFormScreenState extends ConsumerState<AppSiteFormScreen> {
           personId: personId,
           title: _title.text.trim(),
           url: _url.text.trim(),
+          category: _category,
+          usernameHint: _nullIfBlank(_usernameHint.text),
+          loginNote: _nullIfBlank(_loginNote.text),
           notes: _nullIfBlank(_notes.text),
         );
       }
@@ -89,6 +103,19 @@ class _AppSiteFormScreenState extends ConsumerState<AppSiteFormScreen> {
   static String? _nullIfBlank(String s) {
     final t = s.trim();
     return t.isEmpty ? null : t;
+  }
+
+  static String? _urlError(String? raw) {
+    final value = raw?.trim() ?? '';
+    if (value.isEmpty) return 'Please add a URL';
+    final normalized = value.contains('://') ? value : 'https://$value';
+    final uri = Uri.tryParse(normalized);
+    if (uri == null ||
+        uri.host.isEmpty ||
+        (uri.scheme != 'http' && uri.scheme != 'https')) {
+      return 'Enter a valid URL';
+    }
+    return null;
   }
 
   @override
@@ -113,6 +140,25 @@ class _AppSiteFormScreenState extends ConsumerState<AppSiteFormScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                DropdownButtonFormField<AppSiteCategory>(
+                  initialValue: _category,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Category',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: [
+                    for (final category in AppSiteCategory.values)
+                      DropdownMenuItem(
+                        value: category,
+                        child: Text(labelForAppSiteCategory(category)),
+                      ),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) setState(() => _category = value);
+                  },
+                ),
+                const SizedBox(height: 16),
                 TextFormField(
                   controller: _title,
                   autofocus: !widget.isEditing,
@@ -138,12 +184,7 @@ class _AppSiteFormScreenState extends ConsumerState<AppSiteFormScreen> {
                     hintText: 'https://… or example.com',
                     border: OutlineInputBorder(),
                   ),
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) {
-                      return 'Please add a URL';
-                    }
-                    return null;
-                  },
+                  validator: _urlError,
                 ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
@@ -162,6 +203,37 @@ class _AppSiteFormScreenState extends ConsumerState<AppSiteFormScreen> {
                   },
                   icon: const Icon(Icons.open_in_new),
                   label: const Text('Try URL'),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _usernameHint,
+                  autocorrect: false,
+                  decoration: const InputDecoration(
+                    labelText: 'Username hint (optional)',
+                    hintText: 'Email used, student ID hint — not a password.',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _loginNote,
+                  minLines: 2,
+                  maxLines: 4,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Login note (optional)',
+                    hintText: '2FA goes to Dad, use school email — no secrets.',
+                    border: OutlineInputBorder(),
+                    alignLabelWithHint: true,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Do not store passwords, recovery codes, or security '
+                  'answers here. Use a password manager for secrets.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
